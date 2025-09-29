@@ -273,11 +273,15 @@ export function AdminDashboard() {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
+      // Use signed URL instead of public URL since bucket might not be public
+      const { data, error: urlError } = await supabase.storage
         .from('Slike obroka')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
 
-      return data.publicUrl;
+      if (urlError) throw urlError;
+
+      console.log('Generated signed URL:', data.signedUrl);
+      return data.signedUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
@@ -372,11 +376,16 @@ export function AdminDashboard() {
       });
       
       // Update selectedMeal with the new data including the updated image_url
-      setSelectedMeal({
+      const updatedMealData = {
         ...selectedMeal,
         image_url: imageUrl || null,
-      });
+        updated_at: new Date().toISOString(),
+      };
+      
+      setSelectedMeal(updatedMealData);
       setImageFile(null);
+      
+      console.log('Updated selectedMeal:', updatedMealData);
       
       toast({
         title: "Uspeh",
@@ -1012,15 +1021,20 @@ export function AdminDashboard() {
                           className="hidden"
                         />
                       </div>
-                      {(imageFile || selectedMeal.image_url) && (
-                        <div className="mt-2">
-                          <img 
-                            src={imageFile ? URL.createObjectURL(imageFile) : selectedMeal.image_url} 
-                            alt="Preview" 
-                            className="w-full h-32 object-cover rounded-md"
-                          />
-                        </div>
-                      )}
+                       {(imageFile || selectedMeal.image_url) && (
+                         <div className="mt-2">
+                           <img 
+                             src={imageFile ? URL.createObjectURL(imageFile) : selectedMeal.image_url || ''} 
+                             alt="Preview slike obroka" 
+                             className="w-full h-32 object-cover rounded-md"
+                             onLoad={() => console.log('Image loaded successfully')}
+                             onError={(e) => {
+                               console.error('Image failed to load:', selectedMeal.image_url);
+                               console.log('Image error event:', e);
+                             }}
+                           />
+                         </div>
+                       )}
                     </div>
                     
                     <div className="space-y-2 pt-4">
