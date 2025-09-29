@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ChefHat, User } from "lucide-react";
+import { Calendar, Clock, ChefHat, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import chickenSaladImage from "@/assets/meal-chicken-salad.jpg";
 import pastaImage from "@/assets/meal-pasta.jpg";
@@ -52,6 +53,7 @@ const SAMPLE_MEALS: Meal[] = [
 const DAYS = ["Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak"];
 
 export function EmployeeDashboard() {
+  const { signOut } = useAuth();
   const [weekSelections, setWeekSelections] = useState<DaySelection[]>(
     DAYS.map(day => ({ day }))
   );
@@ -101,14 +103,20 @@ export function EmployeeDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-accent to-background">
       <div className="container mx-auto p-6">
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-primary rounded-lg">
-              <ChefHat className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary rounded-lg">
+                <ChefHat className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Ketering Portal</h1>
+                <p className="text-muted-foreground">Izaberite obroke za narednu sedmicu</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Ketering Portal</h1>
-              <p className="text-muted-foreground">Izaberite obroke za narednu sedmicu</p>
-            </div>
+            <Button onClick={signOut} variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Odjavi se
+            </Button>
           </div>
           
           <div className="flex items-center gap-4 text-sm text-muted-foreground">

@@ -14,8 +14,10 @@ import {
   Download, 
   Plus,
   Search,
-  Filter
+  Filter,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface OrderStats {
@@ -47,6 +49,7 @@ const SAMPLE_DAILY_ORDERS: DailyOrders[] = [
 ];
 
 export function AdminDashboard() {
+  const { signOut } = useAuth();
   const [newMeal, setNewMeal] = useState({
     name: "",
     description: "",
@@ -84,14 +87,20 @@ export function AdminDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-corporate/5 to-background">
       <div className="container mx-auto p-6">
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-corporate rounded-lg">
-              <BarChart3 className="h-6 w-6 text-corporate-foreground" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-corporate rounded-lg">
+                <BarChart3 className="h-6 w-6 text-corporate-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+                <p className="text-muted-foreground">Upravljanje keteringom i izveštajima</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-              <p className="text-muted-foreground">Upravljanje keteringom i izveštajima</p>
-            </div>
+            <Button onClick={signOut} variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Odjavi se
+            </Button>
           </div>
         </div>
 
