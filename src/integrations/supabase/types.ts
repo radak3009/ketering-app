@@ -56,6 +56,8 @@ export type Database = {
           name: string
           nutritional_info: Json | null
           price: number
+          shifts: string[]
+          status: string
           updated_at: string
         }
         Insert: {
@@ -69,6 +71,8 @@ export type Database = {
           name: string
           nutritional_info?: Json | null
           price: number
+          shifts?: string[]
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -82,6 +86,8 @@ export type Database = {
           name?: string
           nutritional_info?: Json | null
           price?: number
+          shifts?: string[]
+          status?: string
           updated_at?: string
         }
         Relationships: []
