@@ -29,18 +29,10 @@ const Index = () => {
     return null;
   }
 
-  // If user doesn't have a profile yet, show registration message
+  // If user doesn't have a profile, redirect to auth
   if (!profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
-        <div className="text-center space-y-4 max-w-md mx-auto p-6">
-          <h2 className="text-2xl font-bold text-foreground">Registracija potrebna</h2>
-          <p className="text-muted-foreground">
-            Morate se registrovati da biste koristili aplikaciju. Molimo vas kontaktirajte administratora.
-          </p>
-        </div>
-      </div>
-    );
+    navigate('/auth');
+    return null;
   }
 
   // Show appropriate dashboard based on user role

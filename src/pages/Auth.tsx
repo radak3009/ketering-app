@@ -108,8 +108,14 @@ export default function Auth() {
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           toast({
-            title: 'Greška',
-            description: 'Neispravni podaci za prijavljivanje.',
+            title: 'Prijava neuspešna',
+            description: 'Neispravni podaci za prijavljivanje. Ako nemate nalog, molimo vas kontaktirajte administratora za registraciju.',
+            variant: 'destructive'
+          });
+        } else if (error.message.includes('Email not confirmed')) {
+          toast({
+            title: 'Email nije potvrđen',
+            description: 'Molimo vas proverite email i potvrdite nalog.',
             variant: 'destructive'
           });
         } else {
