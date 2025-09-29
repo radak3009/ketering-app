@@ -1021,26 +1021,16 @@ export function AdminDashboard() {
                     </div>
                     
                     <div className="space-y-2 pt-4">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button className="w-full">
-                            <Save className="h-4 w-4 mr-2" />
-                            Sačuvaj izmene
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Potvrdi izmene</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Da li ste sigurni da želite da sačuvate izmene za ovaj obrok?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleUpdateMeal}>Sačuvaj</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <Button 
+                        className="w-full" 
+                        onClick={() => {
+                          console.log('Save button clicked for meal:', selectedMeal?.name);
+                          handleUpdateMeal();
+                        }}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Sačuvaj izmene
+                      </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -1069,11 +1059,11 @@ export function AdminDashboard() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </div>
-                  </div>
-                )}
-              </SheetContent>
-            </Sheet>
+                     </div>
+                   </div>
+                 )}
+               </SheetContent>
+             </Sheet>
           </TabsContent>
 
           <TabsContent value="menus">
