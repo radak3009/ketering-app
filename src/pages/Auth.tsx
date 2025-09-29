@@ -24,7 +24,7 @@ const signInSchema = z.object({
 });
 
 export default function Auth() {
-  const { signUp, signIn, signInWithGoogle, user } = useAuth();
+  const { signUp, signIn, signInWithGoogle, signOut, user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -44,10 +44,11 @@ export default function Auth() {
   });
 
   useEffect(() => {
-    if (user) {
+    // Only redirect if user exists AND has profile
+    if (user && profile) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,14 +159,33 @@ export default function Auth() {
           <p className="text-muted-foreground">Prijavite se na vaš nalog</p>
         </div>
 
-        <Card className="shadow-elegant border-primary/20">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Dobrodošli</CardTitle>
-            <CardDescription className="text-center">
-              Izaberite kako želite da pristupite
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {user && !authLoading && !profile ? (
+          <Card className="shadow-elegant border-destructive/20">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold text-center text-destructive">Profil nije kreiran</CardTitle>
+              <CardDescription className="text-center">
+                Vaš profil još uvek nije kreiran. Molimo vas kontaktirajte administratora ili se odjavite i registrujte ponovo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => signOut()} 
+                className="w-full"
+                variant="outline"
+              >
+                Odjavi se
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="shadow-elegant border-primary/20">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold text-center">Dobrodošli</CardTitle>
+              <CardDescription className="text-center">
+                Izaberite kako želite da pristupite
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">Prijavljivanje</TabsTrigger>
@@ -323,6 +343,7 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );
