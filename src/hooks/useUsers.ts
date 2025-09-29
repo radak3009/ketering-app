@@ -85,6 +85,49 @@ export function useUsers() {
     }
   };
 
+  const createUser = async (userData: {
+    full_name: string;
+    email: string;
+    phone?: string;
+    role: 'admin' | 'employee';
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([{
+          user_id: '', // This will be set by the trigger when user signs up
+          full_name: userData.full_name,
+          email: userData.email,
+          phone: userData.phone,
+          role: userData.role
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Send magic link for new user
+      await sendMagicLink(userData.email);
+      
+      await fetchUsers(); // Refresh the list
+      
+      toast({
+        title: 'Uspeh',
+        description: 'Korisnik je uspešno kreiran i pozivnica je poslata'
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast({
+        title: 'Greška',
+        description: 'Nije moguće kreirati korisnika',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   const sendMagicLink = async (email: string) => {
     try {
       const { error } = await supabase.auth.signInWithOtp({
@@ -118,6 +161,7 @@ export function useUsers() {
   return {
     users,
     loading,
+    createUser,
     updateUser,
     deleteUser,
     sendMagicLink,

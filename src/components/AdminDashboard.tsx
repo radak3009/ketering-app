@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   BarChart3, 
   Users, 
@@ -26,13 +27,16 @@ import {
   ImageIcon,
   Clock,
   Upload,
-  Save
+  Save,
+  FileText,
+  ChevronDown
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
 import { useUsers } from "@/hooks/useUsers";
+import { useOrders } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
 
@@ -68,17 +72,23 @@ export function AdminDashboard() {
   const { signOut } = useAuth();
   const { toast } = useToast();
   const { meals, loading: mealsLoading, createMeal, updateMeal, deleteMeal } = useMeals();
-  const { menus, loading: menusLoading, createMenu, deleteMenu } = useMenus();
-  const { users, loading: usersLoading, updateUser, deleteUser, sendMagicLink } = useUsers();
+  const { menus, loading: menusLoading, createMenu, updateMenu, deleteMenu } = useMenus();
+  const { users, loading: usersLoading, createUser, updateUser, deleteUser, sendMagicLink } = useUsers();
+  const { orders, loading: ordersLoading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders();
 
   // State management
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [mealForm, setMealForm] = useState({
@@ -96,19 +106,141 @@ export function AdminDashboard() {
     selectedMeals: [] as string[]
   });
 
+  const [userForm, setUserForm] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    role: "employee" as "admin" | "employee"
+  });
+
   // Search states
   const [menuMealSearch, setMenuMealSearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderDateRange, setOrderDateRange] = useState({
+    startDate: "",
+    endDate: ""
+  });
 
-  const resetMealForm = () => {
-    setMealForm({
-      name: "",
-      description: "",
-      price: "",
-      status: "aktivan",
-      shifts: [],
-      image_url: ""
+  const resetUserForm = () => {
+    setUserForm({
+      full_name: "",
+      email: "",
+      phone: "",
+      role: "employee"
     });
-    setImageFile(null);
+  };
+
+  const handleCreateUser = async () => {
+    if (!userForm.full_name || !userForm.email) {
+      toast({
+        title: "Greška",
+        description: "Molimo unesite ime i email",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      await createUser(userForm);
+      resetUserForm();
+      setIsAddUserOpen(false);
+    } catch (error) {
+      console.error('Error creating user:', error);
+    }
+  };
+
+  const handleBulkUserImport = async () => {
+    if (!csvFile) {
+      toast({
+        title: "Greška",
+        description: "Molimo odaberite fajl",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const text = await csvFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      
+      const requiredFields = ['ime', 'email'];
+      const hasRequiredFields = requiredFields.every(field => 
+        headers.some(h => h.includes(field) || h.includes(field.replace('ime', 'name')))
+      );
+
+      if (!hasRequiredFields) {
+        toast({
+          title: "Greška",
+          description: "CSV mora sadržavati kolone: Ime, Email",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const users = lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.trim());
+        const userData: any = {};
+        
+        headers.forEach((header, index) => {
+          if (header.includes('ime') || header.includes('name')) userData.full_name = values[index];
+          if (header.includes('email')) userData.email = values[index];
+          if (header.includes('phone') || header.includes('telefon')) userData.phone = values[index];
+          if (header.includes('role') || header.includes('uloga')) {
+            userData.role = values[index].toLowerCase().includes('admin') ? 'admin' : 'employee';
+          } else {
+            userData.role = 'employee';
+          }
+        });
+        
+        return userData;
+      }).filter(user => user.full_name && user.email);
+
+      for (const userData of users) {
+        await createUser(userData);
+      }
+
+      setCsvFile(null);
+      toast({
+        title: "Uspeh",
+        description: `Uvezeno je ${users.length} korisnika`
+      });
+    } catch (error) {
+      console.error('Error importing users:', error);
+      toast({
+        title: "Greška",
+        description: "Greška pri uvozu korisnika",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDateRangeFilter = () => {
+    if (orderDateRange.startDate && orderDateRange.endDate) {
+      fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
+    }
+  };
+
+  const handleDayClick = async (day: any) => {
+    const date = format(new Date(2025, 0, parseInt(day.day.split(' ')[1]) - 1), 'yyyy-MM-dd');
+    setSelectedDay(date);
+    const mealOrders = await getMealOrdersByDate(date);
+    setDailyMealOrders(mealOrders);
+  };
+
+  const handleSearchOrders = async () => {
+    if (orderSearch.trim()) {
+      const results = await searchMealOrders(
+        orderSearch, 
+        orderDateRange.startDate || undefined, 
+        orderDateRange.endDate || undefined
+      );
+      // Handle search results - you could display them in a separate state
+      toast({
+        title: "Pretraga završena",
+        description: `Pronađeno je ${results.length} porudžbina`
+      });
+    }
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -280,12 +412,42 @@ export function AdminDashboard() {
     }
   };
 
+  const handleUpdateMenu = async () => {
+    if (!selectedMenu) return;
+
+    try {
+      const selectedMealIds = selectedMenu.meals?.map((m: any) => m.meal_id) || [];
+      
+      await updateMenu(selectedMenu.id, {
+        description: selectedMenu.description,
+        menu_date: selectedMenu.menu_date,
+        meal_ids: selectedMealIds
+      });
+      
+      setSelectedMenu(null);
+    } catch (error) {
+      console.error('Error updating menu:', error);
+    }
+  };
+
   const handleSendMagicLink = async (email: string) => {
     try {
       await sendMagicLink(email);
     } catch (error) {
       console.error('Error sending magic link:', error);
     }
+  };
+
+  const resetMealForm = () => {
+    setMealForm({
+      name: "",
+      description: "",
+      price: "",
+      status: "aktivan",
+      shifts: [],
+      image_url: ""
+    });
+    setImageFile(null);
   };
 
   const filteredMenuMeals = meals.filter(meal => 
@@ -397,16 +559,38 @@ export function AdminDashboard() {
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle>Pregled porudžbina</CardTitle>
-                    <CardDescription>Sedmica: 6-10 Januar 2025</CardDescription>
+                    <CardDescription>Filtriraj i pretraži porudžbine</CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Input 
+                      placeholder="Pretraži po nazivu obroka..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      className="w-48"
+                    />
+                    <Button variant="outline" size="sm" onClick={handleSearchOrders}>
                       <Search className="h-4 w-4 mr-1" />
                       Pretraži
                     </Button>
-                    <Button variant="outline" size="sm">
+                  </div>
+                </div>
+                <div className="flex gap-4 mt-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      type="date"
+                      placeholder="Od datuma"
+                      value={orderDateRange.startDate}
+                      onChange={(e) => setOrderDateRange({...orderDateRange, startDate: e.target.value})}
+                    />
+                    <Input 
+                      type="date"
+                      placeholder="Do datuma"
+                      value={orderDateRange.endDate}
+                      onChange={(e) => setOrderDateRange({...orderDateRange, endDate: e.target.value})}
+                    />
+                    <Button variant="outline" size="sm" onClick={handleDateRangeFilter}>
                       <Filter className="h-4 w-4 mr-1" />
-                      Filter
+                      Filtriraj
                     </Button>
                   </div>
                 </div>
@@ -414,15 +598,65 @@ export function AdminDashboard() {
               <CardContent>
                 <div className="grid gap-4">
                   {SAMPLE_DAILY_ORDERS.map((day) => (
-                    <div key={day.day} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">{day.day}</h3>
-                        <p className="text-sm text-muted-foreground">{day.orders} porudžbina</p>
+                    <div key={day.day} className="relative">
+                      <div 
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                        onClick={() => handleDayClick(day)}
+                      >
+                        <div>
+                          <h3 className="font-medium">{day.day}</h3>
+                          <p className="text-sm text-muted-foreground">{day.orders} porudžbina</p>
+                        </div>
+                        <div className="text-right flex items-center gap-2">
+                          <div>
+                            <p className="font-bold">{day.revenue.toLocaleString()} RSD</p>
+                            <Badge variant="secondary">{day.orders} kom</Badge>
+                          </div>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{day.revenue.toLocaleString()} RSD</p>
-                        <Badge variant="secondary">{day.orders} kom</Badge>
-                      </div>
+                      
+                      {selectedDay && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <div className="absolute top-0 left-0 w-full h-full"></div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-80">
+                            <div className="p-4 max-h-60 overflow-y-auto">
+                              <h4 className="font-medium mb-3">Obroci za {day.day}</h4>
+                              {dailyMealOrders.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">Nema podataka</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {dailyMealOrders.map((mealOrder) => (
+                                    <DropdownMenuItem key={mealOrder.meal_id} className="flex items-center gap-3 p-2">
+                                      <div className="w-10 h-10 rounded overflow-hidden bg-muted">
+                                        {mealOrder.meal_image_url ? (
+                                          <img 
+                                            src={mealOrder.meal_image_url} 
+                                            alt={mealOrder.meal_name} 
+                                            className="w-full h-full object-cover" 
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center">
+                                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1">
+                                        <p className="font-medium text-sm">{mealOrder.meal_name}</p>
+                                        <Badge variant="outline" className="text-xs">
+                                          {mealOrder.total_orders} kom
+                                        </Badge>
+                                      </div>
+                                    </DropdownMenuItem>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1010,14 +1244,7 @@ export function AdminDashboard() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => {
-                            // Update menu logic would go here
-                            toast({
-                              title: "Uspeh",
-                              description: "Jelovnik je ažuriran"
-                            });
-                            setSelectedMenu(null);
-                          }}>
+                          <AlertDialogAction onClick={handleUpdateMenu}>
                             Sačuvaj
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -1157,7 +1384,9 @@ export function AdminDashboard() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleUpdateUser}>Sačuvaj</AlertDialogAction>
+                            <AlertDialogAction onClick={() => {
+                              handleUpdateUser();
+                            }}>Sačuvaj</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>

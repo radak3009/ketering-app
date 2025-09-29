@@ -107,6 +107,66 @@ export function useMenus() {
     }
   };
 
+  const updateMenu = async (id: string, menuData: {
+    description?: string;
+    menu_date?: string;
+    meal_ids?: string[];
+  }) => {
+    try {
+      // Update menu basic info
+      const { error: menuError } = await supabase
+        .from('menus')
+        .update({
+          description: menuData.description,
+          menu_date: menuData.menu_date
+        })
+        .eq('id', id);
+
+      if (menuError) throw menuError;
+
+      // Update meal associations if provided
+      if (menuData.meal_ids) {
+        // First delete existing associations
+        const { error: deleteError } = await supabase
+          .from('menu_meals')
+          .delete()
+          .eq('menu_id', id);
+
+        if (deleteError) throw deleteError;
+
+        // Then add new associations
+        if (menuData.meal_ids.length > 0) {
+          const menuMeals = menuData.meal_ids.map(meal_id => ({
+            menu_id: id,
+            meal_id,
+            quantity: 1
+          }));
+
+          const { error: insertError } = await supabase
+            .from('menu_meals')
+            .insert(menuMeals);
+
+          if (insertError) throw insertError;
+        }
+      }
+
+      await fetchMenus(); // Refresh the list
+      
+      toast({
+        title: 'Uspeh',
+        description: 'Jelovnik je uspešno ažuriran'
+      });
+    } catch (error) {
+      console.error('Error updating menu:', error);
+      toast({
+        title: 'Greška',
+        description: 'Nije moguće ažurirati jelovnik',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   const deleteMenu = async (id: string) => {
     try {
       const { error } = await supabase
@@ -140,6 +200,7 @@ export function useMenus() {
     menus,
     loading,
     createMenu,
+    updateMenu,
     deleteMenu,
     refetch: fetchMenus
   };
