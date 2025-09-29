@@ -10,8 +10,10 @@ import {
   Clock, 
   Shield,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import heroImage from "@/assets/hero-catering.jpg";
 
 interface LandingPageProps {
@@ -19,6 +21,7 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onRoleSelect }: LandingPageProps) {
+  const { signOut, profile } = useAuth();
   const [selectedRole, setSelectedRole] = useState<'employee' | 'admin' | null>(null);
 
   const features = [
@@ -46,6 +49,24 @@ export function LandingPage({ onRoleSelect }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent via-background to-accent/50">
+      {/* Header */}
+      {profile && (
+        <div className="border-b border-primary/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container mx-auto px-6 flex h-16 items-center justify-between">
+            <h1 className="text-xl font-bold text-primary">Catering Portal</h1>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                Dobrodošli, {profile.full_name}
+              </span>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Odjavi se
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="container mx-auto px-6 py-16">
