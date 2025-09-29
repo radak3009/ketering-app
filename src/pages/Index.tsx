@@ -9,11 +9,8 @@ const Index = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
+  // Don't redirect if loading or if user is not authenticated
+  // Let them stay on whatever page they're on (including /auth)
 
   if (loading) {
     return (
@@ -26,8 +23,10 @@ const Index = () => {
     );
   }
 
+  // If user is not authenticated, redirect to auth page
   if (!user) {
-    return null; // Will redirect to auth
+    navigate('/auth');
+    return null;
   }
 
   // If user doesn't have a profile yet, show registration message
