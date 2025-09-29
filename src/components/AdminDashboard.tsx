@@ -222,7 +222,25 @@ export function AdminDashboard() {
   };
 
   const handleDayClick = async (day: any) => {
-    const date = format(new Date(2025, 0, parseInt(day.day.split(' ')[1]) - 1), 'yyyy-MM-dd');
+    // Extract date from the day string or use direct date
+    const dateString = day.date || day.day;
+    let date;
+    
+    if (dateString.includes('-')) {
+      // Already a date string
+      date = dateString;
+    } else {
+      // Parse from display format like "Ponedeljak 06.01"
+      const parts = dateString.split(' ');
+      if (parts.length >= 2) {
+        const datePart = parts[1];
+        const [dayNum, month] = datePart.split('.');
+        date = `2025-${month.padStart(2, '0')}-${dayNum.padStart(2, '0')}`;
+      } else {
+        date = format(new Date(), 'yyyy-MM-dd');
+      }
+    }
+    
     setSelectedDay(date);
     const mealOrders = await getMealOrdersByDate(date);
     setDailyMealOrders(mealOrders);
@@ -596,70 +614,89 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4">
-                  {SAMPLE_DAILY_ORDERS.map((day) => (
-                    <div key={day.day} className="relative">
-                      <div 
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => handleDayClick(day)}
-                      >
-                        <div>
-                          <h3 className="font-medium">{day.day}</h3>
-                          <p className="text-sm text-muted-foreground">{day.orders} porudžbina</p>
-                        </div>
-                        <div className="text-right flex items-center gap-2">
-                          <div>
-                            <p className="font-bold">{day.revenue.toLocaleString()} RSD</p>
-                            <Badge variant="secondary">{day.orders} kom</Badge>
-                          </div>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        </div>
+                {ordersLoading ? (
+                  <div className="text-center py-8">Učitavanje...</div>
+                ) : (
+                  <div className="grid gap-4">
+                    {orders.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nema porudžbina za izabrani period
                       </div>
-                      
-                      {selectedDay && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <div className="absolute top-0 left-0 w-full h-full"></div>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-80">
-                            <div className="p-4 max-h-60 overflow-y-auto">
-                              <h4 className="font-medium mb-3">Obroci za {day.day}</h4>
-                              {dailyMealOrders.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">Nema podataka</p>
-                              ) : (
-                                <div className="space-y-2">
-                                  {dailyMealOrders.map((mealOrder) => (
-                                    <DropdownMenuItem key={mealOrder.meal_id} className="flex items-center gap-3 p-2">
-                                      <div className="w-10 h-10 rounded overflow-hidden bg-muted">
-                                        {mealOrder.meal_image_url ? (
-                                          <img 
-                                            src={mealOrder.meal_image_url} 
-                                            alt={mealOrder.meal_name} 
-                                            className="w-full h-full object-cover" 
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center">
-                                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex-1">
-                                        <p className="font-medium text-sm">{mealOrder.meal_name}</p>
-                                        <Badge variant="outline" className="text-xs">
-                                          {mealOrder.total_orders} kom
-                                        </Badge>
-                                      </div>
-                                    </DropdownMenuItem>
-                                  ))}
+                    ) : (
+                      // Group orders by date
+                      Object.entries(
+                        orders.reduce((acc, order) => {
+                          const date = order.order_date;
+                          if (!acc[date]) {
+                            acc[date] = [];
+                          }
+                          acc[date].push(order);
+                          return acc;
+                        }, {} as Record<string, typeof orders>)
+                      ).map(([date, dayOrders]) => {
+                        const totalOrders = dayOrders.length;
+                        const totalRevenue = dayOrders.reduce((sum, order) => sum + (parseFloat(order.total_amount.toString()) || 0), 0);
+                        const dayName = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'][new Date(date).getDay()];
+                        
+                        return (
+                          <div key={date} className="relative">
+                            <div 
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                              onClick={() => handleDayClick({ day: `${dayName} ${format(new Date(date), 'dd.MM')}` })}
+                            >
+                              <div>
+                                <h3 className="font-medium">{dayName} {format(new Date(date), 'dd.MM.yyyy')}</h3>
+                                <p className="text-sm text-muted-foreground">{totalOrders} porudžbina</p>
+                              </div>
+                              <div className="text-right flex items-center gap-2">
+                                <div>
+                                  <p className="font-bold">{totalRevenue.toLocaleString()} RSD</p>
+                                  <Badge variant="secondary">{totalOrders} kom</Badge>
                                 </div>
-                              )}
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              </div>
                             </div>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                            
+                            {selectedDay === date && (
+                              <div className="mt-2 p-4 bg-muted/20 rounded-lg">
+                                <h4 className="font-medium mb-3">Obroci za {dayName}</h4>
+                                {dailyMealOrders.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">Nema podataka</p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {dailyMealOrders.map((mealOrder) => (
+                                      <div key={mealOrder.meal_id} className="flex items-center gap-3 p-2 border rounded">
+                                        <div className="w-10 h-10 rounded overflow-hidden bg-muted">
+                                          {mealOrder.meal_image_url ? (
+                                            <img 
+                                              src={mealOrder.meal_image_url} 
+                                              alt={mealOrder.meal_name} 
+                                              className="w-full h-full object-cover" 
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-medium text-sm">{mealOrder.meal_name}</p>
+                                          <Badge variant="outline" className="text-xs">
+                                            {mealOrder.total_orders} kom
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1111,6 +1148,9 @@ export function AdminDashboard() {
                         >
                           <div className="flex-1">
                             <p className="font-medium">{menu.name}</p>
+                            {menu.description && (
+                              <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>
+                            )}
                             <p className="text-sm text-muted-foreground">
                               {menu.meals?.length || 0} obroka
                             </p>
@@ -1134,6 +1174,9 @@ export function AdminDashboard() {
                         >
                           <div className="flex-1">
                             <p className="font-medium">{menu.name}</p>
+                            {menu.description && (
+                              <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>
+                            )}
                             <p className="text-sm text-muted-foreground">
                               {menu.meals?.length || 0} obroka
                             </p>
@@ -1259,11 +1302,119 @@ export function AdminDashboard() {
           <TabsContent value="users">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Upravljanje korisnicima
-                </CardTitle>
-                <CardDescription>Pregled svih registrovanih korisnika</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Upravljanje korisnicima
+                    </CardTitle>
+                    <CardDescription>Pregled svih registrovanih korisnika</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      ref={csvInputRef}
+                      type="file"
+                      accept=".csv,.xlsx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setCsvFile(file);
+                      }}
+                      className="hidden"
+                    />
+                    <Button variant="outline" onClick={() => csvInputRef.current?.click()}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Uvezi CSV/XLSX
+                    </Button>
+                    {csvFile && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline">
+                            <Upload className="h-4 w-4 mr-2" />
+                            Uvezi ({csvFile.name})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Potvrdi uvoz</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Da li ste sigurni da želite da uvezete korisnike iz fajla {csvFile.name}? CSV mora imati kolone: Ime, Email (opciono: Telefon, Uloga).
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleBulkUserImport}>Uvezi</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                      <SheetTrigger asChild>
+                        <Button onClick={() => { resetUserForm(); setIsAddUserOpen(true); }}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Dodaj korisnika
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent>
+                        <SheetHeader>
+                          <SheetTitle>Dodaj novog korisnika</SheetTitle>
+                        </SheetHeader>
+                        <div className="space-y-4 mt-6">
+                          <div>
+                            <Label htmlFor="user-name">Ime i prezime *</Label>
+                            <Input 
+                              id="user-name"
+                              value={userForm.full_name}
+                              onChange={(e) => setUserForm({...userForm, full_name: e.target.value})}
+                              placeholder="Marko Marković"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="user-email">Email *</Label>
+                            <Input 
+                              id="user-email"
+                              type="email"
+                              value={userForm.email}
+                              onChange={(e) => setUserForm({...userForm, email: e.target.value})}
+                              placeholder="marko@example.com"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="user-phone">Telefon</Label>
+                            <Input 
+                              id="user-phone"
+                              value={userForm.phone}
+                              onChange={(e) => setUserForm({...userForm, phone: e.target.value})}
+                              placeholder="069123456"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label>Uloga</Label>
+                            <Select 
+                              value={userForm.role} 
+                              onValueChange={(value: "admin" | "employee") => setUserForm({...userForm, role: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Odaberite ulogu" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="employee">Zaposleni</SelectItem>
+                                <SelectItem value="admin">Administrator</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <Button onClick={handleCreateUser} className="w-full" disabled={usersLoading}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Sačuvaj
+                          </Button>
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {usersLoading ? (
