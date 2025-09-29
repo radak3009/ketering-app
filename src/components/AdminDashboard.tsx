@@ -967,6 +967,16 @@ export function AdminDashboard() {
                           <Upload className="h-4 w-4 mr-2" />
                           {imageFile ? imageFile.name : "Promeni sliku"}
                         </Button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setImageFile(file);
+                          }}
+                          className="hidden"
+                        />
                       </div>
                       {(imageFile || selectedMeal.image_url) && (
                         <div className="mt-2">
