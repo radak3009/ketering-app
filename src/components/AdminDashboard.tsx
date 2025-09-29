@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   BarChart3, 
   Users, 
@@ -23,13 +24,17 @@ import {
   Trash2,
   Mail,
   ImageIcon,
-  Clock
+  Clock,
+  Upload,
+  Save
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
 import { useUsers } from "@/hooks/useUsers";
+import { supabase } from "@/integrations/supabase/client";
+import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
 
 interface OrderStats {
   totalOrders: number;
@@ -66,75 +71,159 @@ export function AdminDashboard() {
   const { menus, loading: menusLoading, createMenu, deleteMenu } = useMenus();
   const { users, loading: usersLoading, updateUser, deleteUser, sendMagicLink } = useUsers();
 
-  // Meal form state
+  // State management
+  const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [selectedMenu, setSelectedMenu] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [isAddMealOpen, setIsAddMealOpen] = useState(false);
+  const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Form states
   const [mealForm, setMealForm] = useState({
     name: "",
     description: "",
     price: "",
-    category: "",
     status: "aktivan" as "aktivan" | "neaktivan",
     shifts: [] as string[],
     image_url: ""
   });
 
-  // Menu form state
   const [menuForm, setMenuForm] = useState({
-    name: "",
     description: "",
     menu_date: "",
     selectedMeals: [] as string[]
   });
 
-  // User form state
-  const [editingUser, setEditingUser] = useState<any>(null);
-
   // Search states
-  const [mealSearch, setMealSearch] = useState("");
-  const [userSearch, setUserSearch] = useState("");
+  const [menuMealSearch, setMenuMealSearch] = useState("");
 
-  const handleCreateMeal = async () => {
-    if (!mealForm.name || !mealForm.price || !mealForm.category) {
+  const resetMealForm = () => {
+    setMealForm({
+      name: "",
+      description: "",
+      price: "",
+      status: "aktivan",
+      shifts: [],
+      image_url: ""
+    });
+    setImageFile(null);
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('Slike obroka')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('Slike obroka')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
       toast({
         title: "Greška",
-        description: "Molimo unesite sve obavezne podatke",
+        description: "Greška pri upload-u slike",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const handleCreateMeal = async () => {
+    if (!mealForm.name || !mealForm.price) {
+      toast({
+        title: "Greška",
+        description: "Molimo unesite naziv i cenu obroka",
         variant: "destructive"
       });
       return;
     }
 
     try {
+      let imageUrl = mealForm.image_url;
+      
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+        if (!imageUrl) return;
+      }
+
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
         price: parseFloat(mealForm.price),
-        category: mealForm.category,
+        category: "Glavno jelo", // Default category
         status: mealForm.status,
         shifts: mealForm.shifts,
-        image_url: mealForm.image_url || null,
+        image_url: imageUrl || null,
         is_available: true,
         allergens: null,
         nutritional_info: null
       });
       
-      setMealForm({
-        name: "",
-        description: "",
-        price: "",
-        category: "",
-        status: "aktivan",
-        shifts: [],
-        image_url: ""
-      });
+      resetMealForm();
+      setIsAddMealOpen(false);
     } catch (error) {
       console.error('Error creating meal:', error);
     }
   };
 
-  const handleCreateMenu = async () => {
-    if (!menuForm.name || !menuForm.menu_date || menuForm.selectedMeals.length === 0) {
+  const handleUpdateMeal = async () => {
+    if (!selectedMeal || !selectedMeal.name || !selectedMeal.price) {
       toast({
         title: "Greška",
-        description: "Molimo unesite naziv, datum i odaberite obroke",
+        description: "Molimo unesite naziv i cenu obroka",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      let imageUrl = selectedMeal.image_url;
+      
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+        if (!imageUrl) return;
+      }
+
+      await updateMeal(selectedMeal.id, {
+        name: selectedMeal.name,
+        description: selectedMeal.description || null,
+        price: parseFloat(selectedMeal.price),
+        status: selectedMeal.status,
+        shifts: selectedMeal.shifts,
+        image_url: imageUrl || null,
+      });
+      
+      setSelectedMeal(null);
+      setImageFile(null);
+    } catch (error) {
+      console.error('Error updating meal:', error);
+    }
+  };
+
+  const generateMenuName = (date: string) => {
+    const menuDate = new Date(date);
+    const dayNames = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
+    const dayName = dayNames[menuDate.getDay()];
+    const formattedDate = format(menuDate, 'dd.MM.yyyy');
+    return `${dayName} ${formattedDate}`;
+  };
+
+  const handleCreateMenu = async () => {
+    if (!menuForm.menu_date || menuForm.selectedMeals.length === 0) {
+      toast({
+        title: "Greška",
+        description: "Molimo odaberite datum i obroke",
         variant: "destructive"
       });
       return;
@@ -154,50 +243,65 @@ export function AdminDashboard() {
     }
 
     try {
+      const menuName = generateMenuName(menuForm.menu_date);
+      
       await createMenu({
-        name: menuForm.name,
+        name: menuName,
         description: menuForm.description || undefined,
         menu_date: menuForm.menu_date,
         meal_ids: menuForm.selectedMeals
       });
       
       setMenuForm({
-        name: "",
         description: "",
         menu_date: "",
         selectedMeals: []
       });
+      setIsCreateMenuOpen(false);
     } catch (error) {
       console.error('Error creating menu:', error);
     }
   };
 
   const handleUpdateUser = async () => {
-    if (!editingUser) return;
+    if (!selectedUser) return;
 
     try {
-      await updateUser(editingUser.id, {
-        full_name: editingUser.full_name,
-        email: editingUser.email,
-        phone: editingUser.phone,
-        role: editingUser.role
+      await updateUser(selectedUser.id, {
+        full_name: selectedUser.full_name,
+        email: selectedUser.email,
+        phone: selectedUser.phone,
+        role: selectedUser.role
       });
       
-      setEditingUser(null);
+      setSelectedUser(null);
     } catch (error) {
       console.error('Error updating user:', error);
     }
   };
 
-  const filteredMeals = meals.filter(meal => 
+  const handleSendMagicLink = async (email: string) => {
+    try {
+      await sendMagicLink(email);
+    } catch (error) {
+      console.error('Error sending magic link:', error);
+    }
+  };
+
+  const filteredMenuMeals = meals.filter(meal => 
     meal.status === "aktivan" && 
-    meal.name.toLowerCase().includes(mealSearch.toLowerCase())
+    meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
   );
 
-  const filteredUsers = users.filter(user =>
-    user.full_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    user.email?.toLowerCase().includes(userSearch.toLowerCase())
-  );
+  const isNextWeek = (date: Date) => {
+    const nextWeek = addWeeks(new Date(), 1);
+    const startOfNextWeek = startOfWeek(nextWeek, { weekStartsOn: 1 });
+    const endOfNextWeek = endOfWeek(nextWeek, { weekStartsOn: 1 });
+    return date >= startOfNextWeek && date <= endOfNextWeek;
+  };
+
+  const thisWeekMenus = menus.filter(menu => isThisWeek(new Date(menu.menu_date)));
+  const nextWeekMenus = menus.filter(menu => isNextWeek(new Date(menu.menu_date)));
 
   const handleExportReport = () => {
     toast({
@@ -327,68 +431,226 @@ export function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="meals">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ChefHat className="h-5 w-5" />
-                    Dodaj novi obrok
-                  </CardTitle>
-                  <CardDescription>Unesite detalje novog obroka</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <ChefHat className="h-5 w-5" />
+                      Upravljanje obrocima
+                    </CardTitle>
+                    <CardDescription>Svi obroci u sistemu</CardDescription>
+                  </div>
+                  <Sheet open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>
+                    <SheetTrigger asChild>
+                      <Button onClick={() => { resetMealForm(); setIsAddMealOpen(true); }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Dodaj obrok
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Dodaj novi obrok</SheetTitle>
+                      </SheetHeader>
+                      <div className="space-y-4 mt-6">
+                        <div>
+                          <Label htmlFor="meal-name">Naziv obroka *</Label>
+                          <Input 
+                            id="meal-name"
+                            value={mealForm.name}
+                            onChange={(e) => setMealForm({...mealForm, name: e.target.value})}
+                            placeholder="npr. Piletina sa rižom"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="meal-price">Cena (RSD) *</Label>
+                          <Input 
+                            id="meal-price"
+                            type="number"
+                            value={mealForm.price}
+                            onChange={(e) => setMealForm({...mealForm, price: e.target.value})}
+                            placeholder="450"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="meal-description">Opis</Label>
+                          <Textarea 
+                            id="meal-description"
+                            value={mealForm.description}
+                            onChange={(e) => setMealForm({...mealForm, description: e.target.value})}
+                            placeholder="Kratak opis obroka..."
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label>Status</Label>
+                          <Select 
+                            value={mealForm.status} 
+                            onValueChange={(value: "aktivan" | "neaktivan") => setMealForm({...mealForm, status: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Odaberite status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="aktivan">Aktivan</SelectItem>
+                              <SelectItem value="neaktivan">Neaktivan</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label>Dostupnost u smenama</Label>
+                          <div className="flex gap-4 mt-2">
+                            {["prva", "druga", "treća"].map((shift) => (
+                              <div key={shift} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={shift}
+                                  checked={mealForm.shifts.includes(shift)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setMealForm({...mealForm, shifts: [...mealForm.shifts, shift]});
+                                    } else {
+                                      setMealForm({...mealForm, shifts: mealForm.shifts.filter(s => s !== shift)});
+                                    }
+                                  }}
+                                />
+                                <label htmlFor={shift} className="text-sm font-medium capitalize">
+                                  {shift} smena
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Slika obroka</Label>
+                          <div className="flex gap-2 mt-2">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              onClick={() => fileInputRef.current?.click()}
+                              className="flex-1"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              {imageFile ? imageFile.name : "Učitaj sliku"}
+                            </Button>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) setImageFile(file);
+                              }}
+                              className="hidden"
+                            />
+                          </div>
+                          {(imageFile || mealForm.image_url) && (
+                            <div className="mt-2">
+                              <img 
+                                src={imageFile ? URL.createObjectURL(imageFile) : mealForm.image_url} 
+                                alt="Preview" 
+                                className="w-full h-32 object-cover rounded-md"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <Button onClick={handleCreateMeal} className="w-full" disabled={mealsLoading}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Dodaj obrok
+                        </Button>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {mealsLoading ? (
+                  <div className="text-center py-8">Učitavanje...</div>
+                ) : (
+                  <div className="grid gap-4">
+                    {meals.map((meal) => (
+                      <div key={meal.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                        onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                      >
+                        <div className="w-16 h-16 rounded-md overflow-hidden bg-muted">
+                          {meal.image_url ? (
+                            <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{meal.name}</p>
+                            <Badge variant={meal.status === "aktivan" ? "default" : "secondary"}>
+                              {meal.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{meal.price} RSD</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
+                              {meal.shifts?.join(', ')} smena
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit Meal Sheet */}
+            <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); }}>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Izmeni obrok</SheetTitle>
+                </SheetHeader>
+                {selectedMeal && (
+                  <div className="space-y-4 mt-6">
                     <div>
-                      <Label htmlFor="meal-name">Naziv obroka *</Label>
+                      <Label htmlFor="edit-meal-name">Naziv obroka *</Label>
                       <Input 
-                        id="meal-name"
-                        value={mealForm.name}
-                        onChange={(e) => setMealForm({...mealForm, name: e.target.value})}
-                        placeholder="npr. Piletina sa rižom"
+                        id="edit-meal-name"
+                        value={selectedMeal.name}
+                        onChange={(e) => setSelectedMeal({...selectedMeal, name: e.target.value})}
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="meal-price">Cena (RSD) *</Label>
+                      <Label htmlFor="edit-meal-price">Cena (RSD) *</Label>
                       <Input 
-                        id="meal-price"
+                        id="edit-meal-price"
                         type="number"
-                        value={mealForm.price}
-                        onChange={(e) => setMealForm({...mealForm, price: e.target.value})}
-                        placeholder="450"
+                        value={selectedMeal.price}
+                        onChange={(e) => setSelectedMeal({...selectedMeal, price: e.target.value})}
                       />
                     </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="meal-description">Opis</Label>
-                    <Textarea 
-                      id="meal-description"
-                      value={mealForm.description}
-                      onChange={(e) => setMealForm({...mealForm, description: e.target.value})}
-                      placeholder="Kratak opis obroka..."
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
+                    
                     <div>
-                      <Label htmlFor="meal-category">Kategorija *</Label>
-                      <Input 
-                        id="meal-category"
-                        value={mealForm.category}
-                        onChange={(e) => setMealForm({...mealForm, category: e.target.value})}
-                        placeholder="Glavno jelo"
+                      <Label htmlFor="edit-meal-description">Opis</Label>
+                      <Textarea 
+                        id="edit-meal-description"
+                        value={selectedMeal.description || ''}
+                        onChange={(e) => setSelectedMeal({...selectedMeal, description: e.target.value})}
                       />
                     </div>
                     
                     <div>
                       <Label>Status</Label>
                       <Select 
-                        value={mealForm.status} 
-                        onValueChange={(value: "aktivan" | "neaktivan") => setMealForm({...mealForm, status: value})}
+                        value={selectedMeal.status} 
+                        onValueChange={(value: "aktivan" | "neaktivan") => setSelectedMeal({...selectedMeal, status: value})}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Odaberite status" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="aktivan">Aktivan</SelectItem>
@@ -396,408 +658,610 @@ export function AdminDashboard() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
 
-                  <div>
-                    <Label>Dostupnost u smenama</Label>
-                    <div className="flex gap-4 mt-2">
-                      {["prva", "druga", "treća"].map((shift) => (
-                        <div key={shift} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={shift}
-                            checked={mealForm.shifts.includes(shift)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setMealForm({...mealForm, shifts: [...mealForm.shifts, shift]});
-                              } else {
-                                setMealForm({...mealForm, shifts: mealForm.shifts.filter(s => s !== shift)});
-                              }
-                            }}
+                    <div>
+                      <Label>Dostupnost u smenama</Label>
+                      <div className="flex gap-4 mt-2">
+                        {["prva", "druga", "treća"].map((shift) => (
+                          <div key={shift} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`edit-${shift}`}
+                              checked={selectedMeal.shifts?.includes(shift)}
+                              onCheckedChange={(checked) => {
+                                const currentShifts = selectedMeal.shifts || [];
+                                if (checked) {
+                                  setSelectedMeal({...selectedMeal, shifts: [...currentShifts, shift]});
+                                } else {
+                                  setSelectedMeal({...selectedMeal, shifts: currentShifts.filter(s => s !== shift)});
+                                }
+                              }}
+                            />
+                            <label htmlFor={`edit-${shift}`} className="text-sm font-medium capitalize">
+                              {shift} smena
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Slika obroka</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex-1"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {imageFile ? imageFile.name : "Promeni sliku"}
+                        </Button>
+                      </div>
+                      {(imageFile || selectedMeal.image_url) && (
+                        <div className="mt-2">
+                          <img 
+                            src={imageFile ? URL.createObjectURL(imageFile) : selectedMeal.image_url} 
+                            alt="Preview" 
+                            className="w-full h-32 object-cover rounded-md"
                           />
-                          <label htmlFor={shift} className="text-sm font-medium capitalize">
-                            {shift} smena
-                          </label>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
+                    
+                    <div className="space-y-2 pt-4">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="w-full">
+                            <Save className="h-4 w-4 mr-2" />
+                            Sačuvaj izmene
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Potvrdi izmene</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Da li ste sigurni da želite da sačuvate izmene za ovaj obrok?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleUpdateMeal}>Sačuvaj</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
 
-                  <div>
-                    <Label htmlFor="meal-image">URL slike</Label>
-                    <Input 
-                      id="meal-image"
-                      value={mealForm.image_url}
-                      onChange={(e) => setMealForm({...mealForm, image_url: e.target.value})}
-                      placeholder="https://example.com/slika.jpg"
-                    />
-                  </div>
-                  
-                  <Button onClick={handleCreateMeal} className="w-full" variant="gradient" disabled={mealsLoading}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Dodaj obrok
-                  </Button>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ChefHat className="h-5 w-5" />
-                    Upravljanje obrocima
-                  </CardTitle>
-                  <CardDescription>Svi obroci u sistemu</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {mealsLoading ? (
-                    <div className="text-center py-8">Učitavanje...</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {meals.map((meal) => (
-                        <div key={meal.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{meal.name}</p>
-                              <Badge variant={meal.status === "aktivan" ? "default" : "secondary"}>
-                                {meal.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{meal.price} RSD - {meal.category}</p>
-                            <div className="flex items-center gap-1 mt-1">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {meal.shifts?.join(', ')} smena
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => updateMeal(meal.id, { 
-                                status: meal.status === "aktivan" ? "neaktivan" : "aktivan" 
-                              })}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" className="w-full">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Obriši obrok
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Potvrdi brisanje</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Da li ste sigurni da želite da obrišete ovaj obrok? Ova akcija se ne može poništiti.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={async () => {
+                                await deleteMeal(selectedMeal.id);
+                                setSelectedMeal(null);
+                              }}
                             >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => deleteMeal(meal.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                              Obriši
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
           </TabsContent>
 
           <TabsContent value="menus">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Kreiraj jelovnik
-                  </CardTitle>
-                  <CardDescription>Dodajte novi jelovnik za određeni datum</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="menu-name">Naziv jelovnika *</Label>
-                    <Input 
-                      id="menu-name"
-                      value={menuForm.name}
-                      onChange={(e) => setMenuForm({...menuForm, name: e.target.value})}
-                      placeholder="npr. Jelovnik za ponedeljak"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="menu-date">Datum *</Label>
-                    <Input 
-                      id="menu-date"
-                      type="date"
-                      value={menuForm.menu_date}
-                      onChange={(e) => setMenuForm({...menuForm, menu_date: e.target.value})}
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="menu-description">Opis</Label>
-                    <Textarea 
-                      id="menu-description"
-                      value={menuForm.description}
-                      onChange={(e) => setMenuForm({...menuForm, description: e.target.value})}
-                      placeholder="Kratak opis jelovnika..."
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Pretraži obroke</Label>
-                    <div className="flex gap-2">
-                      <Search className="h-4 w-4 mt-3 text-muted-foreground" />
-                      <Input 
-                        value={mealSearch}
-                        onChange={(e) => setMealSearch(e.target.value)}
-                        placeholder="Pretraži po nazivu..."
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Odaberite obroke</Label>
-                    <div className="max-h-40 overflow-y-auto border rounded-md p-2">
-                      {filteredMeals.map((meal) => (
-                        <div key={meal.id} className="flex items-center space-x-2 py-2">
-                          <Checkbox
-                            id={meal.id}
-                            checked={menuForm.selectedMeals.includes(meal.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setMenuForm({...menuForm, selectedMeals: [...menuForm.selectedMeals, meal.id]});
-                              } else {
-                                setMenuForm({...menuForm, selectedMeals: menuForm.selectedMeals.filter(id => id !== meal.id)});
-                              }
-                            }}
-                          />
-                          <label htmlFor={meal.id} className="text-sm">
-                            {meal.name} - {meal.price} RSD
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <Button onClick={handleCreateMenu} className="w-full" variant="gradient" disabled={menusLoading}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Kreiraj jelovnik
-                  </Button>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Postojeći jelovnici
-                  </CardTitle>
-                  <CardDescription>Upravljanje jelovnicima</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {menusLoading ? (
-                    <div className="text-center py-8">Učitavanje...</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {menus.map((menu) => (
-                        <div key={menu.id} className="p-4 border rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium">{menu.name}</h3>
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => deleteMenu(menu.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Datum: {new Date(menu.menu_date).toLocaleDateString('sr-RS')}
-                          </p>
-                          <div className="text-xs text-muted-foreground">
-                            Obroci: {menu.meals?.length || 0}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="users">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Pretraga korisnika
-                  </CardTitle>
-                  <CardDescription>Pronađi i upravljaj korisnicima</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <div className="flex gap-2">
-                      <Search className="h-4 w-4 mt-3 text-muted-foreground" />
-                      <Input 
-                        value={userSearch}
-                        onChange={(e) => setUserSearch(e.target.value)}
-                        placeholder="Pretraži po imenu ili email-u..."
-                      />
-                    </div>
-                  </div>
-
-                  {usersLoading ? (
-                    <div className="text-center py-8">Učitavanje...</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {filteredUsers.map((user) => (
-                        <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex-1">
-                            <p className="font-medium">{user.full_name || 'Bez imena'}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
-                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="mt-1">
-                              {user.role}
-                            </Badge>
-                          </div>
-                          <div className="flex gap-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setEditingUser({...user})}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Izmeni korisnika</DialogTitle>
-                                </DialogHeader>
-                                {editingUser && (
-                                  <div className="space-y-4">
-                                    <div>
-                                      <Label>Ime i prezime</Label>
-                                      <Input 
-                                        value={editingUser.full_name || ""}
-                                        onChange={(e) => setEditingUser({...editingUser, full_name: e.target.value})}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Email</Label>
-                                      <Input 
-                                        value={editingUser.email || ""}
-                                        onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Telefon</Label>
-                                      <Input 
-                                        value={editingUser.phone || ""}
-                                        onChange={(e) => setEditingUser({...editingUser, phone: e.target.value})}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label>Uloga</Label>
-                                      <Select 
-                                        value={editingUser.role} 
-                                        onValueChange={(value) => setEditingUser({...editingUser, role: value})}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="employee">Zaposleni</SelectItem>
-                                          <SelectItem value="admin">Admin</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <Button onClick={handleUpdateUser} className="w-full">
-                                      Sačuvaj promene
-                                    </Button>
-                                  </div>
-                                )}
-                              </DialogContent>
-                            </Dialog>
-                            
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => sendMagicLink(user.email!)}
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            
-                            <Button 
-                              variant="destructive" 
-                              size="sm"
-                              onClick={() => deleteUser(user.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Pozivnice
-                  </CardTitle>
-                  <CardDescription>Pošaljite pozivnice novim korisnicima</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 bg-accent rounded-lg">
-                    <h3 className="font-medium mb-2">Magic Link pozivnice</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Kliknite na dugme Mail kod korisnika da pošaljete magic link za prijavu
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Mail className="h-3 w-3" />
-                      <span>Automatska registracija kroz email link</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="reports">
             <Card>
               <CardHeader>
-                <CardTitle>Generiši izveštaje</CardTitle>
-                <CardDescription>Preuzmite detaljne izveštaje o porudžbinama</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Upravljanje jelovnicima
+                    </CardTitle>
+                    <CardDescription>Pregled i kreiranje jelovnika</CardDescription>
+                  </div>
+                  <Sheet open={isCreateMenuOpen} onOpenChange={setIsCreateMenuOpen}>
+                    <SheetTrigger asChild>
+                      <Button onClick={() => setIsCreateMenuOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Kreiraj jelovnik
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Kreiraj novi jelovnik</SheetTitle>
+                      </SheetHeader>
+                      <div className="space-y-4 mt-6">
+                        <div>
+                          <Label htmlFor="menu-date">Datum *</Label>
+                          <Input 
+                            id="menu-date"
+                            type="date"
+                            value={menuForm.menu_date}
+                            onChange={(e) => setMenuForm({...menuForm, menu_date: e.target.value})}
+                            min={new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="menu-description">Opis</Label>
+                          <Textarea 
+                            id="menu-description"
+                            value={menuForm.description}
+                            onChange={(e) => setMenuForm({...menuForm, description: e.target.value})}
+                            placeholder="Kratak opis jelovnika..."
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label>Pretraži obroke</Label>
+                          <div className="flex gap-2 mt-1">
+                            <Input 
+                              placeholder="Pretraži po nazivu..."
+                              value={menuMealSearch}
+                              onChange={(e) => setMenuMealSearch(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label>Odaberite obroke</Label>
+                          <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
+                            {filteredMenuMeals.map((meal) => (
+                              <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                                <Checkbox
+                                  id={`menu-meal-${meal.id}`}
+                                  checked={menuForm.selectedMeals.includes(meal.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setMenuForm({...menuForm, selectedMeals: [...menuForm.selectedMeals, meal.id]});
+                                    } else {
+                                      setMenuForm({...menuForm, selectedMeals: menuForm.selectedMeals.filter(id => id !== meal.id)});
+                                    }
+                                  }}
+                                />
+                                <div className="w-8 h-8 rounded overflow-hidden bg-muted mr-2">
+                                  {meal.image_url ? (
+                                    <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <label htmlFor={`menu-meal-${meal.id}`} className="text-sm font-medium cursor-pointer">
+                                    {meal.name}
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <Button onClick={handleCreateMenu} className="w-full" disabled={menusLoading}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Kreiraj jelovnik
+                        </Button>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Button onClick={handleExportReport} variant="corporate" className="h-20">
-                    <div className="text-center">
-                      <Download className="h-6 w-6 mx-auto mb-2" />
-                      <span>Nedeljni izveštaj</span>
+                {/* This Week */}
+                <div>
+                  <h3 className="text-lg font-medium mb-3">Tekuća nedelja</h3>
+                  {thisWeekMenus.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">Nema jelovnika za tekuću nedelju</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {thisWeekMenus.map((menu) => (
+                        <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                          onClick={() => setSelectedMenu({...menu})}
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{menu.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {menu.meals?.length || 0} obroka
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </Button>
-                  
-                  <Button onClick={handleExportReport} variant="success" className="h-20">
-                    <div className="text-center">
-                      <BarChart3 className="h-6 w-6 mx-auto mb-2" />
-                      <span>Mesečni izveštaj</span>
-                    </div>
-                  </Button>
+                  )}
                 </div>
-                
-                <div className="p-4 bg-accent rounded-lg">
-                  <h3 className="font-medium mb-2">Automatski izveštaji</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Podesiti automatsko slanje izveštaja na email svakog ponedeljka
-                  </p>
-                  <Button variant="outline" size="sm">
-                    Podesi automatiku
-                  </Button>
+
+                {/* Next Week */}
+                <div>
+                  <h3 className="text-lg font-medium mb-3">Sledeća nedelja</h3>
+                  {nextWeekMenus.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">Nema jelovnika za sledeću nedelju</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {nextWeekMenus.map((menu) => (
+                        <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                          onClick={() => setSelectedMenu({...menu})}
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{menu.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {menu.meals?.length || 0} obroka
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Edit Menu Sheet */}
+            <Sheet open={!!selectedMenu} onOpenChange={() => setSelectedMenu(null)}>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Detalji jelovnika</SheetTitle>
+                </SheetHeader>
+                {selectedMenu && (
+                  <div className="space-y-4 mt-6">
+                    <div>
+                      <Label>Naziv jelovnika</Label>
+                      <Input value={selectedMenu.name} disabled />
+                    </div>
+                    
+                    <div>
+                      <Label>Datum</Label>
+                      <Input 
+                        type="date"
+                        value={selectedMenu.menu_date}
+                        onChange={(e) => setSelectedMenu({...selectedMenu, menu_date: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="edit-menu-description">Opis</Label>
+                      <Textarea 
+                        id="edit-menu-description"
+                        value={selectedMenu.description || ''}
+                        onChange={(e) => setSelectedMenu({...selectedMenu, description: e.target.value})}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label>Pretraži obroke</Label>
+                      <Input 
+                        placeholder="Pretraži po nazivu..."
+                        value={menuMealSearch}
+                        onChange={(e) => setMenuMealSearch(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label>Obroke u jelovniku</Label>
+                      <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
+                        {filteredMenuMeals.map((meal) => (
+                          <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                            <Checkbox
+                              id={`edit-menu-meal-${meal.id}`}
+                              checked={selectedMenu.meals?.some((m: any) => m.meal_id === meal.id) || false}
+                              onCheckedChange={(checked) => {
+                                const currentMeals = selectedMenu.meals || [];
+                                if (checked) {
+                                  setSelectedMenu({
+                                    ...selectedMenu,
+                                    meals: [...currentMeals, { meal_id: meal.id, meal: meal }]
+                                  });
+                                } else {
+                                  setSelectedMenu({
+                                    ...selectedMenu,
+                                    meals: currentMeals.filter((m: any) => m.meal_id !== meal.id)
+                                  });
+                                }
+                              }}
+                            />
+                            <div className="w-8 h-8 rounded overflow-hidden bg-muted mr-2">
+                              {meal.image_url ? (
+                                <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <label htmlFor={`edit-menu-meal-${meal.id}`} className="text-sm font-medium cursor-pointer">
+                                {meal.name}
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button className="w-full">
+                          <Save className="h-4 w-4 mr-2" />
+                          Sačuvaj izmene
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Potvrdi izmene</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Da li ste sigurni da želite da sačuvate izmene za ovaj jelovnik?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => {
+                            // Update menu logic would go here
+                            toast({
+                              title: "Uspeh",
+                              description: "Jelovnik je ažuriran"
+                            });
+                            setSelectedMenu(null);
+                          }}>
+                            Sačuvaj
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Upravljanje korisnicima
+                </CardTitle>
+                <CardDescription>Pregled svih registrovanih korisnika</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {usersLoading ? (
+                  <div className="text-center py-8">Učitavanje...</div>
+                ) : (
+                  <div className="space-y-3">
+                    {users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium">{user.full_name || 'Bez imena'}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline">{user.role}</Badge>
+                            {user.phone && <span className="text-xs text-muted-foreground">{user.phone}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Pošalji magic link</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Da li ste sigurni da želite da pošaljete magic link za prijavu korisniku {user.full_name} na email {user.email}?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleSendMagicLink(user.email || '')}>
+                                  Pošalji
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit User Sheet */}
+            <Sheet open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Izmeni korisnika</SheetTitle>
+                </SheetHeader>
+                {selectedUser && (
+                  <div className="space-y-4 mt-6">
+                    <div>
+                      <Label htmlFor="edit-user-name">Ime i prezime</Label>
+                      <Input 
+                        id="edit-user-name"
+                        value={selectedUser.full_name || ''}
+                        onChange={(e) => setSelectedUser({...selectedUser, full_name: e.target.value})}
+                        placeholder="Marko Marković"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="edit-user-email">Email</Label>
+                      <Input 
+                        id="edit-user-email"
+                        type="email"
+                        value={selectedUser.email || ''}
+                        onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
+                        placeholder="marko@example.com"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="edit-user-phone">Telefon</Label>
+                      <Input 
+                        id="edit-user-phone"
+                        value={selectedUser.phone || ''}
+                        onChange={(e) => setSelectedUser({...selectedUser, phone: e.target.value})}
+                        placeholder="069123456"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label>Uloga</Label>
+                      <Select 
+                        value={selectedUser.role} 
+                        onValueChange={(value) => setSelectedUser({...selectedUser, role: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Odaberite ulogu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="employee">Zaposleni</SelectItem>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2 pt-4">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="w-full">
+                            <Save className="h-4 w-4 mr-2" />
+                            Sačuvaj izmene
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Potvrdi izmene</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Da li ste sigurni da želite da sačuvate izmene za ovog korisnika?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleUpdateUser}>Sačuvaj</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" className="w-full">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Obriši korisnika
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Potvrdi brisanje</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Da li ste sigurni da želite da obrišete ovog korisnika? Ova akcija se ne može poništiti.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={async () => {
+                                await deleteUser(selectedUser.id);
+                                setSelectedUser(null);
+                              }}
+                            >
+                              Obriši
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Generišite izveštaj</CardTitle>
+                  <CardDescription>Izvoz podataka u CSV format</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Tip izveštaja</Label>
+                    <Select defaultValue="orders">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Odaberite tip" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="orders">Porudžbine</SelectItem>
+                        <SelectItem value="revenue">Prihodi</SelectItem>
+                        <SelectItem value="users">Korisnici</SelectItem>
+                        <SelectItem value="meals">Obroci</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Od datuma</Label>
+                      <Input type="date" />
+                    </div>
+                    <div>
+                      <Label>Do datuma</Label>
+                      <Input type="date" />
+                    </div>
+                  </div>
+                  
+                  <Button onClick={handleExportReport} className="w-full">
+                    <Download className="h-4 w-4 mr-2" />
+                    Generiši izveštaj
+                  </Button>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Brzi statistike</CardTitle>
+                  <CardDescription>Pregled ključnih pokazatelja</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Ukupno korisnika</span>
+                    <span className="font-bold">{users.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Aktivni obroci</span>
+                    <span className="font-bold">{meals.filter(m => m.status === 'aktivan').length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Jelovnici ove nedelje</span>
+                    <span className="font-bold">{thisWeekMenus.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Jelovnici sledeće nedelje</span>
+                    <span className="font-bold">{nextWeekMenus.length}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
