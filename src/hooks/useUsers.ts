@@ -92,36 +92,21 @@ export function useUsers() {
     role: 'admin' | 'employee';
   }) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([{
-          user_id: '', // This will be set by the trigger when user signs up
-          full_name: userData.full_name,
-          email: userData.email,
-          phone: userData.phone,
-          role: userData.role
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Send magic link for new user
+      // Instead of creating a profile directly, we just send a magic link
+      // The profile will be created automatically by the trigger when the user signs up
       await sendMagicLink(userData.email);
-      
-      await fetchUsers(); // Refresh the list
       
       toast({
         title: 'Uspeh',
-        description: 'Korisnik je uspešno kreiran i pozivnica je poslata'
+        description: `Pozivnica je poslata na ${userData.email}. Korisnik će biti kreiran kada se prvi put prijavi.`
       });
       
-      return data;
+      return null;
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error sending invitation:', error);
       toast({
         title: 'Greška',
-        description: 'Nije moguće kreirati korisnika',
+        description: 'Nije moguće poslati pozivnicu',
         variant: 'destructive'
       });
       throw error;
