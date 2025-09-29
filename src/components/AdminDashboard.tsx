@@ -341,9 +341,26 @@ export function AdminDashboard() {
       let imageUrl = selectedMeal.image_url;
       
       if (imageFile) {
+        console.log('Uploading new image:', imageFile.name);
+        toast({
+          title: "Upload u toku...",
+          description: "Slika se učitava, molimo sačekajte"
+        });
+        
         imageUrl = await uploadImage(imageFile);
         if (!imageUrl) return;
+        
+        console.log('New image uploaded:', imageUrl);
       }
+
+      console.log('Updating meal with data:', {
+        name: selectedMeal.name,
+        description: selectedMeal.description || null,
+        price: parseFloat(selectedMeal.price),
+        status: selectedMeal.status,
+        shifts: selectedMeal.shifts,
+        image_url: imageUrl || null,
+      });
 
       await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
@@ -356,8 +373,18 @@ export function AdminDashboard() {
       
       setSelectedMeal(null);
       setImageFile(null);
+      
+      toast({
+        title: "Uspeh",
+        description: "Obrok je uspešno ažuriran!"
+      });
     } catch (error) {
       console.error('Error updating meal:', error);
+      toast({
+        title: "Greška pri ažuriranju",
+        description: "Pokušajte ponovo",
+        variant: "destructive"
+      });
     }
   };
 
