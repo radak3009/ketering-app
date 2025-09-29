@@ -96,7 +96,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      console.log('Attempting to sign out...');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+        // Even if there's an error, clear local state
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      } else {
+        console.log('Sign out successful');
+      }
+    } catch (error) {
+      console.error('Unexpected sign out error:', error);
+      // Clear local state even on unexpected errors
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+    }
   };
 
   const signInWithGoogle = async () => {
