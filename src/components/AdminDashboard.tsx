@@ -362,7 +362,7 @@ export function AdminDashboard() {
         image_url: imageUrl || null,
       });
 
-      await updateMeal(selectedMeal.id, {
+      const updatedMeal = await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
         price: parseFloat(selectedMeal.price),
@@ -371,7 +371,11 @@ export function AdminDashboard() {
         image_url: imageUrl || null,
       });
       
-      setSelectedMeal(null);
+      // Update selectedMeal with the new data including the updated image_url
+      setSelectedMeal({
+        ...selectedMeal,
+        image_url: imageUrl || null,
+      });
       setImageFile(null);
       
       toast({
