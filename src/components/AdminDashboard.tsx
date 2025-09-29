@@ -876,7 +876,11 @@ export function AdminDashboard() {
                   <div className="grid gap-4">
                     {meals.map((meal) => (
                       <div key={meal.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                         onClick={() => {
+                           console.log('Meal clicked:', meal.name);
+                           console.log('Setting selectedMeal to:', meal);
+                           setSelectedMeal({...meal, shifts: meal.shifts || []});
+                         }}
                       >
                         <div className="w-16 h-16 rounded-md overflow-hidden bg-muted">
                           {meal.image_url ? (
@@ -910,13 +914,20 @@ export function AdminDashboard() {
             </Card>
 
             {/* Edit Meal Sheet */}
-            <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); }}>
+            <Sheet open={!!selectedMeal} onOpenChange={() => { 
+              console.log('Sheet closing, selectedMeal was:', selectedMeal?.name);
+              setSelectedMeal(null); 
+              setImageFile(null); 
+            }}>
               <SheetContent>
                 <SheetHeader>
                   <SheetTitle>Izmeni obrok</SheetTitle>
                 </SheetHeader>
                 {selectedMeal && (
                   <div className="space-y-4 mt-6">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      DEBUG: Editing meal - {selectedMeal.name}
+                    </p>
                     <div>
                       <Label htmlFor="edit-meal-name">Naziv obroka *</Label>
                       <Input 
@@ -1020,11 +1031,13 @@ export function AdminDashboard() {
                       )}
                     </div>
                     
-                    <div className="space-y-2 pt-4">
+                    <div className="space-y-2 pt-4 border-2 border-red-500 bg-red-50 p-2 rounded">
+                      <p className="text-xs text-red-600 mb-2">DEBUG: Save button area - selectedMeal: {selectedMeal?.name}</p>
                       <Button 
-                        className="w-full" 
+                        className="w-full bg-green-600 hover:bg-green-700 text-white border-2 border-green-800" 
                         onClick={() => {
                           console.log('Save button clicked for meal:', selectedMeal?.name);
+                          console.log('Button is visible and clickable!');
                           handleUpdateMeal();
                         }}
                       >
@@ -1059,11 +1072,11 @@ export function AdminDashboard() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                     </div>
-                   </div>
-                 )}
-               </SheetContent>
-             </Sheet>
+                      </div>
+                    </div>
+                  )}
+                </SheetContent>
+              </Sheet>
           </TabsContent>
 
           <TabsContent value="menus">
