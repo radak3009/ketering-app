@@ -9,8 +9,12 @@ const Index = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Don't redirect if loading or if user is not authenticated
-  // Let them stay on whatever page they're on (including /auth)
+  useEffect(() => {
+    // If user is not authenticated, redirect to auth page
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
@@ -23,16 +27,23 @@ const Index = () => {
     );
   }
 
-  // If user is not authenticated, redirect to auth page
+  // If user is not authenticated, show nothing (will redirect in useEffect)
   if (!user) {
-    navigate('/auth');
     return null;
   }
 
-  // If user doesn't have a profile, redirect to auth
+  // If user doesn't have a profile, show message here instead of redirecting
   if (!profile) {
-    navigate('/auth');
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md mx-auto p-6">
+          <h2 className="text-2xl font-bold text-foreground">Profil nije kreiran</h2>
+          <p className="text-muted-foreground">
+            Vaš profil još uvek nije kreiran. Molimo vas kontaktirajte administratora.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Show appropriate dashboard based on user role
