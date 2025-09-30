@@ -368,6 +368,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      email_exists: {
+        Args: { check_email: string }
+        Returns: boolean
+      }
       is_admin_user: {
         Args: { user_uuid: string }
         Returns: boolean

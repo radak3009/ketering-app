@@ -72,6 +72,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'employee' = 'employee') => {
+    // First check if user with this email already exists using secure function
+    const { data: emailExists, error: checkError } = await supabase
+      .rpc('email_exists', { check_email: email });
+
+    if (emailExists) {
+      return { 
+        error: { 
+          message: 'User already registered',
+          status: 409
+        } 
+      };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
