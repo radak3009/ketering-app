@@ -62,10 +62,10 @@ export function useUsers() {
 
   const deleteUser = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
+      // Call the edge function to delete the user completely (from auth.users)
+      const { error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: id }
+      });
 
       if (error) throw error;
 

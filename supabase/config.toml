@@ -2,3 +2,6 @@ project_id = "qqrvezuesxaappslfvrh"
 
 [functions.nfc-meal-pickup]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = true
