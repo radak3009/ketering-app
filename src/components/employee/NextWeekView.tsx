@@ -95,7 +95,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
         <CardHeader>
           <CardTitle>Vaše porudžbine za iduću nedelju</CardTitle>
           <CardDescription>
-            {canEdit ? 'Možete dodavati i menjati porudžbine' : 'Rok za izmene je istekao'}
+            {canEdit ? 'Možete dodavati i menjati porudžbine do Petka u 17h' : 'Rok za izmene je istekao (Petak 17:00)'}
           </CardDescription>
         </CardHeader>
         <CardContent>
