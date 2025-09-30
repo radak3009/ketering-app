@@ -13,7 +13,7 @@ type View = 'current' | 'next' | 'feedback' | 'profile';
 
 export function EmployeeDashboard() {
   const { signOut, user } = useAuth();
-  const [currentView, setCurrentView] = useState<View>('current');
+  const [currentView, setCurrentView] = useState<View>('next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
@@ -69,20 +69,20 @@ export function EmployeeDashboard() {
         {/* Desktop Navigation */}
         <div className="hidden md:flex gap-2 mb-6">
           <Button
-            variant={currentView === 'current' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('current')}
-            className="gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Tekuća nedelja
-          </Button>
-          <Button
             variant={currentView === 'next' ? 'default' : 'outline'}
             onClick={() => setCurrentView('next')}
             className="gap-2"
           >
             <CalendarPlus className="h-4 w-4" />
             Iduća nedelja
+          </Button>
+          <Button
+            variant={currentView === 'current' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('current')}
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Tekuća nedelja
           </Button>
           <Button
             variant={currentView === 'feedback' ? 'default' : 'outline'}
@@ -104,9 +104,6 @@ export function EmployeeDashboard() {
 
         {/* Content Area */}
         <div className="max-w-4xl mx-auto">
-          {currentView === 'current' && (
-            <CurrentWeekView orders={currentWeekOrders} loading={loading} />
-          )}
           {currentView === 'next' && (
             <NextWeekView
               orders={nextWeekOrders}
@@ -116,6 +113,9 @@ export function EmployeeDashboard() {
               onOrderDeleted={handleOrderDeleted}
             />
           )}
+          {currentView === 'current' && (
+            <CurrentWeekView orders={currentWeekOrders} loading={loading} />
+          )}
           {currentView === 'feedback' && <FeedbackView />}
         </div>
       </div>
@@ -124,20 +124,20 @@ export function EmployeeDashboard() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
         <div className="grid grid-cols-4 gap-1 p-2">
           <Button
-            variant={currentView === 'current' ? 'default' : 'ghost'}
-            onClick={() => setCurrentView('current')}
-            className="flex flex-col h-auto py-2 gap-1"
-          >
-            <Calendar className="h-5 w-5" />
-            <span className="text-xs">Tekuća</span>
-          </Button>
-          <Button
             variant={currentView === 'next' ? 'default' : 'ghost'}
             onClick={() => setCurrentView('next')}
             className="flex flex-col h-auto py-2 gap-1"
           >
             <CalendarPlus className="h-5 w-5" />
             <span className="text-xs">Iduća</span>
+          </Button>
+          <Button
+            variant={currentView === 'current' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('current')}
+            className="flex flex-col h-auto py-2 gap-1"
+          >
+            <Calendar className="h-5 w-5" />
+            <span className="text-xs">Tekuća</span>
           </Button>
           <Button
             variant={currentView === 'feedback' ? 'default' : 'ghost'}

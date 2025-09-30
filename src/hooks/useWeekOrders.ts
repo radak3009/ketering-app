@@ -76,8 +76,7 @@ export const useWeekOrders = (userId: string | undefined) => {
       `)
       .eq('orders.user_id', userId)
       .gte('orders.delivery_date', startDate)
-      .lte('orders.delivery_date', endDate)
-      .order('orders.delivery_date', { ascending: true });
+      .lte('orders.delivery_date', endDate);
 
     if (error) {
       console.error('Error fetching orders:', error);
