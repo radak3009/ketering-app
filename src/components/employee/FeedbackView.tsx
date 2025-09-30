@@ -48,7 +48,7 @@ export function FeedbackView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-4">
       <div>
         <h2 className="text-2xl font-bold text-foreground">Utisci i predlozi</h2>
         <p className="text-muted-foreground">
