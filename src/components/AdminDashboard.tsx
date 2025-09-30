@@ -235,11 +235,13 @@ export function AdminDashboard() {
         orderDateRange.startDate || undefined, 
         orderDateRange.endDate || undefined
       );
-      // Handle search results - you could display them in a separate state
       toast({
         title: "Pretraga završena",
         description: `Pronađeno je ${results.length} porudžbina`
       });
+    } else {
+      // If search is empty, fetch all orders
+      fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
     }
   };
 

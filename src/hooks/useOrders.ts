@@ -35,7 +35,7 @@ export function useOrders() {
             meals (*)
           )
         `)
-        .order('delivery_date', { ascending: false });
+        .order('delivery_date', { ascending: true });
 
       if (startDate && endDate) {
         query = query.gte('delivery_date', startDate).lte('delivery_date', endDate);
@@ -111,8 +111,9 @@ export function useOrders() {
     }
   };
 
-  const searchMealOrders = async (mealName: string, startDate?: string, endDate?: string): Promise<OrderWithItems[]> => {
+  const searchMealOrders = async (mealName: string, startDate?: string, endDate?: string) => {
     try {
+      setLoading(true);
       let query = supabase
         .from('orders')
         .select(`
@@ -123,7 +124,7 @@ export function useOrders() {
           )
         `)
         .ilike('order_items.meals.name', `%${mealName}%`)
-        .order('delivery_date', { ascending: false });
+        .order('delivery_date', { ascending: true });
 
       if (startDate && endDate) {
         query = query.gte('delivery_date', startDate).lte('delivery_date', endDate);
@@ -141,10 +142,13 @@ export function useOrders() {
         }))
       })) || [];
       
+      setOrders(formattedOrders);
       return formattedOrders;
     } catch (error) {
       console.error('Error searching meal orders:', error);
       return [];
+    } finally {
+      setLoading(false);
     }
   };
 
