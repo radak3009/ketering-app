@@ -234,15 +234,14 @@ export function AdminDashboard() {
     
     if (orderSearch.trim()) {
       console.log('🔍 Starting search for:', orderSearch);
-      const results = await searchMealOrders(
-        orderSearch, 
-        orderDateRange.startDate || undefined, 
-        orderDateRange.endDate || undefined
-      );
+      // Search without date range - show all matching results
+      const results = await searchMealOrders(orderSearch);
       console.log('✅ Search completed, results:', results.length);
       toast({
         title: "Pretraga završena",
-        description: `Pronađeno je ${results.length} porudžbina sa obrokom "${orderSearch}"`
+        description: results.length > 0 
+          ? `Pronađeno je ${results.length} porudžbina sa obrokom "${orderSearch}"`
+          : `Nije pronađena nijedna porudžbina sa obrokom "${orderSearch}"`
       });
     } else {
       console.log('🔄 Resetting search, fetching all orders');
