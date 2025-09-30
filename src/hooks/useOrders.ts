@@ -35,10 +35,10 @@ export function useOrders() {
             meals (*)
           )
         `)
-        .order('order_date', { ascending: false });
+        .order('delivery_date', { ascending: false });
 
       if (startDate && endDate) {
-        query = query.gte('order_date', startDate).lte('order_date', endDate);
+        query = query.gte('delivery_date', startDate).lte('delivery_date', endDate);
       }
 
       const { data, error } = await query;
@@ -78,10 +78,10 @@ export function useOrders() {
             image_url
           ),
           orders!inner (
-            order_date
+            delivery_date
           )
         `)
-        .eq('orders.order_date', date);
+        .eq('orders.delivery_date', date);
 
       if (error) throw error;
 
@@ -123,10 +123,10 @@ export function useOrders() {
           )
         `)
         .ilike('order_items.meals.name', `%${mealName}%`)
-        .order('order_date', { ascending: false });
+        .order('delivery_date', { ascending: false });
 
       if (startDate && endDate) {
-        query = query.gte('order_date', startDate).lte('order_date', endDate);
+        query = query.gte('delivery_date', startDate).lte('delivery_date', endDate);
       }
 
       const { data, error } = await query;

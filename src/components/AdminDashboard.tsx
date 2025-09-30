@@ -662,10 +662,10 @@ export function AdminDashboard() {
                         Nema porudžbina za izabrani period
                       </div>
                     ) : (
-                      // Group orders by date
+                      // Group orders by delivery date
                       Object.entries(
                         orders.reduce((acc, order) => {
-                          const date = order.order_date;
+                          const date = order.delivery_date;
                           if (!acc[date]) {
                             acc[date] = [];
                           }
@@ -681,7 +681,7 @@ export function AdminDashboard() {
                           <div key={date} className="relative">
                             <div 
                               className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                              onClick={() => handleDayClick({ day: `${dayName} ${format(new Date(date), 'dd.MM')}` })}
+                              onClick={() => handleDayClick({ date })}
                             >
                               <div>
                                 <h3 className="font-medium">{dayName} {format(new Date(date), 'dd.MM.yyyy')}</h3>
