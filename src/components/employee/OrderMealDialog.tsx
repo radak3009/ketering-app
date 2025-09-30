@@ -87,15 +87,16 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     const nextWeekEnd = addDays(nextWeekStart, 6);
 
     const { data, error } = await supabase
-      .from('orders')
-      .select('delivery_date')
-      .eq('user_id', userId)
-      .gte('delivery_date', format(nextWeekStart, 'yyyy-MM-dd'))
-      .lte('delivery_date', format(nextWeekEnd, 'yyyy-MM-dd'));
+      .from('order_items')
+      .select('orders!inner(delivery_date, user_id)')
+      .eq('orders.user_id', userId)
+      .gte('orders.delivery_date', format(nextWeekStart, 'yyyy-MM-dd'))
+      .lte('orders.delivery_date', format(nextWeekEnd, 'yyyy-MM-dd'));
 
     if (!error && data) {
-      const dates = data.map(order => order.delivery_date).filter(Boolean);
-      setExistingOrderDates(dates);
+      const dates = data.map((item: any) => item.orders?.delivery_date).filter(Boolean);
+      const uniqueDates = [...new Set(dates)];
+      setExistingOrderDates(uniqueDates);
     }
   };
 
