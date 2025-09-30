@@ -29,7 +29,8 @@ import {
   Upload,
   Save,
   FileText,
-  ChevronDown
+  ChevronDown,
+  MessageSquare
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,8 @@ import { useUsers } from "@/hooks/useUsers";
 import { useOrders } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
+import { FeedbackManagement } from "./admin/FeedbackManagement";
+import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 
 interface OrderStats {
   totalOrders: number;
@@ -603,11 +606,12 @@ export function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="meals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="orders">Porudžbine</TabsTrigger>
             <TabsTrigger value="meals">Obroci</TabsTrigger>
             <TabsTrigger value="menus">Jelovnici</TabsTrigger>
             <TabsTrigger value="users">Korisnici</TabsTrigger>
+            <TabsTrigger value="feedback">Utisci</TabsTrigger>
             <TabsTrigger value="reports">Izveštaji</TabsTrigger>
           </TabsList>
 
@@ -1689,6 +1693,11 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="feedback" className="space-y-6">
+            <FeedbackManagement />
+            <SuggestionsManagement />
           </TabsContent>
         </Tabs>
       </div>

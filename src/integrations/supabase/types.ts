@@ -44,6 +44,27 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meals: {
         Row: {
           allergens: string[] | null
@@ -308,6 +329,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suggestions: {
+        Row: {
+          additional_notes: string | null
+          created_at: string
+          description: string
+          id: string
+          meal_name: string
+          user_id: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          meal_name: string
+          user_id: string
+        }
+        Update: {
+          additional_notes?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          meal_name?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

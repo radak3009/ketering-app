@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChefHat, LogOut, Calendar, CalendarPlus, User } from 'lucide-react';
+import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekOrders } from '@/hooks/useWeekOrders';
 import { CurrentWeekView } from './employee/CurrentWeekView';
 import { NextWeekView } from './employee/NextWeekView';
 import { OrderMealDialog } from './employee/OrderMealDialog';
 import { ProfileDialog } from './employee/ProfileDialog';
+import { FeedbackView } from './employee/FeedbackView';
 
-type View = 'current' | 'next' | 'profile';
+type View = 'current' | 'next' | 'feedback' | 'profile';
 
 export function EmployeeDashboard() {
   const { signOut, user } = useAuth();
@@ -82,6 +83,14 @@ export function EmployeeDashboard() {
             Iduća nedelja
           </Button>
           <Button
+            variant={currentView === 'feedback' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('feedback')}
+            className="gap-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Utisci i predlozi
+          </Button>
+          <Button
             variant="outline"
             onClick={handleProfileClick}
             className="gap-2"
@@ -105,12 +114,13 @@ export function EmployeeDashboard() {
               onOrderDeleted={handleOrderDeleted}
             />
           )}
+          {currentView === 'feedback' && <FeedbackView />}
         </div>
       </div>
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
-        <div className="grid grid-cols-3 gap-1 p-2">
+        <div className="grid grid-cols-4 gap-1 p-2">
           <Button
             variant={currentView === 'current' ? 'default' : 'ghost'}
             onClick={() => setCurrentView('current')}
@@ -126,6 +136,14 @@ export function EmployeeDashboard() {
           >
             <CalendarPlus className="h-5 w-5" />
             <span className="text-xs">Iduća</span>
+          </Button>
+          <Button
+            variant={currentView === 'feedback' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('feedback')}
+            className="flex flex-col h-auto py-2 gap-1"
+          >
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-xs">Utisci</span>
           </Button>
           <Button
             variant="ghost"
