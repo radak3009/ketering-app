@@ -114,6 +114,8 @@ export function useOrders() {
   const searchMealOrders = async (mealName: string, startDate?: string, endDate?: string) => {
     try {
       setLoading(true);
+      console.log('🔍 Searching for meal:', mealName);
+      console.log('📅 Date range:', { startDate, endDate });
       
       // First, get all orders with their items and meals
       let ordersQuery = supabase
@@ -135,19 +137,32 @@ export function useOrders() {
 
       if (error) throw error;
       
+      console.log('📦 Total orders fetched from DB:', data?.length || 0);
+      
       // Filter orders that have at least one meal matching the search term (case-insensitive)
       const searchLower = mealName.toLowerCase();
-      const filteredOrders = data?.filter(order => 
-        order.order_items?.some(item => 
-          item.meals?.name?.toLowerCase().includes(searchLower)
-        )
-      ).map(order => ({
+      console.log('🔎 Search term (lowercase):', searchLower);
+      
+      const filteredOrders = data?.filter(order => {
+        const hasMatch = order.order_items?.some(item => {
+          const mealName = item.meals?.name?.toLowerCase() || '';
+          const matches = mealName.includes(searchLower);
+          if (matches) {
+            console.log('✅ Match found:', item.meals?.name);
+          }
+          return matches;
+        });
+        return hasMatch;
+      }).map(order => ({
         ...order,
         order_items: order.order_items?.map(oi => ({
           ...oi,
           meal: oi.meals
         }))
       })) || [];
+      
+      console.log('✨ Filtered orders count:', filteredOrders.length);
+      console.log('📋 Filtered orders:', filteredOrders);
       
       setOrders(filteredOrders);
       return filteredOrders;

@@ -229,17 +229,23 @@ export function AdminDashboard() {
   };
 
   const handleSearchOrders = async () => {
+    console.log('🎯 handleSearchOrders called with:', orderSearch);
+    console.log('📅 Current date range:', orderDateRange);
+    
     if (orderSearch.trim()) {
+      console.log('🔍 Starting search for:', orderSearch);
       const results = await searchMealOrders(
         orderSearch, 
         orderDateRange.startDate || undefined, 
         orderDateRange.endDate || undefined
       );
+      console.log('✅ Search completed, results:', results.length);
       toast({
         title: "Pretraga završena",
         description: `Pronađeno je ${results.length} porudžbina sa obrokom "${orderSearch}"`
       });
     } else {
+      console.log('🔄 Resetting search, fetching all orders');
       // If search is empty, reset and fetch all orders
       setOrderSearch('');
       await fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
