@@ -103,6 +103,13 @@ export function AdminDashboard() {
     role: "employee" as "admin" | "employee"
   });
 
+  // Report states
+  const [reportType, setReportType] = useState("orders");
+  const [reportDateRange, setReportDateRange] = useState({
+    startDate: format(new Date(new Date().getFullYear(), 0, 1), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd')
+  });
+
   const resetUserForm = () => {
     setUserForm({
       full_name: "",
@@ -539,11 +546,98 @@ export function AdminDashboard() {
   const thisWeekMenus = menus.filter(menu => isThisWeek(new Date(menu.menu_date)));
   const nextWeekMenus = menus.filter(menu => isNextWeek(new Date(menu.menu_date)));
 
-  const handleExportReport = () => {
-    toast({
-      title: "Izveštaj se generiše",
-      description: "CSV fajl će biti preuzet za nekoliko sekundi",
-    });
+  const handleExportReport = async () => {
+    try {
+      let csvContent = '';
+      let filename = '';
+
+      if (reportType === 'orders') {
+        // Fetch orders for the date range
+        await fetchOrders(reportDateRange.startDate, reportDateRange.endDate);
+        
+        // Generate CSV for orders
+        csvContent = '\uFEFF'; // UTF-8 BOM
+        csvContent += 'ID Porudžbine,Korisnik,Datum porudžbine,Datum dostave,Status,Ukupan iznos,Napomene\n';
+        
+        orders.forEach(order => {
+          const user = users.find(u => u.user_id === order.user_id);
+          csvContent += `"${order.id}","${user?.full_name || 'N/A'}","${order.order_date}","${order.delivery_date || 'N/A'}","${order.status}","${order.total_amount}","${order.notes || ''}"\n`;
+        });
+        
+        filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
+      } 
+      else if (reportType === 'revenue') {
+        // Fetch orders for revenue calculation
+        await fetchOrders(reportDateRange.startDate, reportDateRange.endDate);
+        
+        // Group by date and calculate revenue
+        const revenueByDate: Record<string, number> = {};
+        orders.forEach(order => {
+          const date = order.delivery_date || order.order_date;
+          if (!revenueByDate[date]) {
+            revenueByDate[date] = 0;
+          }
+          revenueByDate[date] += parseFloat(order.total_amount.toString());
+        });
+        
+        csvContent = '\uFEFF'; // UTF-8 BOM
+        csvContent += 'Datum,Ukupan prihod (RSD),Broj porudžbina\n';
+        
+        Object.entries(revenueByDate)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .forEach(([date, revenue]) => {
+            const ordersCount = orders.filter(o => (o.delivery_date || o.order_date) === date).length;
+            csvContent += `"${date}","${revenue.toFixed(2)}","${ordersCount}"\n`;
+          });
+        
+        filename = `prihodi_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
+      }
+      else if (reportType === 'users') {
+        csvContent = '\uFEFF'; // UTF-8 BOM
+        csvContent += 'ID,Ime i prezime,Email,Telefon,Rola,ID kartice,Datum kreiranja\n';
+        
+        users.forEach(user => {
+          csvContent += `"${user.user_id}","${user.full_name || ''}","${user.email || ''}","${user.phone || ''}","${user.role}","${user.company_card_id || ''}","${user.created_at}"\n`;
+        });
+        
+        filename = `korisnici_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      }
+      else if (reportType === 'meals') {
+        csvContent = '\uFEFF'; // UTF-8 BOM
+        csvContent += 'ID,Naziv,Kategorija,Cena (RSD),Status,Dostupnost,Smene,Datum kreiranja\n';
+        
+        meals.forEach(meal => {
+          const shiftsStr = meal.shifts?.join(', ') || '';
+          csvContent += `"${meal.id}","${meal.name}","${meal.category}","${meal.price}","${meal.status}","${meal.is_available ? 'Da' : 'Ne'}","${shiftsStr}","${meal.created_at}"\n`;
+        });
+        
+        filename = `obroci_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      }
+
+      // Create and download the CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Izveštaj preuzet",
+        description: `CSV fajl ${filename} je uspešno preuzet`,
+      });
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      toast({
+        title: "Greška",
+        description: "Nije moguće generisati izveštaj",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -1666,7 +1760,7 @@ export function AdminDashboard() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Tip izveštaja</Label>
-                    <Select defaultValue="orders">
+                    <Select value={reportType} onValueChange={setReportType}>
                       <SelectTrigger>
                         <SelectValue placeholder="Odaberite tip" />
                       </SelectTrigger>
@@ -1679,20 +1773,30 @@ export function AdminDashboard() {
                     </Select>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Od datuma</Label>
-                      <Input type="date" />
+                  {(reportType === 'orders' || reportType === 'revenue') && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Od datuma</Label>
+                        <Input 
+                          type="date" 
+                          value={reportDateRange.startDate}
+                          onChange={(e) => setReportDateRange({...reportDateRange, startDate: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label>Do datuma</Label>
+                        <Input 
+                          type="date" 
+                          value={reportDateRange.endDate}
+                          onChange={(e) => setReportDateRange({...reportDateRange, endDate: e.target.value})}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Label>Do datuma</Label>
-                      <Input type="date" />
-                    </div>
-                  </div>
+                  )}
                   
                   <Button onClick={handleExportReport} className="w-full">
                     <Download className="h-4 w-4 mr-2" />
-                    Generiši izveštaj
+                    Generiši i preuzmi CSV
                   </Button>
                 </CardContent>
               </Card>
