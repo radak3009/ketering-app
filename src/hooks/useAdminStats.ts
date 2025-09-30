@@ -24,13 +24,13 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     try {
       let query = supabase
         .from('orders')
-        .select('total_amount, user_id');
+        .select('total_amount, user_id, delivery_date');
 
       if (startDate) {
-        query = query.gte('order_date', startDate);
+        query = query.gte('delivery_date', startDate);
       }
       if (endDate) {
-        query = query.lte('order_date', endDate);
+        query = query.lte('delivery_date', endDate);
       }
 
       const { data: orders, error } = await query;
