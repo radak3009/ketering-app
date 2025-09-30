@@ -14,8 +14,7 @@ import { z } from 'zod';
 const signUpSchema = z.object({
   email: z.string().email('Neispravna email adresa').max(255),
   password: z.string().min(6, 'Lozinka mora imati najmanje 6 karaktera').max(100),
-  fullName: z.string().trim().min(2, 'Ime mora imati najmanje 2 karaktera').max(100),
-  role: z.enum(['admin', 'employee'])
+  fullName: z.string().trim().min(2, 'Ime mora imati najmanje 2 karaktera').max(100)
 });
 
 const signInSchema = z.object({
@@ -34,8 +33,7 @@ export default function Auth() {
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
-    fullName: '',
-    role: 'employee' as 'admin' | 'employee'
+    fullName: ''
   });
   
   const [signInData, setSignInData] = useState({
@@ -61,7 +59,7 @@ export default function Auth() {
         validatedData.email,
         validatedData.password,
         validatedData.fullName,
-        validatedData.role
+        'employee'
       );
       
       if (error) {
@@ -311,27 +309,6 @@ export default function Auth() {
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-role">Uloga</Label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Select
-                        value={signUpData.role}
-                        onValueChange={(value: 'admin' | 'employee') => 
-                          setSignUpData({ ...signUpData, role: value })
-                        }
-                      >
-                        <SelectTrigger className="pl-10">
-                          <SelectValue placeholder="Izaberite ulogu" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="employee">Zaposleni</SelectItem>
-                          <SelectItem value="admin">Administrator</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                   
