@@ -65,39 +65,52 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
                       Nema poručenih obroka
                     </div>
                   ) : (
-                    <div className="space-y-2 mt-3">
+                    <div className="space-y-3 mt-3">
                       {order.items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-start gap-3 p-3 bg-accent/50 rounded-lg"
+                          className="relative border rounded-lg overflow-hidden bg-card hover:shadow-md transition-shadow"
                         >
                           {item.meal.image_url && (
-                            <img
-                              src={item.meal.image_url}
-                              alt={item.meal.name}
-                              className="w-16 h-16 rounded object-cover flex-shrink-0"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm">{item.meal.name}</div>
-                            <div className="text-xs text-muted-foreground mb-1">
-                              {item.meal.description}
-                            </div>
-                            <div className="flex flex-wrap gap-1 items-center">
-                              <Badge variant="outline" className="text-xs">
-                                {item.shift === 'prva' ? 'Prva smena' : item.shift === 'druga' ? 'Druga smena' : 'Treća smena'}
-                              </Badge>
-                              {item.pickup_status === 'preuzeto' ? (
-                                <Badge variant="default" className="text-xs gap-1">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Preuzeto
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="text-xs gap-1">
-                                  <XCircle className="h-3 w-3" />
-                                  Nije preuzeto
-                                </Badge>
+                            <div className="relative w-full h-48 md:h-32">
+                              <img
+                                src={item.meal.image_url}
+                                alt={item.meal.name}
+                                className="w-full h-full object-cover"
+                              />
+                              {item.pickup_status === 'preuzeto' && (
+                                <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5">
+                                  <CheckCircle2 className="h-5 w-5 text-white" />
+                                </div>
                               )}
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <h3 className="font-semibold text-base mb-2">{item.meal.name}</h3>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {item.meal.description}
+                            </p>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium">Smena:</span>
+                                <span className="text-muted-foreground">
+                                  {item.shift === 'prva' ? 'Prva smena' : item.shift === 'druga' ? 'Druga smena' : 'Treća smena'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium">Status:</span>
+                                {item.pickup_status === 'preuzeto' ? (
+                                  <span className="text-green-600 flex items-center gap-1">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    Preuzeto
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground flex items-center gap-1">
+                                    <XCircle className="h-4 w-4" />
+                                    Nije preuzeto
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
