@@ -16,6 +16,7 @@ export function EmployeeDashboard() {
   const [currentView, setCurrentView] = useState<View>('next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [totalMenuDays, setTotalMenuDays] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const {
     currentWeekOrders,
@@ -41,6 +42,7 @@ export function EmployeeDashboard() {
   const handleOrderDeleted = () => {
     refetch();
     fetchTotalMenuDays();
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const fetchTotalMenuDays = async () => {
@@ -187,6 +189,8 @@ export function EmployeeDashboard() {
         onOpenChange={setOrderDialogOpen}
         userId={user?.id}
         onOrderCreated={handleOrderCreated}
+        totalMenuDays={totalMenuDays}
+        refreshTrigger={refreshTrigger}
       />
     </div>
   );

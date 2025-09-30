@@ -30,6 +30,8 @@ interface OrderMealDialogProps {
   onOpenChange: (open: boolean) => void;
   userId: string | undefined;
   onOrderCreated: () => void;
+  totalMenuDays: number;
+  refreshTrigger: number;
 }
 
 const SHIFTS = [
@@ -38,7 +40,7 @@ const SHIFTS = [
   { value: 'treća', label: 'Treća smena' },
 ];
 
-export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: OrderMealDialogProps) {
+export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, totalMenuDays, refreshTrigger }: OrderMealDialogProps) {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<string>('');
   const [selectedMeal, setSelectedMeal] = useState<string>('');
@@ -55,6 +57,14 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
       fetchExistingOrders();
     }
   }, [open, userId]);
+
+  // Refetch data when external changes occur (e.g., order deletion)
+  useEffect(() => {
+    if (open && refreshTrigger > 0) {
+      fetchMenus();
+      fetchExistingOrders();
+    }
+  }, [refreshTrigger]);
 
   useEffect(() => {
     if (selectedDate) {
