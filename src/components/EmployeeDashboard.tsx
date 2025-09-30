@@ -25,7 +25,9 @@ export function EmployeeDashboard() {
     refetch
   } = useWeekOrders(user?.id);
 
-  const handleOrderCreated = () => {
+  const handleOrderCreated = async () => {
+    // Small delay to ensure database transaction is committed
+    await new Promise(resolve => setTimeout(resolve, 500));
     refetch();
   };
 
