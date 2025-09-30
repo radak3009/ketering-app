@@ -22,8 +22,12 @@ const signInSchema = z.object({
   password: z.string().min(1, 'Unesite lozinku').max(100)
 });
 
+const magicLinkSchema = z.object({
+  email: z.string().email('Neispravna email adresa').max(255)
+});
+
 export default function Auth() {
-  const { signUp, signIn, signInWithGoogle, signOut, user, profile, loading: authLoading } = useAuth();
+  const { signUp, signIn, signInWithGoogle, signInWithMagicLink, signOut, user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -40,6 +44,8 @@ export default function Auth() {
     email: '',
     password: ''
   });
+
+  const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
   useEffect(() => {
     // Only redirect if user exists AND has profile
@@ -149,6 +155,41 @@ export default function Auth() {
     }
   };
 
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const validatedData = magicLinkSchema.parse({ email: magicLinkEmail });
+      setLoading(true);
+      
+      const { error } = await signInWithMagicLink(validatedData.email);
+      
+      if (error) {
+        toast({
+          title: 'Greška',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Magični link poslat!',
+          description: 'Proverite vaš email za link za prijavljivanje. Link ističe za 60 minuta.',
+        });
+        setMagicLinkEmail('');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Greška u podacima',
+          description: error.errors[0].message,
+          variant: 'destructive'
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -185,8 +226,9 @@ export default function Auth() {
             </CardHeader>
             <CardContent>
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="signin">Prijavljivanje</TabsTrigger>
+                <TabsTrigger value="magiclink">Magični link</TabsTrigger>
                 <TabsTrigger value="signup">Registracija</TabsTrigger>
               </TabsList>
               
@@ -253,6 +295,40 @@ export default function Auth() {
                 >
                   Prijavite se sa Google
                 </Button>
+              </TabsContent>
+
+              <TabsContent value="magiclink" className="space-y-4">
+                <div className="space-y-2 mb-4">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Unesite email i dobićete link za prijavljivanje bez lozinke.
+                  </p>
+                </div>
+                
+                <form onSubmit={handleMagicLink} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="magiclink-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="magiclink-email"
+                        type="email"
+                        placeholder="vas@email.com"
+                        className="pl-10"
+                        value={magicLinkEmail}
+                        onChange={(e) => setMagicLinkEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Slanje...' : 'Pošalji magični link'}
+                  </Button>
+                </form>
+
+                <div className="text-center text-sm text-muted-foreground mt-4">
+                  <p>Link ističe za 60 minuta</p>
+                </div>
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
