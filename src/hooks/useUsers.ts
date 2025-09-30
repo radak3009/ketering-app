@@ -63,8 +63,9 @@ export function useUsers() {
   const deleteUser = async (id: string) => {
     try {
       // Call the edge function to delete the user completely (from auth.users)
+      // Pass the profile id, the edge function will fetch the auth user_id
       const { error } = await supabase.functions.invoke('delete-user', {
-        body: { userId: id }
+        body: { profileId: id }
       });
 
       if (error) throw error;

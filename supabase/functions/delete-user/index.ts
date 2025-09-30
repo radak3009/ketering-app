@@ -47,23 +47,38 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { userId } = await req.json();
+    const { profileId } = await req.json();
 
-    if (!userId) {
-      throw new Error('Missing userId parameter');
+    if (!profileId) {
+      throw new Error('Missing profileId parameter');
     }
 
-    console.log('Deleting user:', userId);
+    console.log('Deleting user with profile ID:', profileId);
+
+    // First, get the user_id from the profiles table
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id')
+      .eq('id', profileId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Error fetching profile:', profileError);
+      throw new Error('Profile not found');
+    }
+
+    const authUserId = profile.user_id;
+    console.log('Found auth user ID:', authUserId);
 
     // Delete the user from auth.users (this will cascade to profiles and related data)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authUserId);
 
     if (deleteError) {
       console.error('Error deleting user:', deleteError);
       throw deleteError;
     }
 
-    console.log('User successfully deleted:', userId);
+    console.log('User successfully deleted:', authUserId);
 
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
