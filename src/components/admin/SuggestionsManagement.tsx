@@ -8,10 +8,15 @@ import { useSuggestions } from '@/hooks/useSuggestions';
 import { format } from 'date-fns';
 import { sr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function SuggestionsManagement() {
-  const { suggestions, loading } = useSuggestions();
+  const { suggestions, loading, updateSuggestion } = useSuggestions();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleCheckboxChange = async (id: string, currentValue: boolean) => {
+    await updateSuggestion(id, !currentValue);
+  };
 
   const filteredSuggestions = useMemo(() => {
     if (!searchTerm) return suggestions;
@@ -80,6 +85,7 @@ export function SuggestionsManagement() {
                   <TableHead>Opis</TableHead>
                   <TableHead>Napomene</TableHead>
                   <TableHead>Datum</TableHead>
+                  <TableHead className="text-center">Obrađeno</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,6 +108,12 @@ export function SuggestionsManagement() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={item.obradeno}
+                        onCheckedChange={() => handleCheckboxChange(item.id, item.obradeno)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

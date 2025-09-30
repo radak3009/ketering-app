@@ -9,6 +9,7 @@ export interface Suggestion {
   description: string;
   additional_notes: string | null;
   created_at: string;
+  obradeno: boolean;
   profiles?: {
     full_name: string;
     email: string;
@@ -26,6 +27,7 @@ export function useSuggestions() {
       const { data: suggestionsData, error } = await supabase
         .from('suggestions')
         .select('*')
+        .eq('obradeno', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -89,6 +91,25 @@ export function useSuggestions() {
     }
   };
 
+  const updateSuggestion = async (id: string, obradeno: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('suggestions')
+        .update({ obradeno })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchSuggestions();
+    } catch (error: any) {
+      toast({
+        title: 'Greška',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   useEffect(() => {
     fetchSuggestions();
   }, []);
@@ -97,6 +118,7 @@ export function useSuggestions() {
     suggestions,
     loading,
     createSuggestion,
+    updateSuggestion,
     refetch: fetchSuggestions,
   };
 }

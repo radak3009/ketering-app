@@ -7,6 +7,7 @@ export interface Feedback {
   user_id: string;
   content: string;
   created_at: string;
+  obradeno: boolean;
   profiles?: {
     full_name: string;
     email: string;
@@ -24,6 +25,7 @@ export function useFeedback() {
       const { data: feedbackData, error } = await supabase
         .from('feedback')
         .select('*')
+        .eq('obradeno', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -79,6 +81,25 @@ export function useFeedback() {
     }
   };
 
+  const updateFeedback = async (id: string, obradeno: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('feedback')
+        .update({ obradeno })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchFeedback();
+    } catch (error: any) {
+      toast({
+        title: 'Greška',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   useEffect(() => {
     fetchFeedback();
   }, []);
@@ -87,6 +108,7 @@ export function useFeedback() {
     feedback,
     loading,
     createFeedback,
+    updateFeedback,
     refetch: fetchFeedback,
   };
 }

@@ -8,10 +8,15 @@ import { useFeedback } from '@/hooks/useFeedback';
 import { format } from 'date-fns';
 import { sr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function FeedbackManagement() {
-  const { feedback, loading } = useFeedback();
+  const { feedback, loading, updateFeedback } = useFeedback();
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleCheckboxChange = async (id: string, currentValue: boolean) => {
+    await updateFeedback(id, !currentValue);
+  };
 
   const filteredFeedback = useMemo(() => {
     if (!searchTerm) return feedback;
@@ -77,6 +82,7 @@ export function FeedbackManagement() {
                   <TableHead>Email</TableHead>
                   <TableHead>Utisak</TableHead>
                   <TableHead>Datum</TableHead>
+                  <TableHead className="text-center">Obrađeno</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -91,6 +97,12 @@ export function FeedbackManagement() {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={item.obradeno}
+                        onCheckedChange={() => handleCheckboxChange(item.id, item.obradeno)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
