@@ -6,7 +6,7 @@ import { useWeekOrders } from '@/hooks/useWeekOrders';
 import { CurrentWeekView } from './employee/CurrentWeekView';
 import { NextWeekView } from './employee/NextWeekView';
 import { OrderMealDialog } from './employee/OrderMealDialog';
-import { ProfileDialog } from './employee/ProfileDialog';
+import { ProfileView } from './employee/ProfileView';
 import { FeedbackView } from './employee/FeedbackView';
 
 type View = 'current' | 'next' | 'feedback' | 'profile';
@@ -15,7 +15,6 @@ export function EmployeeDashboard() {
   const { signOut, user } = useAuth();
   const [currentView, setCurrentView] = useState<View>('next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
   const {
     currentWeekOrders,
@@ -33,10 +32,6 @@ export function EmployeeDashboard() {
 
   const handleOrderDeleted = () => {
     refetch();
-  };
-
-  const handleProfileClick = () => {
-    setProfileDialogOpen(true);
   };
 
   return (
@@ -93,8 +88,8 @@ export function EmployeeDashboard() {
             Utisci i predlozi
           </Button>
           <Button
-            variant="outline"
-            onClick={handleProfileClick}
+            variant={currentView === 'profile' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('profile')}
             className="gap-2"
           >
             <User className="h-4 w-4" />
@@ -117,6 +112,7 @@ export function EmployeeDashboard() {
             <CurrentWeekView orders={currentWeekOrders} loading={loading} />
           )}
           {currentView === 'feedback' && <FeedbackView />}
+          {currentView === 'profile' && <ProfileView user={user} />}
         </div>
       </div>
 
@@ -148,8 +144,8 @@ export function EmployeeDashboard() {
             <span className="text-xs">Utisci</span>
           </Button>
           <Button
-            variant="ghost"
-            onClick={handleProfileClick}
+            variant={currentView === 'profile' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('profile')}
             className="flex flex-col h-auto py-2 gap-1"
           >
             <User className="h-5 w-5" />
@@ -164,12 +160,6 @@ export function EmployeeDashboard() {
         onOpenChange={setOrderDialogOpen}
         userId={user?.id}
         onOrderCreated={handleOrderCreated}
-      />
-
-      <ProfileDialog
-        open={profileDialogOpen}
-        onOpenChange={setProfileDialogOpen}
-        user={user}
       />
     </div>
   );
