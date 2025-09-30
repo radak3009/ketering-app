@@ -62,8 +62,8 @@ export function AdminDashboard() {
   const [menuMealSearch, setMenuMealSearch] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
   const [orderDateRange, setOrderDateRange] = useState({
-    startDate: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'), // Početak tekuće nedelje
-    endDate: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd') // Kraj tekuće nedelje
+    startDate: format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd'), // Početak iduće nedelje
+    endDate: format(endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd') // Kraj iduće nedelje
   });
   
   const { stats, loading: statsLoading } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
@@ -106,8 +106,8 @@ export function AdminDashboard() {
   // Report states
   const [reportType, setReportType] = useState("orders");
   const [reportDateRange, setReportDateRange] = useState({
-    startDate: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'), // Početak tekuće nedelje
-    endDate: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd') // Kraj tekuće nedelje
+    startDate: format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd'), // Početak iduće nedelje
+    endDate: format(endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd') // Kraj iduće nedelje
   });
 
   const resetUserForm = () => {
