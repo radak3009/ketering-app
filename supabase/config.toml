@@ -1,1 +1,4 @@
 project_id = "qqrvezuesxaappslfvrh"
+
+[functions.nfc-meal-pickup]
+verify_jwt = false

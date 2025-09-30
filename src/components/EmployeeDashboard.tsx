@@ -1,244 +1,156 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ChefHat, User, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import chickenSaladImage from "@/assets/meal-chicken-salad.jpg";
-import pastaImage from "@/assets/meal-pasta.jpg";
-import salmonImage from "@/assets/meal-salmon.jpg";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { ChefHat, LogOut, Calendar, CalendarPlus, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useWeekOrders } from '@/hooks/useWeekOrders';
+import { CurrentWeekView } from './employee/CurrentWeekView';
+import { NextWeekView } from './employee/NextWeekView';
+import { OrderMealDialog } from './employee/OrderMealDialog';
+import { ProfileDialog } from './employee/ProfileDialog';
 
-interface Meal {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-}
-
-interface DaySelection {
-  day: string;
-  meal?: Meal;
-}
-
-const SAMPLE_MEALS: Meal[] = [
-  {
-    id: "1",
-    name: "Piletina sa salatom",
-    description: "Sočna piletina sa svežom mešanom salatom i vinaigrette dresingom",
-    price: 450,
-    image: chickenSaladImage,
-    category: "Glavno jelo"
-  },
-  {
-    id: "2", 
-    name: "Pasta Primavera",
-    description: "Italijanska pasta sa svežim povrćem i parmezan sirom",
-    price: 420,
-    image: pastaImage,
-    category: "Vegetarijanska"
-  },
-  {
-    id: "3",
-    name: "Losos sa kinoom",
-    description: "Pečeni losos sa kinoom i prženim povrćem",
-    price: 520,
-    image: salmonImage,
-    category: "Morski plodovi"
-  }
-];
-
-const DAYS = ["Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak"];
+type View = 'current' | 'next' | 'profile';
 
 export function EmployeeDashboard() {
-  const { signOut } = useAuth();
-  const [weekSelections, setWeekSelections] = useState<DaySelection[]>(
-    DAYS.map(day => ({ day }))
-  );
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { signOut, user } = useAuth();
+  const [currentView, setCurrentView] = useState<View>('current');
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
-  const handleMealSelect = (meal: Meal) => {
-    if (!selectedDay) return;
-    
-    setWeekSelections(prev => 
-      prev.map(selection => 
-        selection.day === selectedDay 
-          ? { ...selection, meal } 
-          : selection
-      )
-    );
-    
-    toast({
-      title: "Obrok je izabran!",
-      description: `${meal.name} za ${selectedDay}`,
-    });
-    
-    setSelectedDay(null);
+  const {
+    currentWeekOrders,
+    nextWeekOrders,
+    loading,
+    canEditNextWeek,
+    refetch
+  } = useWeekOrders(user?.id);
+
+  const handleOrderCreated = () => {
+    refetch();
   };
 
-  const removeMeal = (day: string) => {
-    setWeekSelections(prev => 
-      prev.map(selection => 
-        selection.day === day 
-          ? { ...selection, meal: undefined } 
-          : selection
-      )
-    );
-    
-    toast({
-      title: "Obrok je uklonjen",
-      description: `Obrok za ${day} je uklonjen`,
-      variant: "destructive"
-    });
+  const handleOrderDeleted = () => {
+    refetch();
   };
 
-  const totalCost = weekSelections.reduce((sum, selection) => 
-    sum + (selection.meal?.price || 0), 0
-  );
+  const handleProfileClick = () => {
+    setProfileDialogOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent to-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+      {/* Header */}
+      <div className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary rounded-lg">
-                <ChefHat className="h-6 w-6 text-primary-foreground" />
+                <ChefHat className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Ketering Portal</h1>
-                <p className="text-muted-foreground">Izaberite obroke za narednu sedmicu</p>
+                <h1 className="text-xl font-bold text-foreground">Ketering Portal</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">
+                  Poručite obroke za narednu sedmicu
+                </p>
               </div>
             </div>
-            <Button onClick={signOut} variant="outline" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Odjavi se
+            <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Odjavi se</span>
             </Button>
-          </div>
-          
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              <span>Sedmica: 6-10 Januar 2025</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>Rok za izmene: Petak 17:00</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Week Overview */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vaš izbor za sedmicu</CardTitle>
-                <CardDescription>
-                  Kliknite na dan da izaberete obrok
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3">
-                  {weekSelections.map((selection) => (
-                    <div 
-                      key={selection.day}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                      onClick={() => setSelectedDay(selection.day)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="font-medium text-sm">{selection.day}</div>
-                        {selection.meal ? (
-                          <div className="flex items-center gap-2">
-                            <img 
-                              src={selection.meal.image} 
-                              alt={selection.meal.name}
-                              className="w-8 h-8 rounded object-cover"
-                            />
-                            <span className="text-sm">{selection.meal.name}</span>
-                            <Badge variant="secondary">{selection.meal.price} RSD</Badge>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Nije izabrano</span>
-                        )}
-                      </div>
-                      {selection.meal && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeMeal(selection.day);
-                          }}
-                        >
-                          Ukloni
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="mt-6 p-4 bg-accent rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Ukupna cena:</span>
-                    <span className="text-lg font-bold text-primary">{totalCost} RSD</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Meal Selection */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {selectedDay ? `Izaberite obrok za ${selectedDay}` : "Dostupni obroci"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  {SAMPLE_MEALS.map((meal) => (
-                    <div 
-                      key={meal.id}
-                      className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <img 
-                        src={meal.image} 
-                        alt={meal.name}
-                        className="w-full h-32 object-cover"
-                      />
-                      <div className="p-3">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-sm">{meal.name}</h3>
-                          <Badge variant="outline">{meal.category}</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          {meal.description}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-primary">{meal.price} RSD</span>
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleMealSelect(meal)}
-                            disabled={!selectedDay}
-                            variant={selectedDay ? "default" : "secondary"}
-                          >
-                            Izaberi
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex gap-2 mb-6">
+          <Button
+            variant={currentView === 'current' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('current')}
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Tekuća nedelja
+          </Button>
+          <Button
+            variant={currentView === 'next' ? 'default' : 'outline'}
+            onClick={() => setCurrentView('next')}
+            className="gap-2"
+          >
+            <CalendarPlus className="h-4 w-4" />
+            Iduća nedelja
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleProfileClick}
+            className="gap-2"
+          >
+            <User className="h-4 w-4" />
+            Profil
+          </Button>
+        </div>
+
+        {/* Content Area */}
+        <div className="max-w-4xl mx-auto">
+          {currentView === 'current' && (
+            <CurrentWeekView orders={currentWeekOrders} loading={loading} />
+          )}
+          {currentView === 'next' && (
+            <NextWeekView
+              orders={nextWeekOrders}
+              loading={loading}
+              canEdit={canEditNextWeek}
+              onOpenOrderDialog={() => setOrderDialogOpen(true)}
+              onOrderDeleted={handleOrderDeleted}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
+        <div className="grid grid-cols-3 gap-1 p-2">
+          <Button
+            variant={currentView === 'current' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('current')}
+            className="flex flex-col h-auto py-2 gap-1"
+          >
+            <Calendar className="h-5 w-5" />
+            <span className="text-xs">Tekuća</span>
+          </Button>
+          <Button
+            variant={currentView === 'next' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('next')}
+            className="flex flex-col h-auto py-2 gap-1"
+          >
+            <CalendarPlus className="h-5 w-5" />
+            <span className="text-xs">Iduća</span>
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleProfileClick}
+            className="flex flex-col h-auto py-2 gap-1"
+          >
+            <User className="h-5 w-5" />
+            <span className="text-xs">Profil</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Dialogs */}
+      <OrderMealDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        userId={user?.id}
+        onOrderCreated={handleOrderCreated}
+      />
+
+      <ProfileDialog
+        open={profileDialogOpen}
+        onOpenChange={setProfileDialogOpen}
+        user={user}
+      />
     </div>
   );
 }

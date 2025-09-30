@@ -167,7 +167,10 @@ export type Database = {
           id: string
           meal_id: string
           order_id: string
+          pickup_status: string
+          pickup_time: string | null
           quantity: number
+          shift: string
           total_price: number
           unit_price: number
         }
@@ -176,7 +179,10 @@ export type Database = {
           id?: string
           meal_id: string
           order_id: string
+          pickup_status?: string
+          pickup_time?: string | null
           quantity?: number
+          shift?: string
           total_price: number
           unit_price: number
         }
@@ -185,7 +191,10 @@ export type Database = {
           id?: string
           meal_id?: string
           order_id?: string
+          pickup_status?: string
+          pickup_time?: string | null
           quantity?: number
+          shift?: string
           total_price?: number
           unit_price?: number
         }
@@ -255,6 +264,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company_card_id: string | null
           company_id: string | null
           created_at: string
           email: string | null
@@ -266,6 +276,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_card_id?: string | null
           company_id?: string | null
           created_at?: string
           email?: string | null
@@ -277,6 +288,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_card_id?: string | null
           company_id?: string | null
           created_at?: string
           email?: string | null
