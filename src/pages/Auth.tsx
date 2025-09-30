@@ -227,7 +227,7 @@ export default function Auth() {
             <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="signin">Prijavljivanje</TabsTrigger>
+                <TabsTrigger value="signin">Prijavi se</TabsTrigger>
                 <TabsTrigger value="magiclink">Magični link</TabsTrigger>
                 <TabsTrigger value="signup">Registracija</TabsTrigger>
               </TabsList>
