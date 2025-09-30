@@ -739,133 +739,60 @@ export function AdminDashboard() {
           </TabsList>
 
           <TabsContent value="orders">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Pregled porudžbina</CardTitle>
-                    <CardDescription>Filtriraj i pretraži porudžbine</CardDescription>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Pregled porudžbina</CardTitle>
+                      <CardDescription>Filtriraj i pretraži porudžbine</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Pretraži po nazivu obroka..."
+                        value={orderSearch}
+                        onChange={(e) => setOrderSearch(e.target.value)}
+                        className="w-48"
+                      />
+                      <Button variant="outline" size="sm" onClick={handleSearchOrders}>
+                        <Search className="h-4 w-4 mr-1" />
+                        Pretraži
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="Pretraži po nazivu obroka..."
-                      value={orderSearch}
-                      onChange={(e) => setOrderSearch(e.target.value)}
-                      className="w-48"
-                    />
-                    <Button variant="outline" size="sm" onClick={handleSearchOrders}>
-                      <Search className="h-4 w-4 mr-1" />
-                      Pretraži
-                    </Button>
+                  <div className="flex gap-4 mt-4">
+                    <div className="flex gap-2">
+                      <Input 
+                        type="date"
+                        placeholder="Od datuma"
+                        value={orderDateRange.startDate}
+                        onChange={(e) => setOrderDateRange({...orderDateRange, startDate: e.target.value})}
+                      />
+                      <Input 
+                        type="date"
+                        placeholder="Do datuma"
+                        value={orderDateRange.endDate}
+                        onChange={(e) => setOrderDateRange({...orderDateRange, endDate: e.target.value})}
+                      />
+                      <Button variant="outline" size="sm" onClick={handleDateRangeFilter}>
+                        <Filter className="h-4 w-4 mr-1" />
+                        Filtriraj
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-4 mt-4">
-                  <div className="flex gap-2">
-                    <Input 
-                      type="date"
-                      placeholder="Od datuma"
-                      value={orderDateRange.startDate}
-                      onChange={(e) => setOrderDateRange({...orderDateRange, startDate: e.target.value})}
-                    />
-                    <Input 
-                      type="date"
-                      placeholder="Do datuma"
-                      value={orderDateRange.endDate}
-                      onChange={(e) => setOrderDateRange({...orderDateRange, endDate: e.target.value})}
-                    />
-                    <Button variant="outline" size="sm" onClick={handleDateRangeFilter}>
-                      <Filter className="h-4 w-4 mr-1" />
-                      Filtriraj
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {ordersLoading ? (
-                  <div className="text-center py-8">Učitavanje...</div>
-                ) : (
-                  <div className="grid gap-4">
-                    {orders.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Nema porudžbina za izabrani period
-                      </div>
-                    ) : (
-                      // Group orders by delivery date
-                      Object.entries(
-                        orders.reduce((acc, order) => {
-                          const date = order.delivery_date;
-                          if (!acc[date]) {
-                            acc[date] = [];
-                          }
-                          acc[date].push(order);
-                          return acc;
-                        }, {} as Record<string, typeof orders>)
-                      ).map(([date, dayOrders]) => {
-                        const totalOrders = dayOrders.length;
-                        const totalRevenue = dayOrders.reduce((sum, order) => sum + (parseFloat(order.total_amount.toString()) || 0), 0);
-                        const dayName = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'][new Date(date).getDay()];
-                        
-                        return (
-                          <div key={date} className="relative">
-                            <div 
-                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                              onClick={() => handleDayClick({ date })}
-                            >
-                              <div>
-                                <h3 className="font-medium">{dayName} {format(new Date(date), 'dd.MM.yyyy')}</h3>
-                                <p className="text-sm text-muted-foreground">{totalOrders} porudžbina</p>
-                              </div>
-                              <div className="text-right flex items-center gap-2">
-                                <div>
-                                  <p className="font-bold">{totalRevenue.toLocaleString()} RSD</p>
-                                  <Badge variant="secondary">{totalOrders} kom</Badge>
-                                </div>
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            </div>
-                            
-                            {selectedDay === date && (
-                              <div className="mt-2 p-4 bg-muted/20 rounded-lg">
-                                <h4 className="font-medium mb-3">Obroci za {dayName}</h4>
-                                {dailyMealOrders.length === 0 ? (
-                                  <p className="text-sm text-muted-foreground">Nema podataka</p>
-                                ) : (
-                                  <div className="space-y-2">
-                                    {dailyMealOrders.map((mealOrder) => (
-                                      <div key={mealOrder.meal_id} className="flex items-center gap-3 p-2 border rounded">
-                                        <div className="w-10 h-10 rounded overflow-hidden bg-muted">
-                                          {mealOrder.meal_image_url ? (
-                                            <img 
-                                              src={mealOrder.meal_image_url} 
-                                              alt={mealOrder.meal_name} 
-                                              className="w-full h-full object-cover" 
-                                            />
-                                          ) : (
-                                            <div className="w-full h-full flex items-center justify-center">
-                                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex-1">
-                                          <p className="font-medium text-sm">{mealOrder.meal_name}</p>
-                                          <Badge variant="outline" className="text-xs">
-                                            {mealOrder.total_orders} kom
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+              </Card>
+
+              {ordersLoading ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="text-center py-8">Učitavanje...</div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <OrderPivotTable orders={orders} />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="meals">
