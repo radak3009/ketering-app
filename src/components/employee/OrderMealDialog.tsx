@@ -46,13 +46,15 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
   const [menus, setMenus] = useState<Menu[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [existingOrderDates, setExistingOrderDates] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (open) {
+    if (open && userId) {
       fetchMenus();
+      fetchExistingOrders();
     }
-  }, [open]);
+  }, [open, userId]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -62,12 +64,39 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
     }
   }, [selectedDate, menus]);
 
+  useEffect(() => {
+    if (menus.length > 0) {
+      generateAvailableDatesFromMenus(menus);
+    }
+  }, [existingOrderDates, menus]);
+
+  const fetchExistingOrders = async () => {
+    if (!userId) return;
+
+    const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
+    const nextWeekEnd = addDays(nextWeekStart, 6);
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select('delivery_date')
+      .eq('user_id', userId)
+      .gte('delivery_date', format(nextWeekStart, 'yyyy-MM-dd'))
+      .lte('delivery_date', format(nextWeekEnd, 'yyyy-MM-dd'));
+
+    if (!error && data) {
+      const dates = data.map(order => order.delivery_date).filter(Boolean);
+      setExistingOrderDates(dates);
+    }
+  };
+
   const generateAvailableDatesFromMenus = (fetchedMenus: Menu[]) => {
-    // Extract dates from menus and format them
-    const dates = fetchedMenus.map(menu => ({
-      value: menu.menu_date,
-      label: format(new Date(menu.menu_date), 'EEEE, d. MMMM', { locale: sr })
-    }));
+    // Extract dates from menus and format them, filtering out dates with existing orders
+    const dates = fetchedMenus
+      .filter(menu => !existingOrderDates.includes(menu.menu_date))
+      .map(menu => ({
+        value: menu.menu_date,
+        label: format(new Date(menu.menu_date), 'EEEE, d. MMMM', { locale: sr })
+      }));
     
     setAvailableDates(dates);
     
@@ -117,7 +146,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
     })) || [];
 
     setMenus(formattedMenus);
-    generateAvailableDatesFromMenus(formattedMenus);
   };
 
   const loadMealsForDate = (date: string) => {

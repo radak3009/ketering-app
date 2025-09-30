@@ -20,7 +20,7 @@ interface NextWeekViewProps {
 export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOrderDeleted }: NextWeekViewProps) {
   const { toast } = useToast();
   const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
-  const weekDays = Array.from({ length: 5 }, (_, i) => addDays(nextWeekStart, i));
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(nextWeekStart, i));
 
   const getOrderForDate = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
