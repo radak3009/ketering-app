@@ -114,27 +114,34 @@ export function useOrders() {
   const searchMealOrders = async (mealName: string, startDate?: string, endDate?: string) => {
     try {
       setLoading(true);
-      let query = supabase
+      
+      // First, get all orders with their items and meals
+      let ordersQuery = supabase
         .from('orders')
         .select(`
           *,
-          order_items!inner (
+          order_items (
             *,
-            meals!inner (*)
+            meals (*)
           )
         `)
-        .ilike('order_items.meals.name', `%${mealName}%`)
         .order('delivery_date', { ascending: true });
 
       if (startDate && endDate) {
-        query = query.gte('delivery_date', startDate).lte('delivery_date', endDate);
+        ordersQuery = ordersQuery.gte('delivery_date', startDate).lte('delivery_date', endDate);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await ordersQuery;
 
       if (error) throw error;
       
-      const formattedOrders = data?.map(order => ({
+      // Filter orders that have at least one meal matching the search term (case-insensitive)
+      const searchLower = mealName.toLowerCase();
+      const filteredOrders = data?.filter(order => 
+        order.order_items?.some(item => 
+          item.meals?.name?.toLowerCase().includes(searchLower)
+        )
+      ).map(order => ({
         ...order,
         order_items: order.order_items?.map(oi => ({
           ...oi,
@@ -142,10 +149,15 @@ export function useOrders() {
         }))
       })) || [];
       
-      setOrders(formattedOrders);
-      return formattedOrders;
+      setOrders(filteredOrders);
+      return filteredOrders;
     } catch (error) {
       console.error('Error searching meal orders:', error);
+      toast({
+        title: 'Greška',
+        description: 'Nije moguće pretražiti porudžbine',
+        variant: 'destructive'
+      });
       return [];
     } finally {
       setLoading(false);

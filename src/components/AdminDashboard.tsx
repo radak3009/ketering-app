@@ -237,11 +237,16 @@ export function AdminDashboard() {
       );
       toast({
         title: "Pretraga završena",
-        description: `Pronađeno je ${results.length} porudžbina`
+        description: `Pronađeno je ${results.length} porudžbina sa obrokom "${orderSearch}"`
       });
     } else {
-      // If search is empty, fetch all orders
-      fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
+      // If search is empty, reset and fetch all orders
+      setOrderSearch('');
+      await fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
+      toast({
+        title: "Filter resetovan",
+        description: "Prikazuju se sve porudžbine"
+      });
     }
   };
 
