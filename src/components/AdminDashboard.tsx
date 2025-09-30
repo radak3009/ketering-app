@@ -38,38 +38,17 @@ import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
 import { useUsers } from "@/hooks/useUsers";
 import { useOrders } from "@/hooks/useOrders";
+import { useAdminStats } from "@/hooks/useAdminStats";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
-
-interface OrderStats {
-  totalOrders: number;
-  totalRevenue: number;
-  employeesOrdered: number;
-  avgOrderValue: number;
-}
 
 interface DailyOrders {
   day: string;
   orders: number;
   revenue: number;
 }
-
-const SAMPLE_STATS: OrderStats = {
-  totalOrders: 847,
-  totalRevenue: 382150,
-  employeesOrdered: 245,
-  avgOrderValue: 451
-};
-
-const SAMPLE_DAILY_ORDERS: DailyOrders[] = [
-  { day: "Ponedeljak", orders: 180, revenue: 81000 },
-  { day: "Utorak", orders: 165, revenue: 74250 },
-  { day: "Sreda", orders: 172, revenue: 77400 },
-  { day: "Četvrtak", orders: 158, revenue: 71100 },
-  { day: "Petak", orders: 172, revenue: 78400 }
-];
 
 export function AdminDashboard() {
   const { signOut } = useAuth();
@@ -78,6 +57,16 @@ export function AdminDashboard() {
   const { menus, loading: menusLoading, createMenu, updateMenu, deleteMenu } = useMenus();
   const { users, loading: usersLoading, createUser, updateUser, deleteUser, sendMagicLink } = useUsers();
   const { orders, loading: ordersLoading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders();
+
+  // Search states
+  const [menuMealSearch, setMenuMealSearch] = useState("");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderDateRange, setOrderDateRange] = useState({
+    startDate: format(new Date(new Date().getFullYear(), 0, 1), 'yyyy-MM-dd'), // Početak godine
+    endDate: format(new Date(), 'yyyy-MM-dd') // Danas
+  });
+  
+  const { stats, loading: statsLoading } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
 
   // State management
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
@@ -92,8 +81,6 @@ export function AdminDashboard() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
-
-  // Form states
   const [mealForm, setMealForm] = useState({
     name: "",
     description: "",
@@ -114,14 +101,6 @@ export function AdminDashboard() {
     email: "",
     phone: "",
     role: "employee" as "admin" | "employee"
-  });
-
-  // Search states
-  const [menuMealSearch, setMenuMealSearch] = useState("");
-  const [orderSearch, setOrderSearch] = useState("");
-  const [orderDateRange, setOrderDateRange] = useState({
-    startDate: "",
-    endDate: ""
   });
 
   const resetUserForm = () => {
@@ -562,7 +541,11 @@ export function AdminDashboard() {
                 <Users className="h-5 w-5 text-corporate" />
                 <div>
                   <p className="text-sm text-muted-foreground">Ukupno porudžbina</p>
-                  <p className="text-2xl font-bold">{SAMPLE_STATS.totalOrders}</p>
+                  {statsLoading ? (
+                    <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-2xl font-bold">{stats.totalOrders}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -574,7 +557,11 @@ export function AdminDashboard() {
                 <BarChart3 className="h-5 w-5 text-success" />
                 <div>
                   <p className="text-sm text-muted-foreground">Ukupan prihod</p>
-                  <p className="text-2xl font-bold">{SAMPLE_STATS.totalRevenue.toLocaleString()} RSD</p>
+                  {statsLoading ? (
+                    <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} RSD</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -586,7 +573,11 @@ export function AdminDashboard() {
                 <Users className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Zaposleni poručili</p>
-                  <p className="text-2xl font-bold">{SAMPLE_STATS.employeesOrdered}</p>
+                  {statsLoading ? (
+                    <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-2xl font-bold">{stats.employeesOrdered}</p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -598,7 +589,11 @@ export function AdminDashboard() {
                 <Calendar className="h-5 w-5 text-warning" />
                 <div>
                   <p className="text-sm text-muted-foreground">Prosečna porudžbina</p>
-                  <p className="text-2xl font-bold">{SAMPLE_STATS.avgOrderValue} RSD</p>
+                  {statsLoading ? (
+                    <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+                  ) : (
+                    <p className="text-2xl font-bold">{stats.avgOrderValue} RSD</p>
+                  )}
                 </div>
               </div>
             </CardContent>
