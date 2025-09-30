@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,7 @@ export function EmployeeDashboard() {
   const { signOut, user } = useAuth();
   const [currentView, setCurrentView] = useState<View>('next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [totalMenuDays, setTotalMenuDays] = useState(0);
 
   const {
     currentWeekOrders,
@@ -24,14 +25,39 @@ export function EmployeeDashboard() {
     refetch
   } = useWeekOrders(user?.id);
 
+  useEffect(() => {
+    if (user?.id) {
+      fetchTotalMenuDays();
+    }
+  }, [user?.id, nextWeekOrders]);
+
   const handleOrderCreated = async () => {
     // Small delay to ensure database transaction is committed
     await new Promise(resolve => setTimeout(resolve, 500));
     refetch();
+    fetchTotalMenuDays();
   };
 
   const handleOrderDeleted = () => {
     refetch();
+    fetchTotalMenuDays();
+  };
+
+  const fetchTotalMenuDays = async () => {
+    const { format, addWeeks, startOfWeek, addDays } = await import('date-fns');
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
+    const nextWeekEnd = addDays(nextWeekStart, 6);
+
+    const { data } = await supabase
+      .from('menus')
+      .select('menu_date')
+      .gte('menu_date', format(nextWeekStart, 'yyyy-MM-dd'))
+      .lte('menu_date', format(nextWeekEnd, 'yyyy-MM-dd'))
+      .eq('is_active', true);
+
+    setTotalMenuDays(data?.length || 0);
   };
 
   return (
@@ -106,6 +132,7 @@ export function EmployeeDashboard() {
               canEdit={canEditNextWeek}
               onOpenOrderDialog={() => setOrderDialogOpen(true)}
               onOrderDeleted={handleOrderDeleted}
+              totalMenuDays={totalMenuDays}
             />
           )}
           {currentView === 'current' && (

@@ -243,14 +243,47 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
       description: 'Obrok je uspešno poručen',
     });
 
-    // Reset form
+    // Refetch orders and available dates
+    await fetchExistingOrders();
+    await fetchMenus();
+    
+    // Reset form fields but keep dialog open
     setSelectedDate('');
     setSelectedShift('');
     setSelectedMeal('');
     setMeals([]);
     
     onOrderCreated();
-    onOpenChange(false);
+    
+    // Check if all dates are now ordered - if so, close dialog
+    const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
+    const nextWeekEnd = addDays(nextWeekStart, 6);
+
+    const { data: updatedOrders } = await supabase
+      .from('orders')
+      .select('delivery_date')
+      .eq('user_id', userId)
+      .gte('delivery_date', format(nextWeekStart, 'yyyy-MM-dd'))
+      .lte('delivery_date', format(nextWeekEnd, 'yyyy-MM-dd'));
+
+    const { data: availableMenus } = await supabase
+      .from('menus')
+      .select('menu_date')
+      .gte('menu_date', format(nextWeekStart, 'yyyy-MM-dd'))
+      .lte('menu_date', format(nextWeekEnd, 'yyyy-MM-dd'))
+      .eq('is_active', true);
+
+    const orderedDates = updatedOrders?.map(o => o.delivery_date) || [];
+    const menuDates = availableMenus?.map(m => m.menu_date) || [];
+    const remainingDates = menuDates.filter(d => !orderedDates.includes(d));
+
+    if (remainingDates.length === 0) {
+      toast({
+        title: 'Kompletno!',
+        description: 'Poručili ste obroke za sve dostupne dane',
+      });
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -258,6 +291,11 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Poruči obrok</DialogTitle>
+          {availableDates.length > 0 && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Preostalo dana za poručivanje: {availableDates.length}
+            </p>
+          )}
         </DialogHeader>
         
         <div className="space-y-4 py-4">

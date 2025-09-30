@@ -15,12 +15,17 @@ interface NextWeekViewProps {
   canEdit: boolean;
   onOpenOrderDialog: () => void;
   onOrderDeleted: () => void;
+  totalMenuDays: number;
 }
 
-export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOrderDeleted }: NextWeekViewProps) {
+export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOrderDeleted, totalMenuDays }: NextWeekViewProps) {
   const { toast } = useToast();
   const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(nextWeekStart, i));
+  
+  // Calculate how many days have orders
+  const orderedDaysCount = orders.length;
+  const isAllOrdered = orderedDaysCount >= totalMenuDays && totalMenuDays > 0;
 
   const getOrderForDate = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -75,12 +80,36 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           <h2 className="text-xl font-semibold">Iduća nedelja</h2>
         </div>
         {canEdit && (
-          <Button onClick={onOpenOrderDialog} size="sm" className="gap-2">
+          <Button 
+            onClick={onOpenOrderDialog} 
+            size="sm" 
+            className="gap-2"
+            disabled={isAllOrdered}
+          >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Poruči obrok</span>
+            <span className="hidden sm:inline">
+              {isAllOrdered ? 'Sve poručeno' : 'Poruči obrok'}
+            </span>
           </Button>
         )}
       </div>
+
+      {canEdit && totalMenuDays > 0 && (
+        <Alert className={isAllOrdered ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}>
+          <AlertCircle className={isAllOrdered ? 'h-4 w-4 text-green-600' : 'h-4 w-4'} />
+          <AlertDescription>
+            {isAllOrdered ? (
+              <span className="text-green-700 dark:text-green-400 font-medium">
+                ✓ Poručili ste obroke za sve dostupne dane ({orderedDaysCount}/{totalMenuDays})
+              </span>
+            ) : (
+              <span>
+                Poručeno {orderedDaysCount} od {totalMenuDays} dostupnih dana
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {!canEdit && (
         <Alert>
