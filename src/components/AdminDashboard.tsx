@@ -198,8 +198,36 @@ export function AdminDashboard() {
   };
 
   const handleDateRangeFilter = () => {
-    if (orderDateRange.startDate && orderDateRange.endDate) {
-      fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
+    const hasStartDate = orderDateRange.startDate && orderDateRange.startDate.trim() !== '';
+    const hasEndDate = orderDateRange.endDate && orderDateRange.endDate.trim() !== '';
+    
+    if (hasStartDate || hasEndDate) {
+      fetchOrders(
+        hasStartDate ? orderDateRange.startDate : undefined, 
+        hasEndDate ? orderDateRange.endDate : undefined
+      );
+      
+      let description = '';
+      if (hasStartDate && hasEndDate) {
+        description = `Prikazane porudžbine od ${orderDateRange.startDate} do ${orderDateRange.endDate}`;
+      } else if (hasStartDate) {
+        description = `Prikazane porudžbine od ${orderDateRange.startDate} pa nadalje`;
+      } else if (hasEndDate) {
+        description = `Prikazane porudžbine do ${orderDateRange.endDate}`;
+      }
+      
+      toast({
+        title: "Filter primenjen",
+        description
+      });
+    } else {
+      // Reset to show all orders
+      setOrderDateRange({ startDate: '', endDate: '' });
+      fetchOrders();
+      toast({
+        title: "Filter resetovan",
+        description: "Prikazuju se sve porudžbine"
+      });
     }
   };
 
@@ -229,14 +257,9 @@ export function AdminDashboard() {
   };
 
   const handleSearchOrders = async () => {
-    console.log('🎯 handleSearchOrders called with:', orderSearch);
-    console.log('📅 Current date range:', orderDateRange);
-    
     if (orderSearch.trim()) {
-      console.log('🔍 Starting search for:', orderSearch);
       // Search without date range - show all matching results
       const results = await searchMealOrders(orderSearch);
-      console.log('✅ Search completed, results:', results.length);
       toast({
         title: "Pretraga završena",
         description: results.length > 0 
@@ -244,7 +267,6 @@ export function AdminDashboard() {
           : `Nije pronađena nijedna porudžbina sa obrokom "${orderSearch}"`
       });
     } else {
-      console.log('🔄 Resetting search, fetching all orders');
       // If search is empty, reset and fetch all orders
       setOrderSearch('');
       await fetchOrders(orderDateRange.startDate, orderDateRange.endDate);
