@@ -43,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
+import { OrderPivotTable } from "./admin/OrderPivotTable";
 
 interface DailyOrders {
   day: string;
