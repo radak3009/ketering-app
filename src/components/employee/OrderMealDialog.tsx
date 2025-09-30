@@ -50,7 +50,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
 
   useEffect(() => {
     if (open) {
-      generateNextWeekDates();
       fetchMenus();
     }
   }, [open]);
@@ -63,19 +62,19 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
     }
   }, [selectedDate, menus]);
 
-  const generateNextWeekDates = () => {
-    const now = new Date();
-    const nextWeekStart = addWeeks(startOfWeek(now, { weekStartsOn: 1 }), 1);
+  const generateAvailableDatesFromMenus = (fetchedMenus: Menu[]) => {
+    // Extract dates from menus and format them
+    const dates = fetchedMenus.map(menu => ({
+      value: menu.menu_date,
+      label: format(new Date(menu.menu_date), 'EEEE, d. MMMM', { locale: sr })
+    }));
     
-    const dates = [];
-    for (let i = 0; i < 5; i++) { // Monday to Friday
-      const date = addDays(nextWeekStart, i);
-      dates.push({
-        value: format(date, 'yyyy-MM-dd'),
-        label: format(date, 'EEEE, d. MMMM', { locale: sr })
-      });
-    }
     setAvailableDates(dates);
+    
+    // Auto-select first date if available
+    if (dates.length > 0) {
+      setSelectedDate(dates[0].value);
+    }
   };
 
   const fetchMenus = async () => {
@@ -102,7 +101,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
       `)
       .gte('menu_date', format(nextWeekStart, 'yyyy-MM-dd'))
       .lte('menu_date', format(nextWeekEnd, 'yyyy-MM-dd'))
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .order('menu_date', { ascending: true });
 
     if (error) {
       console.error('Error fetching menus:', error);
@@ -117,6 +117,7 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated }: 
     })) || [];
 
     setMenus(formattedMenus);
+    generateAvailableDatesFromMenus(formattedMenus);
   };
 
   const loadMealsForDate = (date: string) => {
