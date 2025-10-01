@@ -33,11 +33,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processingAuth, setProcessingAuth] = useState(false);
 
   useEffect(() => {
+    // Check if we have hash parameters (from email verification or magic link)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
+    
+    if (hasAuthParams) {
+      console.log('Processing auth hash parameters...');
+      setProcessingAuth(true);
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -49,11 +60,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .select('*')
               .eq('user_id', session.user.id)
               .maybeSingle();
+            
+            console.log('Profile fetched:', profileData);
             setProfile(profileData);
+            setProcessingAuth(false);
             setLoading(false);
           }, 0);
         } else {
           setProfile(null);
+          setProcessingAuth(false);
           setLoading(false);
         }
       }
@@ -61,9 +76,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
-      if (!session) {
+      if (!session && !hasAuthParams) {
         setLoading(false);
       }
     });
@@ -156,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     session,
     profile,
-    loading,
+    loading: loading || processingAuth,
     signUp,
     signIn,
     signOut,

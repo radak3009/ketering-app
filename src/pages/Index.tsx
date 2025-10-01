@@ -10,8 +10,19 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if we're processing hash parameters (email verification or magic link)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
+    
+    // Don't redirect if we're still loading or processing auth parameters
+    if (loading || hasAuthParams) {
+      console.log('Waiting for auth processing...', { loading, hasAuthParams });
+      return;
+    }
+
     // If user is not authenticated OR user has no profile, redirect to auth page
-    if (!loading && (!user || (user && !profile))) {
+    if (!user || (user && !profile)) {
+      console.log('Redirecting to auth page...', { user: !!user, profile: !!profile });
       navigate('/auth');
     }
   }, [user, profile, loading, navigate]);
