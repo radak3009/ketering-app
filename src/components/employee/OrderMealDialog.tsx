@@ -249,24 +249,11 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
       return;
     }
 
-    toast({
-      title: 'Uspešno!',
-      description: 'Obrok je uspešno poručen',
-    });
-
-    // Refetch orders and available dates
+    // Refetch orders and menus to get updated available dates
     await fetchExistingOrders();
     await fetchMenus();
     
-    // Reset form fields but keep dialog open
-    setSelectedDate('');
-    setSelectedShift('');
-    setSelectedMeal('');
-    setMeals([]);
-    
-    onOrderCreated();
-    
-    // Check if all dates are now ordered - if so, close dialog
+    // Check remaining available dates
     const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
     const nextWeekEnd = addDays(nextWeekStart, 6);
 
@@ -293,7 +280,28 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
         title: 'Kompletno!',
         description: 'Poručili ste obroke za sve dostupne dane',
       });
+      onOrderCreated();
       onOpenChange(false);
+    } else {
+      // Show success toast and prepare for next day
+      toast({
+        title: 'Uspešno!',
+        description: `Prelazim na sledeći dan... (još ${remainingDates.length} ${remainingDates.length === 1 ? 'dan' : remainingDates.length < 5 ? 'dana' : 'dana'})`,
+      });
+      
+      // Smooth transition - wait a bit before auto-selecting next date
+      setTimeout(() => {
+        // Auto-select the first remaining date
+        if (remainingDates.length > 0) {
+          const nextDate = remainingDates[0];
+          setSelectedDate(nextDate);
+          // Keep selectedShift as is
+          // Reset only selectedMeal
+          setSelectedMeal('');
+        }
+      }, 300);
+      
+      onOrderCreated();
     }
   };
 
