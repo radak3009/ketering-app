@@ -44,6 +44,7 @@ import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 import { OrderPivotTable } from "./admin/OrderPivotTable";
+import { AIHelpChat } from "./AIHelpChat";
 
 interface DailyOrders {
   day: string;
@@ -1762,6 +1763,9 @@ export function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* AI Help Chat */}
+      <AIHelpChat />
     </div>
   );
 }

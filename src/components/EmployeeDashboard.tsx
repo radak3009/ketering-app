@@ -8,6 +8,7 @@ import { NextWeekView } from './employee/NextWeekView';
 import { OrderMealDialog } from './employee/OrderMealDialog';
 import { ProfileView } from './employee/ProfileView';
 import { FeedbackView } from './employee/FeedbackView';
+import { AIHelpChat } from './AIHelpChat';
 
 type View = 'current' | 'next' | 'feedback' | 'profile';
 
@@ -192,6 +193,9 @@ export function EmployeeDashboard() {
         totalMenuDays={totalMenuDays}
         refreshTrigger={refreshTrigger}
       />
+
+      {/* AI Help Chat */}
+      <AIHelpChat />
     </div>
   );
 }
