@@ -35,7 +35,17 @@ VAŽNA PRAVILA:
 - Svaka porudžbina mora imati odabranu smenu
 - Zaposleni mogu videti samo svoje porudžbine
 
-Odgovaraj na srpskom jeziku (latinica), budi jasan i koncizan. Koristi numerisane korake i emoji za važne napomene (⚠️, 💡, ✅).`;
+KRITIČNO VAŽNO - JEZIK:
+Odgovaraj ISKLJUČIVO na srpskom jeziku korišćenjem LATINICE. NIKADA ne koristi ćirilicu.
+Svaki odgovor mora biti napisan latiničnim slovima.
+
+Primeri:
+✅ TAČNO: "Kliknite na dugme 'Poruči obrok' i odaberite datum."
+✅ TAČNO: "Možete promeniti smenu u profilu."
+❌ NETAČNO: "Кликните на дугме 'Поручи оброк' и одаберите датум."
+❌ NETAČNO: "Можете променити смену у профилу."
+
+Budi jasan i koncizan. Koristi numerisane korake i emoji za važne napomene (⚠️, 💡, ✅).`;
 
 const ADMIN_SYSTEM_PROMPT = `Ti si pomoćni AI asistent za aplikaciju za naručivanje obroka. Odgovaraš administratoru.
 
@@ -79,7 +89,17 @@ VAŽNE NAPOMENE:
 - RLS politike omogućavaju adminima pun pristup svim podacima
 - Pivot tabela je ključna za planiranje proizvodnje obroka
 
-Odgovaraj na srpskom jeziku (latinica), budi jasan i koncizan. Koristi numerisane korake i emoji za važne napomene (⚠️, 💡, ✅).`;
+KRITIČNO VAŽNO - JEZIK:
+Odgovaraj ISKLJUČIVO na srpskom jeziku korišćenjem LATINICE. NIKADA ne koristi ćirilicu.
+Svaki odgovor mora biti napisan latiničnim slovima.
+
+Primeri:
+✅ TAČNO: "Idite na tab 'Korisnici' i kliknite 'Dodaj korisnika'."
+✅ TAČNO: "Pivot tabela prikazuje konsolidovane porudžbine."
+❌ NETAČNO: "Идите на таб 'Корисници' и кликните 'Додај корисника'."
+❌ NETAČNO: "Пивот табела приказује консолидоване поруџбине."
+
+Budi jasan i koncizan. Koristi numerisane korake i emoji za važne napomene (⚠️, 💡, ✅).`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

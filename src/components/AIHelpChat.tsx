@@ -37,28 +37,128 @@ export const AIHelpChat = () => {
     let assistantContent = '';
     
     try {
-      const { data, error } = await supabase.functions.invoke('ai-help-assistant', {
-        body: {
-          messages: [...messages, userMessage],
-          role: profile.role,
-        },
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      if (error) throw error;
+      const response = await fetch(
+        `https://qqrvezuesxaappslfvrh.supabase.co/functions/v1/ai-help-assistant`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxcnZlenVlc3hhYXBwc2xmdnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNDM1NTksImV4cCI6MjA3NDcxOTU1OX0.0801HLIkQnUCbPpuFvoXhFb7BLgVsO_hjWcg7Pc6M0s',
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage],
+            role: profile.role,
+          }),
+        }
+      );
 
-      // For non-streaming response
-      if (data && typeof data === 'object' && 'response' in data) {
-        assistantContent = data.response;
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
-      } else {
-        // Handle streaming if implemented
-        assistantContent = 'Izvините, došlo je do greške prilikom obrade vašeg zahteva.';
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Previše zahteva. Molimo pokušajte kasnije.');
+        }
+        if (response.status === 402) {
+          throw new Error('Potrebno je dodati kredite za AI funkcionalnost.');
+        }
+        throw new Error(`HTTP greška: ${response.status}`);
       }
+
+      if (!response.body) {
+        throw new Error('Nema odgovora od servera');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamDone = false;
+
+      // Add empty assistant message that will be updated
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process line by line
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') {
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  lastMessage.content = assistantContent;
+                }
+                return newMessages;
+              });
+            }
+          } catch (parseError) {
+            // Incomplete JSON, put it back
+            buffer = line + '\n' + buffer;
+            break;
+          }
+        }
+      }
+
+      // Flush remaining buffer
+      if (buffer.trim()) {
+        const lines = buffer.split('\n');
+        for (let raw of lines) {
+          if (!raw) continue;
+          if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+          if (raw.startsWith(':') || raw.trim() === '') continue;
+          if (!raw.startsWith('data: ')) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  lastMessage.content = assistantContent;
+                }
+                return newMessages;
+              });
+            }
+          } catch {
+            // Ignore partial leftovers
+          }
+        }
+      }
+
     } catch (error) {
       console.error('Error calling AI assistant:', error);
-      assistantContent = 'Došlo je do greške. Molimo pokušajte ponovo.';
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+      const errorMessage = error instanceof Error ? error.message : 'Došlo je do greške. Molimo pokušajte ponovo.';
+      setMessages(prev => {
+        const filtered = prev.filter(m => !(m.role === 'assistant' && m.content === ''));
+        return [...filtered, { role: 'assistant', content: errorMessage }];
+      });
     } finally {
       setIsLoading(false);
     }
