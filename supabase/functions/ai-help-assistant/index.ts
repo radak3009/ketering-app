@@ -6,6 +6,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function getCurrentDateInSerbian(): string {
+  const now = new Date();
+  const days = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota'];
+  const months = ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
+  
+  const dayName = days[now.getDay()];
+  const day = now.getDate();
+  const monthName = months[now.getMonth()];
+  const year = now.getFullYear();
+  const hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  
+  return `${dayName}, ${day}. ${monthName} ${year}. (${hours}:${minutes})`;
+}
+
+function getDeadlineInfo(): string {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = nedelja, 5 = petak
+  const hours = now.getHours();
+  
+  if (dayOfWeek === 5 && hours < 15) {
+    return "⚠️ Danas je petak pre 15h - zaposleni MOGU još uvek da poručuju obroke za narednu nedelju!";
+  } else if (dayOfWeek === 5 && hours >= 15) {
+    return "⚠️ Danas je petak posle 15h - rok za porudžbine za narednu nedelju je istekao.";
+  } else if (dayOfWeek === 6 || dayOfWeek === 0) {
+    return "⚠️ Danas je vikend - rok za porudžbine za narednu nedelju je istekao (petak 15h).";
+  } else {
+    return "✅ Zaposleni mogu poručivati obroke za narednu nedelju do petka u 15h.";
+  }
+}
+
 const EMPLOYEE_SYSTEM_PROMPT = `Ti si pomoćni AI asistent za aplikaciju za naručivanje obroka. Odgovaraš zaposlenom korisniku.
 
 DOSTUPNE FUNKCIONALNOSTI ZA ZAPOSLENOG:
@@ -122,10 +153,16 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Select system prompt based on role
-    const systemPrompt = role === 'admin' ? ADMIN_SYSTEM_PROMPT : EMPLOYEE_SYSTEM_PROMPT;
+    // Get current date and time context
+    const currentDate = getCurrentDateInSerbian();
+    const deadlineInfo = getDeadlineInfo();
+    const dateContext = `TRENUTNI DATUM I VREME: ${currentDate}\n${deadlineInfo}\n\n`;
+    
+    // Select system prompt based on role and prepend date context
+    const basePrompt = role === 'admin' ? ADMIN_SYSTEM_PROMPT : EMPLOYEE_SYSTEM_PROMPT;
+    const systemPrompt = dateContext + basePrompt;
 
-    console.log(`Processing chat request for ${role} with ${messages.length} messages`);
+    console.log(`Processing chat request for ${role} with ${messages.length} messages at ${currentDate}`);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
