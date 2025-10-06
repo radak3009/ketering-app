@@ -11,27 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { 
-  BarChart3, 
-  Users, 
-  ChefHat, 
-  Calendar, 
-  Download, 
-  Plus,
-  Search,
-  Filter,
-  LogOut,
-  Edit,
-  Trash2,
-  Mail,
-  ImageIcon,
-  Clock,
-  Upload,
-  Save,
-  FileText,
-  ChevronDown,
-  MessageSquare
-} from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
@@ -45,30 +25,64 @@ import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 import { OrderPivotTable } from "./admin/OrderPivotTable";
 import { AIHelpChat } from "./AIHelpChat";
-
 interface DailyOrders {
   day: string;
   orders: number;
   revenue: number;
 }
-
 export function AdminDashboard() {
-  const { signOut } = useAuth();
-  const { toast } = useToast();
-  const { meals, loading: mealsLoading, createMeal, updateMeal, deleteMeal } = useMeals();
-  const { menus, loading: menusLoading, createMenu, updateMenu, deleteMenu } = useMenus();
-  const { users, loading: usersLoading, createUser, updateUser, deleteUser, sendMagicLink } = useUsers();
-  const { orders, loading: ordersLoading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders();
+  const {
+    signOut
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    meals,
+    loading: mealsLoading,
+    createMeal,
+    updateMeal,
+    deleteMeal
+  } = useMeals();
+  const {
+    menus,
+    loading: menusLoading,
+    createMenu,
+    updateMenu,
+    deleteMenu
+  } = useMenus();
+  const {
+    users,
+    loading: usersLoading,
+    createUser,
+    updateUser,
+    deleteUser,
+    sendMagicLink
+  } = useUsers();
+  const {
+    orders,
+    loading: ordersLoading,
+    fetchOrders,
+    getMealOrdersByDate,
+    searchMealOrders
+  } = useOrders();
 
   // Search states
   const [menuMealSearch, setMenuMealSearch] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
   const [orderDateRange, setOrderDateRange] = useState({
-    startDate: format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd'), // Početak iduće nedelje
-    endDate: format(endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd') // Kraj iduće nedelje
+    startDate: format(startOfWeek(addWeeks(new Date(), 1), {
+      weekStartsOn: 1
+    }), 'yyyy-MM-dd'),
+    // Početak iduće nedelje
+    endDate: format(endOfWeek(addWeeks(new Date(), 1), {
+      weekStartsOn: 1
+    }), 'yyyy-MM-dd') // Kraj iduće nedelje
   });
-  
-  const { stats, loading: statsLoading } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
+  const {
+    stats,
+    loading: statsLoading
+  } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
 
   // State management
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
@@ -91,13 +105,11 @@ export function AdminDashboard() {
     shifts: [] as string[],
     image_url: ""
   });
-
   const [menuForm, setMenuForm] = useState({
     description: "",
     menu_date: "",
     selectedMeals: [] as string[]
   });
-
   const [userForm, setUserForm] = useState({
     full_name: "",
     email: "",
@@ -108,10 +120,14 @@ export function AdminDashboard() {
   // Report states
   const [reportType, setReportType] = useState("orders");
   const [reportDateRange, setReportDateRange] = useState({
-    startDate: format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd'), // Početak iduće nedelje
-    endDate: format(endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd') // Kraj iduće nedelje
+    startDate: format(startOfWeek(addWeeks(new Date(), 1), {
+      weekStartsOn: 1
+    }), 'yyyy-MM-dd'),
+    // Početak iduće nedelje
+    endDate: format(endOfWeek(addWeeks(new Date(), 1), {
+      weekStartsOn: 1
+    }), 'yyyy-MM-dd') // Kraj iduće nedelje
   });
-
   const resetUserForm = () => {
     setUserForm({
       full_name: "",
@@ -120,7 +136,6 @@ export function AdminDashboard() {
       role: "employee"
     });
   };
-
   const handleCreateUser = async () => {
     if (!userForm.full_name || !userForm.email) {
       toast({
@@ -130,7 +145,6 @@ export function AdminDashboard() {
       });
       return;
     }
-
     try {
       await createUser(userForm);
       resetUserForm();
@@ -139,7 +153,6 @@ export function AdminDashboard() {
       console.error('Error creating user:', error);
     }
   };
-
   const handleBulkUserImport = async () => {
     if (!csvFile) {
       toast({
@@ -149,17 +162,12 @@ export function AdminDashboard() {
       });
       return;
     }
-
     try {
       const text = await csvFile.text();
       const lines = text.split('\n').filter(line => line.trim());
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-      
       const requiredFields = ['ime', 'email'];
-      const hasRequiredFields = requiredFields.every(field => 
-        headers.some(h => h.includes(field) || h.includes(field.replace('ime', 'name')))
-      );
-
+      const hasRequiredFields = requiredFields.every(field => headers.some(h => h.includes(field) || h.includes(field.replace('ime', 'name'))));
       if (!hasRequiredFields) {
         toast({
           title: "Greška",
@@ -168,11 +176,9 @@ export function AdminDashboard() {
         });
         return;
       }
-
       const users = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
         const userData: any = {};
-        
         headers.forEach((header, index) => {
           if (header.includes('ime') || header.includes('name')) userData.full_name = values[index];
           if (header.includes('email')) userData.email = values[index];
@@ -183,14 +189,11 @@ export function AdminDashboard() {
             userData.role = 'employee';
           }
         });
-        
         return userData;
       }).filter(user => user.full_name && user.email);
-
       for (const userData of users) {
         await createUser(userData);
       }
-
       setCsvFile(null);
       toast({
         title: "Uspeh",
@@ -205,17 +208,11 @@ export function AdminDashboard() {
       });
     }
   };
-
   const handleDateRangeFilter = () => {
     const hasStartDate = orderDateRange.startDate && orderDateRange.startDate.trim() !== '';
     const hasEndDate = orderDateRange.endDate && orderDateRange.endDate.trim() !== '';
-    
     if (hasStartDate || hasEndDate) {
-      fetchOrders(
-        hasStartDate ? orderDateRange.startDate : undefined, 
-        hasEndDate ? orderDateRange.endDate : undefined
-      );
-      
+      fetchOrders(hasStartDate ? orderDateRange.startDate : undefined, hasEndDate ? orderDateRange.endDate : undefined);
       let description = '';
       if (hasStartDate && hasEndDate) {
         description = `Prikazane porudžbine od ${orderDateRange.startDate} do ${orderDateRange.endDate}`;
@@ -224,14 +221,16 @@ export function AdminDashboard() {
       } else if (hasEndDate) {
         description = `Prikazane porudžbine do ${orderDateRange.endDate}`;
       }
-      
       toast({
         title: "Filter primenjen",
         description
       });
     } else {
       // Reset to show all orders
-      setOrderDateRange({ startDate: '', endDate: '' });
+      setOrderDateRange({
+        startDate: '',
+        endDate: ''
+      });
       fetchOrders();
       toast({
         title: "Filter resetovan",
@@ -239,12 +238,10 @@ export function AdminDashboard() {
       });
     }
   };
-
   const handleDayClick = async (day: any) => {
     // Extract date from the day string or use direct date
     const dateString = day.date || day.day;
     let date;
-    
     if (dateString.includes('-')) {
       // Already a date string
       date = dateString;
@@ -259,21 +256,17 @@ export function AdminDashboard() {
         date = format(new Date(), 'yyyy-MM-dd');
       }
     }
-    
     setSelectedDay(date);
     const mealOrders = await getMealOrdersByDate(date);
     setDailyMealOrders(mealOrders);
   };
-
   const handleSearchOrders = async () => {
     if (orderSearch.trim()) {
       // Search without date range - show all matching results
       const results = await searchMealOrders(orderSearch);
       toast({
         title: "Pretraga završena",
-        description: results.length > 0 
-          ? `Pronađeno je ${results.length} porudžbina sa obrokom "${orderSearch}"`
-          : `Nije pronađena nijedna porudžbina sa obrokom "${orderSearch}"`
+        description: results.length > 0 ? `Pronađeno je ${results.length} porudžbina sa obrokom "${orderSearch}"` : `Nije pronađena nijedna porudžbina sa obrokom "${orderSearch}"`
       });
     } else {
       // If search is empty, reset and fetch all orders
@@ -285,26 +278,23 @@ export function AdminDashboard() {
       });
     }
   };
-
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('Slike obroka')
-        .upload(filePath, file);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('Slike obroka').upload(filePath, file);
       if (uploadError) throw uploadError;
 
       // Use signed URL instead of public URL since bucket might not be public
-      const { data, error: urlError } = await supabase.storage
-        .from('Slike obroka')
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
+      const {
+        data,
+        error: urlError
+      } = await supabase.storage.from('Slike obroka').createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
 
       if (urlError) throw urlError;
-
       console.log('Generated signed URL:', data.signedUrl);
       return data.signedUrl;
     } catch (error) {
@@ -317,7 +307,6 @@ export function AdminDashboard() {
       return null;
     }
   };
-
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
       toast({
@@ -327,20 +316,18 @@ export function AdminDashboard() {
       });
       return;
     }
-
     try {
       let imageUrl = mealForm.image_url;
-      
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
         if (!imageUrl) return;
       }
-
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
         price: parseFloat(mealForm.price),
-        category: "Glavno jelo", // Default category
+        category: "Glavno jelo",
+        // Default category
         status: mealForm.status,
         shifts: mealForm.shifts,
         image_url: imageUrl || null,
@@ -348,14 +335,12 @@ export function AdminDashboard() {
         allergens: null,
         nutritional_info: null
       });
-      
       resetMealForm();
       setIsAddMealOpen(false);
     } catch (error) {
       console.error('Error creating meal:', error);
     }
   };
-
   const handleUpdateMeal = async () => {
     if (!selectedMeal || !selectedMeal.name || !selectedMeal.price) {
       toast({
@@ -365,53 +350,44 @@ export function AdminDashboard() {
       });
       return;
     }
-
     try {
       let imageUrl = selectedMeal.image_url;
-      
       if (imageFile) {
         console.log('Uploading new image:', imageFile.name);
         toast({
           title: "Upload u toku...",
           description: "Slika se učitava, molimo sačekajte"
         });
-        
         imageUrl = await uploadImage(imageFile);
         if (!imageUrl) return;
-        
         console.log('New image uploaded:', imageUrl);
       }
-
       console.log('Updating meal with data:', {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
         price: parseFloat(selectedMeal.price),
         status: selectedMeal.status,
         shifts: selectedMeal.shifts,
-        image_url: imageUrl || null,
+        image_url: imageUrl || null
       });
-
       const updatedMeal = await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
         price: parseFloat(selectedMeal.price),
         status: selectedMeal.status,
         shifts: selectedMeal.shifts,
-        image_url: imageUrl || null,
+        image_url: imageUrl || null
       });
-      
+
       // Update selectedMeal with the new data including the updated image_url
       const updatedMealData = {
         ...selectedMeal,
         image_url: imageUrl || null,
-        updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-      
       setSelectedMeal(updatedMealData);
       setImageFile(null);
-      
       console.log('Updated selectedMeal:', updatedMealData);
-      
       toast({
         title: "Uspeh",
         description: "Obrok je uspešno ažuriran!"
@@ -425,7 +401,6 @@ export function AdminDashboard() {
       });
     }
   };
-
   const generateMenuName = (date: string) => {
     const menuDate = new Date(date);
     const dayNames = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
@@ -433,7 +408,6 @@ export function AdminDashboard() {
     const formattedDate = format(menuDate, 'dd.MM.yyyy');
     return `${dayName} ${formattedDate}`;
   };
-
   const handleCreateMenu = async () => {
     if (!menuForm.menu_date || menuForm.selectedMeals.length === 0) {
       toast({
@@ -443,11 +417,9 @@ export function AdminDashboard() {
       });
       return;
     }
-
     const selectedDate = new Date(menuForm.menu_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     if (selectedDate <= today) {
       toast({
         title: "Greška",
@@ -456,17 +428,14 @@ export function AdminDashboard() {
       });
       return;
     }
-
     try {
       const menuName = generateMenuName(menuForm.menu_date);
-      
       await createMenu({
         name: menuName,
         description: menuForm.description || undefined,
         menu_date: menuForm.menu_date,
         meal_ids: menuForm.selectedMeals
       });
-      
       setMenuForm({
         description: "",
         menu_date: "",
@@ -477,10 +446,8 @@ export function AdminDashboard() {
       console.error('Error creating menu:', error);
     }
   };
-
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
-
     try {
       await updateUser(selectedUser.id, {
         full_name: selectedUser.full_name,
@@ -488,31 +455,25 @@ export function AdminDashboard() {
         phone: selectedUser.phone,
         role: selectedUser.role
       });
-      
       setSelectedUser(null);
     } catch (error) {
       console.error('Error updating user:', error);
     }
   };
-
   const handleUpdateMenu = async () => {
     if (!selectedMenu) return;
-
     try {
       const selectedMealIds = selectedMenu.meals?.map((m: any) => m.meal_id) || [];
-      
       await updateMenu(selectedMenu.id, {
         description: selectedMenu.description,
         menu_date: selectedMenu.menu_date,
         meal_ids: selectedMealIds
       });
-      
       setSelectedMenu(null);
     } catch (error) {
       console.error('Error updating menu:', error);
     }
   };
-
   const handleSendMagicLink = async (email: string) => {
     try {
       await sendMagicLink(email);
@@ -520,7 +481,6 @@ export function AdminDashboard() {
       console.error('Error sending magic link:', error);
     }
   };
-
   const resetMealForm = () => {
     setMealForm({
       name: "",
@@ -532,46 +492,39 @@ export function AdminDashboard() {
     });
     setImageFile(null);
   };
-
-  const filteredMenuMeals = meals.filter(meal => 
-    meal.status === "aktivan" && 
-    meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
-  );
-
+  const filteredMenuMeals = meals.filter(meal => meal.status === "aktivan" && meal.name.toLowerCase().includes(menuMealSearch.toLowerCase()));
   const isNextWeek = (date: Date) => {
     const nextWeek = addWeeks(new Date(), 1);
-    const startOfNextWeek = startOfWeek(nextWeek, { weekStartsOn: 1 });
-    const endOfNextWeek = endOfWeek(nextWeek, { weekStartsOn: 1 });
+    const startOfNextWeek = startOfWeek(nextWeek, {
+      weekStartsOn: 1
+    });
+    const endOfNextWeek = endOfWeek(nextWeek, {
+      weekStartsOn: 1
+    });
     return date >= startOfNextWeek && date <= endOfNextWeek;
   };
-
   const thisWeekMenus = menus.filter(menu => isThisWeek(new Date(menu.menu_date)));
   const nextWeekMenus = menus.filter(menu => isNextWeek(new Date(menu.menu_date)));
-
   const handleExportReport = async () => {
     try {
       let csvContent = '';
       let filename = '';
-
       if (reportType === 'orders') {
         // Fetch orders for the date range
         await fetchOrders(reportDateRange.startDate, reportDateRange.endDate);
-        
+
         // Generate CSV for orders
         csvContent = '\uFEFF'; // UTF-8 BOM
         csvContent += 'ID Porudžbine,Korisnik,Datum porudžbine,Datum dostave,Status,Ukupan iznos,Napomene\n';
-        
         orders.forEach(order => {
           const user = users.find(u => u.user_id === order.user_id);
           csvContent += `"${order.id}","${user?.full_name || 'N/A'}","${order.order_date}","${order.delivery_date || 'N/A'}","${order.status}","${order.total_amount}","${order.notes || ''}"\n`;
         });
-        
         filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
-      } 
-      else if (reportType === 'revenue') {
+      } else if (reportType === 'revenue') {
         // Fetch orders for revenue calculation
         await fetchOrders(reportDateRange.startDate, reportDateRange.endDate);
-        
+
         // Group by date and calculate revenue
         const revenueByDate: Record<string, number> = {};
         orders.forEach(order => {
@@ -581,56 +534,45 @@ export function AdminDashboard() {
           }
           revenueByDate[date] += parseFloat(order.total_amount.toString());
         });
-        
         csvContent = '\uFEFF'; // UTF-8 BOM
         csvContent += 'Datum,Ukupan prihod (RSD),Broj porudžbina\n';
-        
-        Object.entries(revenueByDate)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .forEach(([date, revenue]) => {
-            const ordersCount = orders.filter(o => (o.delivery_date || o.order_date) === date).length;
-            csvContent += `"${date}","${revenue.toFixed(2)}","${ordersCount}"\n`;
-          });
-        
+        Object.entries(revenueByDate).sort(([a], [b]) => a.localeCompare(b)).forEach(([date, revenue]) => {
+          const ordersCount = orders.filter(o => (o.delivery_date || o.order_date) === date).length;
+          csvContent += `"${date}","${revenue.toFixed(2)}","${ordersCount}"\n`;
+        });
         filename = `prihodi_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
-      }
-      else if (reportType === 'users') {
+      } else if (reportType === 'users') {
         csvContent = '\uFEFF'; // UTF-8 BOM
         csvContent += 'ID,Ime i prezime,Email,Telefon,Rola,ID kartice,Datum kreiranja\n';
-        
         users.forEach(user => {
           csvContent += `"${user.user_id}","${user.full_name || ''}","${user.email || ''}","${user.phone || ''}","${user.role}","${user.company_card_id || ''}","${user.created_at}"\n`;
         });
-        
         filename = `korisnici_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-      }
-      else if (reportType === 'meals') {
+      } else if (reportType === 'meals') {
         csvContent = '\uFEFF'; // UTF-8 BOM
         csvContent += 'ID,Naziv,Kategorija,Cena (RSD),Status,Dostupnost,Smene,Datum kreiranja\n';
-        
         meals.forEach(meal => {
           const shiftsStr = meal.shifts?.join(', ') || '';
           csvContent += `"${meal.id}","${meal.name}","${meal.category}","${meal.price}","${meal.status}","${meal.is_available ? 'Da' : 'Ne'}","${shiftsStr}","${meal.created_at}"\n`;
         });
-        
         filename = `obroci_${format(new Date(), 'yyyy-MM-dd')}.csv`;
       }
 
       // Create and download the CSV file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;'
+      });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      
       link.setAttribute('href', url);
       link.setAttribute('download', filename);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       toast({
         title: "Izveštaj preuzet",
-        description: `CSV fajl ${filename} je uspešno preuzet`,
+        description: `CSV fajl ${filename} je uspešno preuzet`
       });
     } catch (error) {
       console.error('Error exporting report:', error);
@@ -641,9 +583,7 @@ export function AdminDashboard() {
       });
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-corporate/5 to-background">
+  return <div className="min-h-screen bg-gradient-to-br from-corporate/5 to-background">
       <div className="container mx-auto p-6">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -671,11 +611,7 @@ export function AdminDashboard() {
                 <Users className="h-5 w-5 text-corporate" />
                 <div>
                   <p className="text-sm text-muted-foreground">Ukupno porudžbina</p>
-                  {statsLoading ? (
-                    <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-2xl font-bold">{stats.totalOrders}</p>
-                  )}
+                  {statsLoading ? <div className="h-8 w-16 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.totalOrders}</p>}
                 </div>
               </div>
             </CardContent>
@@ -687,11 +623,7 @@ export function AdminDashboard() {
                 <BarChart3 className="h-5 w-5 text-success" />
                 <div>
                   <p className="text-sm text-muted-foreground">Ukupan prihod</p>
-                  {statsLoading ? (
-                    <div className="h-8 w-24 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} RSD</p>
-                  )}
+                  {statsLoading ? <div className="h-8 w-24 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} RSD</p>}
                 </div>
               </div>
             </CardContent>
@@ -703,11 +635,7 @@ export function AdminDashboard() {
                 <Users className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Zaposleni poručili</p>
-                  {statsLoading ? (
-                    <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-2xl font-bold">{stats.employeesOrdered}</p>
-                  )}
+                  {statsLoading ? <div className="h-8 w-16 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.employeesOrdered}</p>}
                 </div>
               </div>
             </CardContent>
@@ -719,11 +647,7 @@ export function AdminDashboard() {
                 <Calendar className="h-5 w-5 text-warning" />
                 <div>
                   <p className="text-sm text-muted-foreground">Prosečna porudžbina</p>
-                  {statsLoading ? (
-                    <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-                  ) : (
-                    <p className="text-2xl font-bold">{stats.avgOrderValue} RSD</p>
-                  )}
+                  {statsLoading ? <div className="h-8 w-20 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.avgOrderValue} RSD</p>}
                 </div>
               </div>
             </CardContent>
@@ -750,12 +674,7 @@ export function AdminDashboard() {
                       <CardDescription>Filtriraj i pretraži porudžbine</CardDescription>
                     </div>
                     <div className="flex gap-2">
-                      <Input 
-                        placeholder="Pretraži po nazivu obroka..."
-                        value={orderSearch}
-                        onChange={(e) => setOrderSearch(e.target.value)}
-                        className="w-48"
-                      />
+                      <Input placeholder="Pretraži po nazivu obroka..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="w-48" />
                       <Button variant="outline" size="sm" onClick={handleSearchOrders}>
                         <Search className="h-4 w-4 mr-1" />
                         Pretraži
@@ -764,18 +683,14 @@ export function AdminDashboard() {
                   </div>
                   <div className="flex gap-4 mt-4">
                     <div className="flex gap-2">
-                      <Input 
-                        type="date"
-                        placeholder="Od datuma"
-                        value={orderDateRange.startDate}
-                        onChange={(e) => setOrderDateRange({...orderDateRange, startDate: e.target.value})}
-                      />
-                      <Input 
-                        type="date"
-                        placeholder="Do datuma"
-                        value={orderDateRange.endDate}
-                        onChange={(e) => setOrderDateRange({...orderDateRange, endDate: e.target.value})}
-                      />
+                      <Input type="date" placeholder="Od datuma" value={orderDateRange.startDate} onChange={e => setOrderDateRange({
+                      ...orderDateRange,
+                      startDate: e.target.value
+                    })} />
+                      <Input type="date" placeholder="Do datuma" value={orderDateRange.endDate} onChange={e => setOrderDateRange({
+                      ...orderDateRange,
+                      endDate: e.target.value
+                    })} />
                       <Button variant="outline" size="sm" onClick={handleDateRangeFilter}>
                         <Filter className="h-4 w-4 mr-1" />
                         Filtriraj
@@ -785,15 +700,11 @@ export function AdminDashboard() {
                 </CardHeader>
               </Card>
 
-              {ordersLoading ? (
-                <Card>
+              {ordersLoading ? <Card>
                   <CardContent className="p-6">
                     <div className="text-center py-8">Učitavanje...</div>
                   </CardContent>
-                </Card>
-              ) : (
-                <OrderPivotTable orders={orders} />
-              )}
+                </Card> : <OrderPivotTable orders={orders} />}
             </div>
           </TabsContent>
 
@@ -810,7 +721,10 @@ export function AdminDashboard() {
                   </div>
                   <Sheet open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>
                     <SheetTrigger asChild>
-                      <Button onClick={() => { resetMealForm(); setIsAddMealOpen(true); }}>
+                      <Button onClick={() => {
+                      resetMealForm();
+                      setIsAddMealOpen(true);
+                    }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Dodaj obrok
                       </Button>
@@ -822,41 +736,34 @@ export function AdminDashboard() {
                       <div className="space-y-4 mt-6">
                         <div>
                           <Label htmlFor="meal-name">Naziv obroka *</Label>
-                          <Input 
-                            id="meal-name"
-                            value={mealForm.name}
-                            onChange={(e) => setMealForm({...mealForm, name: e.target.value})}
-                            placeholder="npr. Piletina sa rižom"
-                          />
+                          <Input id="meal-name" value={mealForm.name} onChange={e => setMealForm({
+                          ...mealForm,
+                          name: e.target.value
+                        })} placeholder="npr. Piletina sa rižom" />
                         </div>
                         
                         <div>
                           <Label htmlFor="meal-price">Cena (RSD) *</Label>
-                          <Input 
-                            id="meal-price"
-                            type="number"
-                            value={mealForm.price}
-                            onChange={(e) => setMealForm({...mealForm, price: e.target.value})}
-                            placeholder="450"
-                          />
+                          <Input id="meal-price" type="number" value={mealForm.price} onChange={e => setMealForm({
+                          ...mealForm,
+                          price: e.target.value
+                        })} placeholder="450" />
                         </div>
                         
                         <div>
                           <Label htmlFor="meal-description">Opis</Label>
-                          <Textarea 
-                            id="meal-description"
-                            value={mealForm.description}
-                            onChange={(e) => setMealForm({...mealForm, description: e.target.value})}
-                            placeholder="Kratak opis obroka..."
-                          />
+                          <Textarea id="meal-description" value={mealForm.description} onChange={e => setMealForm({
+                          ...mealForm,
+                          description: e.target.value
+                        })} placeholder="Kratak opis obroka..." />
                         </div>
                         
                         <div>
                           <Label>Status</Label>
-                          <Select 
-                            value={mealForm.status} 
-                            onValueChange={(value: "aktivan" | "neaktivan") => setMealForm({...mealForm, status: value})}
-                          >
+                          <Select value={mealForm.status} onValueChange={(value: "aktivan" | "neaktivan") => setMealForm({
+                          ...mealForm,
+                          status: value
+                        })}>
                             <SelectTrigger>
                               <SelectValue placeholder="Odaberite status" />
                             </SelectTrigger>
@@ -870,59 +777,42 @@ export function AdminDashboard() {
                         <div>
                           <Label>Dostupnost u smenama</Label>
                           <div className="flex gap-4 mt-2">
-                            {["prva", "druga", "treća"].map((shift) => (
-                              <div key={shift} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={shift}
-                                  checked={mealForm.shifts.includes(shift)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setMealForm({...mealForm, shifts: [...mealForm.shifts, shift]});
-                                    } else {
-                                      setMealForm({...mealForm, shifts: mealForm.shifts.filter(s => s !== shift)});
-                                    }
-                                  }}
-                                />
+                            {["prva", "druga", "treća"].map(shift => <div key={shift} className="flex items-center space-x-2">
+                                <Checkbox id={shift} checked={mealForm.shifts.includes(shift)} onCheckedChange={checked => {
+                              if (checked) {
+                                setMealForm({
+                                  ...mealForm,
+                                  shifts: [...mealForm.shifts, shift]
+                                });
+                              } else {
+                                setMealForm({
+                                  ...mealForm,
+                                  shifts: mealForm.shifts.filter(s => s !== shift)
+                                });
+                              }
+                            }} />
                                 <label htmlFor={shift} className="text-sm font-medium capitalize">
                                   {shift} smena
                                 </label>
-                              </div>
-                            ))}
+                              </div>)}
                           </div>
                         </div>
 
                         <div>
                           <Label>Slika obroka</Label>
                           <div className="flex gap-2 mt-2">
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              onClick={() => fileInputRef.current?.click()}
-                              className="flex-1"
-                            >
+                            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-1">
                               <Upload className="h-4 w-4 mr-2" />
                               {imageFile ? imageFile.name : "Učitaj sliku"}
                             </Button>
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) setImageFile(file);
-                              }}
-                              className="hidden"
-                            />
+                            <input ref={fileInputRef} type="file" accept="image/*" onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) setImageFile(file);
+                          }} className="hidden" />
                           </div>
-                          {(imageFile || mealForm.image_url) && (
-                            <div className="mt-2">
-                              <img 
-                                src={imageFile ? URL.createObjectURL(imageFile) : mealForm.image_url} 
-                                alt="Preview" 
-                                className="w-full h-32 object-cover rounded-md"
-                              />
-                            </div>
-                          )}
+                          {(imageFile || mealForm.image_url) && <div className="mt-2">
+                              <img src={imageFile ? URL.createObjectURL(imageFile) : mealForm.image_url} alt="Preview" className="w-full h-32 object-cover rounded-md" />
+                            </div>}
                         </div>
                         
                         <Button onClick={handleCreateMeal} className="w-full" disabled={mealsLoading}>
@@ -935,22 +825,15 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {mealsLoading ? (
-                  <div className="text-center py-8">Učitavanje...</div>
-                ) : (
-                  <div className="grid gap-4">
-                    {meals.map((meal) => (
-                      <div key={meal.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                         onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
-                      >
+                {mealsLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="grid gap-4">
+                    {meals.map(meal => <div key={meal.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMeal({
+                  ...meal,
+                  shifts: meal.shifts || []
+                })}>
                         <div className="w-16 h-16 rounded-md overflow-hidden bg-muted">
-                          {meal.image_url ? (
-                            <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
+                          {meal.image_url ? <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                               <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
+                            </div>}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -967,58 +850,51 @@ export function AdminDashboard() {
                             </span>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      </div>)}
+                  </div>}
               </CardContent>
             </Card>
 
             {/* Edit Meal Sheet */}
-            <Sheet open={!!selectedMeal} onOpenChange={() => { 
-              setSelectedMeal(null); 
-              setImageFile(null); 
-            }}>
+            <Sheet open={!!selectedMeal} onOpenChange={() => {
+            setSelectedMeal(null);
+            setImageFile(null);
+          }}>
               <SheetContent className="overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Izmeni obrok</SheetTitle>
                 </SheetHeader>
-                {selectedMeal && (
-                  <div className="space-y-4 mt-6 pb-6">
+                {selectedMeal && <div className="space-y-4 mt-6 pb-6">
                     <div>
                       <Label htmlFor="edit-meal-name">Naziv obroka *</Label>
-                      <Input 
-                        id="edit-meal-name"
-                        value={selectedMeal.name}
-                        onChange={(e) => setSelectedMeal({...selectedMeal, name: e.target.value})}
-                      />
+                      <Input id="edit-meal-name" value={selectedMeal.name} onChange={e => setSelectedMeal({
+                    ...selectedMeal,
+                    name: e.target.value
+                  })} />
                     </div>
                     
                     <div>
                       <Label htmlFor="edit-meal-price">Cena (RSD) *</Label>
-                      <Input 
-                        id="edit-meal-price"
-                        type="number"
-                        value={selectedMeal.price}
-                        onChange={(e) => setSelectedMeal({...selectedMeal, price: e.target.value})}
-                      />
+                      <Input id="edit-meal-price" type="number" value={selectedMeal.price} onChange={e => setSelectedMeal({
+                    ...selectedMeal,
+                    price: e.target.value
+                  })} />
                     </div>
                     
                     <div>
                       <Label htmlFor="edit-meal-description">Opis</Label>
-                      <Textarea 
-                        id="edit-meal-description"
-                        value={selectedMeal.description || ''}
-                        onChange={(e) => setSelectedMeal({...selectedMeal, description: e.target.value})}
-                      />
+                      <Textarea id="edit-meal-description" value={selectedMeal.description || ''} onChange={e => setSelectedMeal({
+                    ...selectedMeal,
+                    description: e.target.value
+                  })} />
                     </div>
                     
                     <div>
                       <Label>Status</Label>
-                      <Select 
-                        value={selectedMeal.status} 
-                        onValueChange={(value: "aktivan" | "neaktivan") => setSelectedMeal({...selectedMeal, status: value})}
-                      >
+                      <Select value={selectedMeal.status} onValueChange={(value: "aktivan" | "neaktivan") => setSelectedMeal({
+                    ...selectedMeal,
+                    status: value
+                  })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -1032,74 +908,52 @@ export function AdminDashboard() {
                     <div>
                       <Label>Dostupnost u smenama</Label>
                       <div className="flex gap-4 mt-2">
-                        {["prva", "druga", "treća"].map((shift) => (
-                          <div key={shift} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`edit-${shift}`}
-                              checked={selectedMeal.shifts?.includes(shift)}
-                              onCheckedChange={(checked) => {
-                                const currentShifts = selectedMeal.shifts || [];
-                                if (checked) {
-                                  setSelectedMeal({...selectedMeal, shifts: [...currentShifts, shift]});
-                                } else {
-                                  setSelectedMeal({...selectedMeal, shifts: currentShifts.filter(s => s !== shift)});
-                                }
-                              }}
-                            />
+                        {["prva", "druga", "treća"].map(shift => <div key={shift} className="flex items-center space-x-2">
+                            <Checkbox id={`edit-${shift}`} checked={selectedMeal.shifts?.includes(shift)} onCheckedChange={checked => {
+                        const currentShifts = selectedMeal.shifts || [];
+                        if (checked) {
+                          setSelectedMeal({
+                            ...selectedMeal,
+                            shifts: [...currentShifts, shift]
+                          });
+                        } else {
+                          setSelectedMeal({
+                            ...selectedMeal,
+                            shifts: currentShifts.filter(s => s !== shift)
+                          });
+                        }
+                      }} />
                             <label htmlFor={`edit-${shift}`} className="text-sm font-medium capitalize">
                               {shift} smena
                             </label>
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
                     </div>
 
                     <div>
                       <Label>Slika obroka</Label>
                       <div className="flex gap-2 mt-2">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex-1"
-                        >
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-1">
                           <Upload className="h-4 w-4 mr-2" />
                           {imageFile ? imageFile.name : "Promeni sliku"}
                         </Button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setImageFile(file);
-                          }}
-                          className="hidden"
-                        />
+                        <input ref={fileInputRef} type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) setImageFile(file);
+                    }} className="hidden" />
                       </div>
-                       {(imageFile || selectedMeal.image_url) && (
-                         <div className="mt-2">
-                           <img 
-                             src={imageFile ? URL.createObjectURL(imageFile) : selectedMeal.image_url || ''} 
-                             alt="Preview slike obroka" 
-                             className="w-full h-32 object-cover rounded-md"
-                             onLoad={() => console.log('Image loaded successfully')}
-                             onError={(e) => {
-                               console.error('Image failed to load:', selectedMeal.image_url);
-                               console.log('Image error event:', e);
-                             }}
-                           />
-                         </div>
-                       )}
+                       {(imageFile || selectedMeal.image_url) && <div className="mt-2">
+                           <img src={imageFile ? URL.createObjectURL(imageFile) : selectedMeal.image_url || ''} alt="Preview slike obroka" className="w-full h-32 object-cover rounded-md" onLoad={() => console.log('Image loaded successfully')} onError={e => {
+                      console.error('Image failed to load:', selectedMeal.image_url);
+                      console.log('Image error event:', e);
+                    }} />
+                         </div>}
                     </div>
                     
                     <div className="space-y-2 pt-4">
-                      <Button 
-                        className="w-full" 
-                        onClick={() => {
-                          handleUpdateMeal();
-                        }}
-                      >
+                      <Button className="w-full" onClick={() => {
+                    handleUpdateMeal();
+                  }}>
                         <Save className="h-4 w-4 mr-2" />
                         Sačuvaj izmene
                       </Button>
@@ -1120,20 +974,17 @@ export function AdminDashboard() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={async () => {
-                                await deleteMeal(selectedMeal.id);
-                                setSelectedMeal(null);
-                              }}
-                            >
+                            <AlertDialogAction onClick={async () => {
+                          await deleteMeal(selectedMeal.id);
+                          setSelectedMeal(null);
+                        }}>
                               Obriši
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </SheetContent>
               </Sheet>
           </TabsContent>
@@ -1163,68 +1014,55 @@ export function AdminDashboard() {
                       <div className="space-y-4 mt-6">
                         <div>
                           <Label htmlFor="menu-date">Datum *</Label>
-                          <Input 
-                            id="menu-date"
-                            type="date"
-                            value={menuForm.menu_date}
-                            onChange={(e) => setMenuForm({...menuForm, menu_date: e.target.value})}
-                            min={new Date().toISOString().split('T')[0]}
-                          />
+                          <Input id="menu-date" type="date" value={menuForm.menu_date} onChange={e => setMenuForm({
+                          ...menuForm,
+                          menu_date: e.target.value
+                        })} min={new Date().toISOString().split('T')[0]} />
                         </div>
                         
                         <div>
                           <Label htmlFor="menu-description">Opis</Label>
-                          <Textarea 
-                            id="menu-description"
-                            value={menuForm.description}
-                            onChange={(e) => setMenuForm({...menuForm, description: e.target.value})}
-                            placeholder="Kratak opis jelovnika..."
-                          />
+                          <Textarea id="menu-description" value={menuForm.description} onChange={e => setMenuForm({
+                          ...menuForm,
+                          description: e.target.value
+                        })} placeholder="Kratak opis jelovnika..." />
                         </div>
                         
                         <div>
                           <Label>Pretraži obroke</Label>
                           <div className="flex gap-2 mt-1">
-                            <Input 
-                              placeholder="Pretraži po nazivu..."
-                              value={menuMealSearch}
-                              onChange={(e) => setMenuMealSearch(e.target.value)}
-                            />
+                            <Input placeholder="Pretraži po nazivu..." value={menuMealSearch} onChange={e => setMenuMealSearch(e.target.value)} />
                           </div>
                         </div>
                         
                         <div>
                           <Label>Odaberite obroke</Label>
                           <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
-                            {filteredMenuMeals.map((meal) => (
-                              <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-                                <Checkbox
-                                  id={`menu-meal-${meal.id}`}
-                                  checked={menuForm.selectedMeals.includes(meal.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setMenuForm({...menuForm, selectedMeals: [...menuForm.selectedMeals, meal.id]});
-                                    } else {
-                                      setMenuForm({...menuForm, selectedMeals: menuForm.selectedMeals.filter(id => id !== meal.id)});
-                                    }
-                                  }}
-                                />
+                            {filteredMenuMeals.map(meal => <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                                <Checkbox id={`menu-meal-${meal.id}`} checked={menuForm.selectedMeals.includes(meal.id)} onCheckedChange={checked => {
+                              if (checked) {
+                                setMenuForm({
+                                  ...menuForm,
+                                  selectedMeals: [...menuForm.selectedMeals, meal.id]
+                                });
+                              } else {
+                                setMenuForm({
+                                  ...menuForm,
+                                  selectedMeals: menuForm.selectedMeals.filter(id => id !== meal.id)
+                                });
+                              }
+                            }} />
                                 <div className="w-8 h-8 rounded overflow-hidden bg-muted mr-2">
-                                  {meal.image_url ? (
-                                    <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
+                                  {meal.image_url ? <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                                       <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                  )}
+                                    </div>}
                                 </div>
                                 <div className="flex-1">
                                   <label htmlFor={`menu-meal-${meal.id}`} className="text-sm font-medium cursor-pointer">
                                     {meal.name}
                                   </label>
                                 </div>
-                              </div>
-                            ))}
+                              </div>)}
                           </div>
                         </div>
                         
@@ -1241,53 +1079,37 @@ export function AdminDashboard() {
                 {/* This Week */}
                 <div>
                   <h3 className="text-lg font-medium mb-3">Tekuća nedelja</h3>
-                  {thisWeekMenus.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">Nema jelovnika za tekuću nedelju</p>
-                  ) : (
-                    <div className="grid gap-3">
-                      {thisWeekMenus.map((menu) => (
-                        <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                          onClick={() => setSelectedMenu({...menu})}
-                        >
+                  {thisWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4">Nema jelovnika za tekuću nedelju</p> : <div className="grid gap-3">
+                      {thisWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
+                    ...menu
+                  })}>
                           <div className="flex-1">
                             <p className="font-medium">{menu.name}</p>
-                            {menu.description && (
-                              <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>
-                            )}
+                            {menu.description && <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>}
                             <p className="text-sm text-muted-foreground">
                               {menu.meals?.length || 0} obroka
                             </p>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        </div>)}
+                    </div>}
                 </div>
 
                 {/* Next Week */}
                 <div>
                   <h3 className="text-lg font-medium mb-3">Sledeća nedelja</h3>
-                  {nextWeekMenus.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">Nema jelovnika za sledeću nedelju</p>
-                  ) : (
-                    <div className="grid gap-3">
-                      {nextWeekMenus.map((menu) => (
-                        <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                          onClick={() => setSelectedMenu({...menu})}
-                        >
+                  {nextWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4">Nema jelovnika za sledeću nedelju</p> : <div className="grid gap-3">
+                      {nextWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
+                    ...menu
+                  })}>
                           <div className="flex-1">
                             <p className="font-medium">{menu.name}</p>
-                            {menu.description && (
-                              <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>
-                            )}
+                            {menu.description && <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>}
                             <p className="text-sm text-muted-foreground">
                               {menu.meals?.length || 0} obroka
                             </p>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        </div>)}
+                    </div>}
                 </div>
               </CardContent>
             </Card>
@@ -1298,8 +1120,7 @@ export function AdminDashboard() {
                 <SheetHeader>
                   <SheetTitle>Detalji jelovnika</SheetTitle>
                 </SheetHeader>
-                {selectedMenu && (
-                  <div className="space-y-4 mt-6">
+                {selectedMenu && <div className="space-y-4 mt-6">
                     <div>
                       <Label>Naziv jelovnika</Label>
                       <Input value={selectedMenu.name} disabled />
@@ -1307,70 +1128,57 @@ export function AdminDashboard() {
                     
                     <div>
                       <Label>Datum</Label>
-                      <Input 
-                        type="date"
-                        value={selectedMenu.menu_date}
-                        onChange={(e) => setSelectedMenu({...selectedMenu, menu_date: e.target.value})}
-                      />
+                      <Input type="date" value={selectedMenu.menu_date} onChange={e => setSelectedMenu({
+                    ...selectedMenu,
+                    menu_date: e.target.value
+                  })} />
                     </div>
                     
                     <div>
                       <Label htmlFor="edit-menu-description">Opis</Label>
-                      <Textarea 
-                        id="edit-menu-description"
-                        value={selectedMenu.description || ''}
-                        onChange={(e) => setSelectedMenu({...selectedMenu, description: e.target.value})}
-                      />
+                      <Textarea id="edit-menu-description" value={selectedMenu.description || ''} onChange={e => setSelectedMenu({
+                    ...selectedMenu,
+                    description: e.target.value
+                  })} />
                     </div>
                     
                     <div>
                       <Label>Pretraži obroke</Label>
-                      <Input 
-                        placeholder="Pretraži po nazivu..."
-                        value={menuMealSearch}
-                        onChange={(e) => setMenuMealSearch(e.target.value)}
-                      />
+                      <Input placeholder="Pretraži po nazivu..." value={menuMealSearch} onChange={e => setMenuMealSearch(e.target.value)} />
                     </div>
                     
                     <div>
                       <Label>Obroke u jelovniku</Label>
                       <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
-                        {filteredMenuMeals.map((meal) => (
-                          <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
-                            <Checkbox
-                              id={`edit-menu-meal-${meal.id}`}
-                              checked={selectedMenu.meals?.some((m: any) => m.meal_id === meal.id) || false}
-                              onCheckedChange={(checked) => {
-                                const currentMeals = selectedMenu.meals || [];
-                                if (checked) {
-                                  setSelectedMenu({
-                                    ...selectedMenu,
-                                    meals: [...currentMeals, { meal_id: meal.id, meal: meal }]
-                                  });
-                                } else {
-                                  setSelectedMenu({
-                                    ...selectedMenu,
-                                    meals: currentMeals.filter((m: any) => m.meal_id !== meal.id)
-                                  });
-                                }
-                              }}
-                            />
+                        {filteredMenuMeals.map(meal => <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                            <Checkbox id={`edit-menu-meal-${meal.id}`} checked={selectedMenu.meals?.some((m: any) => m.meal_id === meal.id) || false} onCheckedChange={checked => {
+                        const currentMeals = selectedMenu.meals || [];
+                        if (checked) {
+                          setSelectedMenu({
+                            ...selectedMenu,
+                            meals: [...currentMeals, {
+                              meal_id: meal.id,
+                              meal: meal
+                            }]
+                          });
+                        } else {
+                          setSelectedMenu({
+                            ...selectedMenu,
+                            meals: currentMeals.filter((m: any) => m.meal_id !== meal.id)
+                          });
+                        }
+                      }} />
                             <div className="w-8 h-8 rounded overflow-hidden bg-muted mr-2">
-                              {meal.image_url ? (
-                                <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
+                              {meal.image_url ? <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
                                   <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                              )}
+                                </div>}
                             </div>
                             <div className="flex-1">
                               <label htmlFor={`edit-menu-meal-${meal.id}`} className="text-sm font-medium cursor-pointer">
                                 {meal.name}
                               </label>
                             </div>
-                          </div>
-                        ))}
+                          </div>)}
                       </div>
                     </div>
                     
@@ -1396,8 +1204,7 @@ export function AdminDashboard() {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  </div>
-                )}
+                  </div>}
               </SheetContent>
             </Sheet>
           </TabsContent>
@@ -1414,22 +1221,15 @@ export function AdminDashboard() {
                     <CardDescription>Pregled svih registrovanih korisnika</CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <input
-                      ref={csvInputRef}
-                      type="file"
-                      accept=".csv,.xlsx"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setCsvFile(file);
-                      }}
-                      className="hidden"
-                    />
+                    <input ref={csvInputRef} type="file" accept=".csv,.xlsx" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) setCsvFile(file);
+                  }} className="hidden" />
                     <Button variant="outline" onClick={() => csvInputRef.current?.click()}>
                       <FileText className="h-4 w-4 mr-2" />
                       Uvezi CSV/XLSX
                     </Button>
-                    {csvFile && (
-                      <AlertDialog>
+                    {csvFile && <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline">
                             <Upload className="h-4 w-4 mr-2" />
@@ -1448,11 +1248,13 @@ export function AdminDashboard() {
                             <AlertDialogAction onClick={handleBulkUserImport}>Uvezi</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                      </AlertDialog>}
                     <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                       <SheetTrigger asChild>
-                        <Button onClick={() => { resetUserForm(); setIsAddUserOpen(true); }}>
+                        <Button onClick={() => {
+                        resetUserForm();
+                        setIsAddUserOpen(true);
+                      }}>
                           <Plus className="h-4 w-4 mr-2" />
                           Dodaj korisnika
                         </Button>
@@ -1464,41 +1266,34 @@ export function AdminDashboard() {
                         <div className="space-y-4 mt-6">
                           <div>
                             <Label htmlFor="user-name">Ime i prezime *</Label>
-                            <Input 
-                              id="user-name"
-                              value={userForm.full_name}
-                              onChange={(e) => setUserForm({...userForm, full_name: e.target.value})}
-                              placeholder="Marko Marković"
-                            />
+                            <Input id="user-name" value={userForm.full_name} onChange={e => setUserForm({
+                            ...userForm,
+                            full_name: e.target.value
+                          })} placeholder="Marko Marković" />
                           </div>
                           
                           <div>
                             <Label htmlFor="user-email">Email *</Label>
-                            <Input 
-                              id="user-email"
-                              type="email"
-                              value={userForm.email}
-                              onChange={(e) => setUserForm({...userForm, email: e.target.value})}
-                              placeholder="marko@example.com"
-                            />
+                            <Input id="user-email" type="email" value={userForm.email} onChange={e => setUserForm({
+                            ...userForm,
+                            email: e.target.value
+                          })} placeholder="marko@example.com" />
                           </div>
                           
                           <div>
                             <Label htmlFor="user-phone">Telefon</Label>
-                            <Input 
-                              id="user-phone"
-                              value={userForm.phone}
-                              onChange={(e) => setUserForm({...userForm, phone: e.target.value})}
-                              placeholder="069123456"
-                            />
+                            <Input id="user-phone" value={userForm.phone} onChange={e => setUserForm({
+                            ...userForm,
+                            phone: e.target.value
+                          })} placeholder="069123456" />
                           </div>
                           
                           <div>
                             <Label>Uloga</Label>
-                            <Select 
-                              value={userForm.role} 
-                              onValueChange={(value: "admin" | "employee") => setUserForm({...userForm, role: value})}
-                            >
+                            <Select value={userForm.role} onValueChange={(value: "admin" | "employee") => setUserForm({
+                            ...userForm,
+                            role: value
+                          })}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Odaberite ulogu" />
                               </SelectTrigger>
@@ -1520,14 +1315,8 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {usersLoading ? (
-                  <div className="text-center py-8">Učitavanje...</div>
-                ) : (
-                  <div className="space-y-3">
-                    {users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                        onClick={() => setSelectedUser(user)}
-                      >
+                {usersLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="space-y-3">
+                    {users.map(user => <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedUser(user)}>
                         <div className="flex-1">
                           <p className="font-medium">{user.full_name || 'Bez imena'}</p>
                           <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -1536,7 +1325,7 @@ export function AdminDashboard() {
                             {user.phone && <span className="text-xs text-muted-foreground">{user.phone}</span>}
                           </div>
                         </div>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="outline" size="sm">
@@ -1559,10 +1348,8 @@ export function AdminDashboard() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      </div>)}
+                  </div>}
               </CardContent>
             </Card>
 
@@ -1572,45 +1359,37 @@ export function AdminDashboard() {
                 <SheetHeader>
                   <SheetTitle>Izmeni korisnika</SheetTitle>
                 </SheetHeader>
-                {selectedUser && (
-                  <div className="space-y-4 mt-6">
+                {selectedUser && <div className="space-y-4 mt-6">
                     <div>
                       <Label htmlFor="edit-user-name">Ime i prezime</Label>
-                      <Input 
-                        id="edit-user-name"
-                        value={selectedUser.full_name || ''}
-                        onChange={(e) => setSelectedUser({...selectedUser, full_name: e.target.value})}
-                        placeholder="Marko Marković"
-                      />
+                      <Input id="edit-user-name" value={selectedUser.full_name || ''} onChange={e => setSelectedUser({
+                    ...selectedUser,
+                    full_name: e.target.value
+                  })} placeholder="Marko Marković" />
                     </div>
                     
                     <div>
                       <Label htmlFor="edit-user-email">Email</Label>
-                      <Input 
-                        id="edit-user-email"
-                        type="email"
-                        value={selectedUser.email || ''}
-                        onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
-                        placeholder="marko@example.com"
-                      />
+                      <Input id="edit-user-email" type="email" value={selectedUser.email || ''} onChange={e => setSelectedUser({
+                    ...selectedUser,
+                    email: e.target.value
+                  })} placeholder="marko@example.com" />
                     </div>
                     
                     <div>
                       <Label htmlFor="edit-user-phone">Telefon</Label>
-                      <Input 
-                        id="edit-user-phone"
-                        value={selectedUser.phone || ''}
-                        onChange={(e) => setSelectedUser({...selectedUser, phone: e.target.value})}
-                        placeholder="069123456"
-                      />
+                      <Input id="edit-user-phone" value={selectedUser.phone || ''} onChange={e => setSelectedUser({
+                    ...selectedUser,
+                    phone: e.target.value
+                  })} placeholder="069123456" />
                     </div>
                     
                     <div>
                       <Label>Uloga</Label>
-                      <Select 
-                        value={selectedUser.role} 
-                        onValueChange={(value) => setSelectedUser({...selectedUser, role: value})}
-                      >
+                      <Select value={selectedUser.role} onValueChange={value => setSelectedUser({
+                    ...selectedUser,
+                    role: value
+                  })}>
                         <SelectTrigger>
                           <SelectValue placeholder="Odaberite ulogu" />
                         </SelectTrigger>
@@ -1639,8 +1418,8 @@ export function AdminDashboard() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Otkaži</AlertDialogCancel>
                             <AlertDialogAction onClick={() => {
-                              handleUpdateUser();
-                            }}>Sačuvaj</AlertDialogAction>
+                          handleUpdateUser();
+                        }}>Sačuvaj</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -1661,20 +1440,17 @@ export function AdminDashboard() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={async () => {
-                                await deleteUser(selectedUser.id);
-                                setSelectedUser(null);
-                              }}
-                            >
+                            <AlertDialogAction onClick={async () => {
+                          await deleteUser(selectedUser.id);
+                          setSelectedUser(null);
+                        }}>
                               Obriši
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                  </div>
-                )}
+                  </div>}
               </SheetContent>
             </Sheet>
           </TabsContent>
@@ -1702,26 +1478,22 @@ export function AdminDashboard() {
                     </Select>
                   </div>
                   
-                  {(reportType === 'orders' || reportType === 'revenue') && (
-                    <div className="grid grid-cols-2 gap-4">
+                  {(reportType === 'orders' || reportType === 'revenue') && <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>Od datuma</Label>
-                        <Input 
-                          type="date" 
-                          value={reportDateRange.startDate}
-                          onChange={(e) => setReportDateRange({...reportDateRange, startDate: e.target.value})}
-                        />
+                        <Input type="date" value={reportDateRange.startDate} onChange={e => setReportDateRange({
+                      ...reportDateRange,
+                      startDate: e.target.value
+                    })} />
                       </div>
                       <div>
                         <Label>Do datuma</Label>
-                        <Input 
-                          type="date" 
-                          value={reportDateRange.endDate}
-                          onChange={(e) => setReportDateRange({...reportDateRange, endDate: e.target.value})}
-                        />
+                        <Input type="date" value={reportDateRange.endDate} onChange={e => setReportDateRange({
+                      ...reportDateRange,
+                      endDate: e.target.value
+                    })} />
                       </div>
-                    </div>
-                  )}
+                    </div>}
                   
                   <Button onClick={handleExportReport} className="w-full">
                     <Download className="h-4 w-4 mr-2" />
@@ -1732,7 +1504,7 @@ export function AdminDashboard() {
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Brzi statistike</CardTitle>
+                  <CardTitle>Brze statistike</CardTitle>
                   <CardDescription>Pregled ključnih pokazatelja</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1766,6 +1538,5 @@ export function AdminDashboard() {
 
       {/* AI Help Chat */}
       <AIHelpChat />
-    </div>
-  );
+    </div>;
 }
