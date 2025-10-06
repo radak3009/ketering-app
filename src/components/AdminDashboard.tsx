@@ -584,19 +584,19 @@ export function AdminDashboard() {
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-corporate/5 to-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+      <div className="container mx-auto p-3 md:p-6">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-corporate rounded-lg">
-                <BarChart3 className="h-6 w-6 text-corporate-foreground" />
+                <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-corporate-foreground" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-                <p className="text-muted-foreground">Upravljanje keteringom i izveštajima</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Panel</h1>
+                <p className="text-sm md:text-base text-muted-foreground">Upravljanje keteringom i izveštajima</p>
               </div>
             </div>
-            <Button onClick={signOut} variant="outline" size="sm">
+            <Button onClick={signOut} variant="outline" size="sm" className="w-full md:w-auto">
               <LogOut className="h-4 w-4 mr-2" />
               Odjavi se
             </Button>
@@ -604,94 +604,94 @@ export function AdminDashboard() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-6 md:mb-8">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-corporate" />
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-corporate" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Ukupno porudžbina</p>
-                  {statsLoading ? <div className="h-8 w-16 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.totalOrders}</p>}
+                  <p className="text-xs md:text-sm text-muted-foreground">Ukupno porudžbina</p>
+                  {statsLoading ? <div className="h-6 md:h-8 w-12 md:w-16 bg-muted animate-pulse rounded" /> : <p className="text-xl md:text-2xl font-bold">{stats.totalOrders}</p>}
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-success" />
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-success" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Ukupan prihod</p>
-                  {statsLoading ? <div className="h-8 w-24 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} RSD</p>}
+                  <p className="text-xs md:text-sm text-muted-foreground">Ukupan prihod</p>
+                  {statsLoading ? <div className="h-6 md:h-8 w-16 md:w-24 bg-muted animate-pulse rounded" /> : <p className="text-xl md:text-2xl font-bold">{stats.totalRevenue.toLocaleString()} RSD</p>}
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Zaposleni poručili</p>
-                  {statsLoading ? <div className="h-8 w-16 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.employeesOrdered}</p>}
+                  <p className="text-xs md:text-sm text-muted-foreground">Zaposleni poručili</p>
+                  {statsLoading ? <div className="h-6 md:h-8 w-12 md:w-16 bg-muted animate-pulse rounded" /> : <p className="text-xl md:text-2xl font-bold">{stats.employeesOrdered}</p>}
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-warning" />
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                <Calendar className="h-4 w-4 md:h-5 md:w-5 text-warning" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Prosečna porudžbina</p>
-                  {statsLoading ? <div className="h-8 w-20 bg-muted animate-pulse rounded" /> : <p className="text-2xl font-bold">{stats.avgOrderValue} RSD</p>}
+                  <p className="text-xs md:text-sm text-muted-foreground">Prosečna porudžbina</p>
+                  {statsLoading ? <div className="h-6 md:h-8 w-16 md:w-20 bg-muted animate-pulse rounded" /> : <p className="text-xl md:text-2xl font-bold">{stats.avgOrderValue} RSD</p>}
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="meals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="orders">Porudžbine</TabsTrigger>
-            <TabsTrigger value="meals">Obroci</TabsTrigger>
-            <TabsTrigger value="menus">Jelovnici</TabsTrigger>
-            <TabsTrigger value="users">Korisnici</TabsTrigger>
-            <TabsTrigger value="feedback">Utisci</TabsTrigger>
-            <TabsTrigger value="reports">Izveštaji</TabsTrigger>
+        <Tabs defaultValue="meals" className="space-y-4 md:space-y-6">
+          <TabsList className="flex overflow-x-auto md:grid w-full md:grid-cols-6 h-auto p-1">
+            <TabsTrigger value="orders" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Porudžbine</TabsTrigger>
+            <TabsTrigger value="meals" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Obroci</TabsTrigger>
+            <TabsTrigger value="menus" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Jelovnici</TabsTrigger>
+            <TabsTrigger value="users" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Korisnici</TabsTrigger>
+            <TabsTrigger value="feedback" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Utisci</TabsTrigger>
+            <TabsTrigger value="reports" className="whitespace-nowrap text-xs md:text-sm px-2 md:px-3">Izveštaji</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders">
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>Pregled porudžbina</CardTitle>
-                      <CardDescription>Filtriraj i pretraži porudžbine</CardDescription>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+                      <div>
+                        <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
+                        <CardDescription className="text-xs md:text-sm">Filtriraj i pretraži porudžbine</CardDescription>
+                      </div>
+                      <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <Input placeholder="Pretraži po nazivu obroka..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="w-full md:w-48 h-10 md:h-9" />
+                        <Button variant="outline" size="sm" onClick={handleSearchOrders} className="w-full md:w-auto h-10 md:h-9">
+                          <Search className="h-4 w-4 mr-1" />
+                          Pretraži
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Input placeholder="Pretraži po nazivu obroka..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="w-48" />
-                      <Button variant="outline" size="sm" onClick={handleSearchOrders}>
-                        <Search className="h-4 w-4 mr-1" />
-                        Pretraži
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 mt-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-col md:flex-row gap-2">
                       <Input type="date" placeholder="Od datuma" value={orderDateRange.startDate} onChange={e => setOrderDateRange({
                       ...orderDateRange,
                       startDate: e.target.value
-                    })} />
+                    })} className="w-full h-10 md:h-9" />
                       <Input type="date" placeholder="Do datuma" value={orderDateRange.endDate} onChange={e => setOrderDateRange({
                       ...orderDateRange,
                       endDate: e.target.value
-                    })} />
-                      <Button variant="outline" size="sm" onClick={handleDateRangeFilter}>
+                    })} className="w-full h-10 md:h-9" />
+                      <Button variant="outline" size="sm" onClick={handleDateRangeFilter} className="w-full md:w-auto h-10 md:h-9">
                         <Filter className="h-4 w-4 mr-1" />
                         Filtriraj
                       </Button>
@@ -711,25 +711,25 @@ export function AdminDashboard() {
           <TabsContent value="meals">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <ChefHat className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                      <ChefHat className="h-4 w-4 md:h-5 md:w-5" />
                       Upravljanje obrocima
                     </CardTitle>
-                    <CardDescription>Svi obroci u sistemu</CardDescription>
+                    <CardDescription className="text-xs md:text-sm">Svi obroci u sistemu</CardDescription>
                   </div>
                   <Sheet open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>
                     <SheetTrigger asChild>
                       <Button onClick={() => {
                       resetMealForm();
                       setIsAddMealOpen(true);
-                    }}>
+                    }} className="w-full md:w-auto">
                         <Plus className="h-4 w-4 mr-2" />
                         Dodaj obrok
                       </Button>
                     </SheetTrigger>
-                    <SheetContent>
+                    <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                       <SheetHeader>
                         <SheetTitle>Dodaj novi obrok</SheetTitle>
                       </SheetHeader>
@@ -825,24 +825,24 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {mealsLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="grid gap-4">
-                    {meals.map(meal => <div key={meal.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMeal({
+                {mealsLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="grid gap-3 md:gap-4">
+                    {meals.map(meal => <div key={meal.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMeal({
                   ...meal,
                   shifts: meal.shifts || []
                 })}>
-                        <div className="w-16 h-16 rounded-md overflow-hidden bg-muted">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
                           {meal.image_url ? <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                              <ImageIcon className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
                             </div>}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{meal.name}</p>
-                            <Badge variant={meal.status === "aktivan" ? "default" : "secondary"}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-sm md:text-base truncate">{meal.name}</p>
+                            <Badge variant={meal.status === "aktivan" ? "default" : "secondary"} className="text-xs">
                               {meal.status}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{meal.price} RSD</p>
+                          <p className="text-xs md:text-sm text-muted-foreground">{meal.price} RSD</p>
                           <div className="flex items-center gap-1 mt-1">
                             <Clock className="h-3 w-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">
@@ -860,7 +860,7 @@ export function AdminDashboard() {
             setSelectedMeal(null);
             setImageFile(null);
           }}>
-              <SheetContent className="overflow-y-auto">
+              <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Izmeni obrok</SheetTitle>
                 </SheetHeader>
@@ -992,22 +992,22 @@ export function AdminDashboard() {
           <TabsContent value="menus">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5" />
+                    <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                      <Calendar className="h-4 w-4 md:h-5 md:w-5" />
                       Upravljanje jelovnicima
                     </CardTitle>
-                    <CardDescription>Pregled i kreiranje jelovnika</CardDescription>
+                    <CardDescription className="text-xs md:text-sm">Pregled i kreiranje jelovnika</CardDescription>
                   </div>
                   <Sheet open={isCreateMenuOpen} onOpenChange={setIsCreateMenuOpen}>
                     <SheetTrigger asChild>
-                      <Button onClick={() => setIsCreateMenuOpen(true)}>
+                      <Button onClick={() => setIsCreateMenuOpen(true)} className="w-full md:w-auto">
                         <Plus className="h-4 w-4 mr-2" />
                         Kreiraj jelovnik
                       </Button>
                     </SheetTrigger>
-                    <SheetContent>
+                    <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                       <SheetHeader>
                         <SheetTitle>Kreiraj novi jelovnik</SheetTitle>
                       </SheetHeader>
@@ -1075,18 +1075,18 @@ export function AdminDashboard() {
                   </Sheet>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 md:space-y-6">
                 {/* This Week */}
                 <div>
-                  <h3 className="text-lg font-medium mb-3">Tekuća nedelja</h3>
-                  {thisWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4">Nema jelovnika za tekuću nedelju</p> : <div className="grid gap-3">
-                      {thisWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
+                  <h3 className="text-base md:text-lg font-medium mb-3">Tekuća nedelja</h3>
+                  {thisWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4 text-sm">Nema jelovnika za tekuću nedelju</p> : <div className="grid gap-2 md:gap-3">
+                      {thisWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
                     ...menu
                   })}>
-                          <div className="flex-1">
-                            <p className="font-medium">{menu.name}</p>
-                            {menu.description && <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>}
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
+                            {menu.description && <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{menu.description}</p>}
+                            <p className="text-xs md:text-sm text-muted-foreground">
                               {menu.meals?.length || 0} obroka
                             </p>
                           </div>
@@ -1096,15 +1096,15 @@ export function AdminDashboard() {
 
                 {/* Next Week */}
                 <div>
-                  <h3 className="text-lg font-medium mb-3">Sledeća nedelja</h3>
-                  {nextWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4">Nema jelovnika za sledeću nedelju</p> : <div className="grid gap-3">
-                      {nextWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
+                  <h3 className="text-base md:text-lg font-medium mb-3">Sledeća nedelja</h3>
+                  {nextWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4 text-sm">Nema jelovnika za sledeću nedelju</p> : <div className="grid gap-2 md:gap-3">
+                      {nextWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
                     ...menu
                   })}>
-                          <div className="flex-1">
-                            <p className="font-medium">{menu.name}</p>
-                            {menu.description && <p className="text-sm text-muted-foreground mt-1">{menu.description}</p>}
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
+                            {menu.description && <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{menu.description}</p>}
+                            <p className="text-xs md:text-sm text-muted-foreground">
                               {menu.meals?.length || 0} obroka
                             </p>
                           </div>
@@ -1116,7 +1116,7 @@ export function AdminDashboard() {
 
             {/* Edit Menu Sheet */}
             <Sheet open={!!selectedMenu} onOpenChange={() => setSelectedMenu(null)}>
-              <SheetContent>
+              <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Detalji jelovnika</SheetTitle>
                 </SheetHeader>
@@ -1212,26 +1212,28 @@ export function AdminDashboard() {
           <TabsContent value="users">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Upravljanje korisnicima
-                    </CardTitle>
-                    <CardDescription>Pregled svih registrovanih korisnika</CardDescription>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                        <Users className="h-4 w-4 md:h-5 md:w-5" />
+                        Upravljanje korisnicima
+                      </CardTitle>
+                      <CardDescription className="text-xs md:text-sm">Pregled svih registrovanih korisnika</CardDescription>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col md:flex-row gap-2">
                     <input ref={csvInputRef} type="file" accept=".csv,.xlsx" onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) setCsvFile(file);
                   }} className="hidden" />
-                    <Button variant="outline" onClick={() => csvInputRef.current?.click()}>
+                    <Button variant="outline" onClick={() => csvInputRef.current?.click()} className="w-full md:w-auto">
                       <FileText className="h-4 w-4 mr-2" />
                       Uvezi CSV/XLSX
                     </Button>
                     {csvFile && <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline">
+                          <Button variant="outline" className="w-full md:w-auto">
                             <Upload className="h-4 w-4 mr-2" />
                             Uvezi ({csvFile.name})
                           </Button>
@@ -1254,12 +1256,12 @@ export function AdminDashboard() {
                         <Button onClick={() => {
                         resetUserForm();
                         setIsAddUserOpen(true);
-                      }}>
+                      }} className="w-full md:w-auto">
                           <Plus className="h-4 w-4 mr-2" />
                           Dodaj korisnika
                         </Button>
                       </SheetTrigger>
-                      <SheetContent>
+                      <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                         <SheetHeader>
                           <SheetTitle>Dodaj novog korisnika</SheetTitle>
                         </SheetHeader>
@@ -1315,20 +1317,20 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {usersLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="space-y-3">
-                    {users.map(user => <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedUser(user)}>
-                        <div className="flex-1">
-                          <p className="font-medium">{user.full_name || 'Bez imena'}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline">{user.role}</Badge>
+                {usersLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="space-y-2 md:space-y-3">
+                    {users.map(user => <div key={user.id} className="flex items-center justify-between gap-3 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedUser(user)}>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm md:text-base truncate">{user.full_name || 'Bez imena'}</p>
+                          <p className="text-xs md:text-sm text-muted-foreground truncate">{user.email}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <Badge variant="outline" className="text-xs">{user.role}</Badge>
                             {user.phone && <span className="text-xs text-muted-foreground">{user.phone}</span>}
                           </div>
                         </div>
-                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                        <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" className="h-8 w-8 md:h-9 md:w-auto md:px-3">
                                 <Mail className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -1355,7 +1357,7 @@ export function AdminDashboard() {
 
             {/* Edit User Sheet */}
             <Sheet open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
-              <SheetContent>
+              <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Izmeni korisnika</SheetTitle>
                 </SheetHeader>

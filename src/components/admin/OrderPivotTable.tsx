@@ -93,59 +93,61 @@ export function OrderPivotTable({ orders }: OrderPivotTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pivot tabela</CardTitle>
-        <CardDescription>Pregled porudžbina po obrocima i danima</CardDescription>
+        <CardTitle className="text-lg md:text-xl">Pivot tabela</CardTitle>
+        <CardDescription className="text-xs md:text-sm">Pregled porudžbina po obrocima i danima</CardDescription>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="font-bold bg-muted/50 sticky left-0 z-10">Obrok / Dan</TableHead>
-              {DAYS_OF_WEEK.map(day => (
-                <TableHead key={day} className="text-center bg-muted/30">
-                  <Badge variant="secondary" className="whitespace-nowrap">
-                    {day}
-                  </Badge>
-                </TableHead>
+      <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+        <div className="min-w-[600px]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-bold bg-muted/50 sticky left-0 z-10 text-xs md:text-sm p-2 md:p-4">Obrok / Dan</TableHead>
+                {DAYS_OF_WEEK.map(day => (
+                  <TableHead key={day} className="text-center bg-muted/30 p-2 md:p-4">
+                    <Badge variant="secondary" className="whitespace-nowrap text-xs">
+                      {day}
+                    </Badge>
+                  </TableHead>
+                ))}
+                <TableHead className="text-center font-bold bg-muted/50 text-xs md:text-sm p-2 md:p-4">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedMeals.map((mealName) => (
+                <TableRow key={mealName}>
+                  <TableCell className="font-medium sticky left-0 z-10 bg-background text-xs md:text-sm p-2 md:p-4">
+                    {mealName}
+                  </TableCell>
+                  {DAYS_OF_WEEK.map(day => {
+                    const value = pivotData[mealName][day];
+                    return (
+                      <TableCell 
+                        key={day} 
+                        className={`text-center text-xs md:text-sm p-2 md:p-4 ${value > 0 ? 'font-medium' : 'text-muted-foreground'}`}
+                      >
+                        {value || 0}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-center font-bold bg-muted/20 text-xs md:text-sm p-2 md:p-4">
+                    {pivotData[mealName].total}
+                  </TableCell>
+                </TableRow>
               ))}
-              <TableHead className="text-center font-bold bg-muted/50">Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedMeals.map((mealName) => (
-              <TableRow key={mealName}>
-                <TableCell className="font-medium sticky left-0 z-10 bg-background">
-                  {mealName}
-                </TableCell>
-                {DAYS_OF_WEEK.map(day => {
-                  const value = pivotData[mealName][day];
-                  return (
-                    <TableCell 
-                      key={day} 
-                      className={`text-center ${value > 0 ? 'font-medium' : 'text-muted-foreground'}`}
-                    >
-                      {value || 0}
-                    </TableCell>
-                  );
-                })}
-                <TableCell className="text-center font-bold bg-muted/20">
-                  {pivotData[mealName].total}
+              <TableRow className="bg-muted/50 font-bold">
+                <TableCell className="sticky left-0 z-10 bg-muted/50 text-xs md:text-sm p-2 md:p-4">Total</TableCell>
+                {DAYS_OF_WEEK.map(day => (
+                  <TableCell key={day} className="text-center text-xs md:text-sm p-2 md:p-4">
+                    {dayTotals[day]}
+                  </TableCell>
+                ))}
+                <TableCell className="text-center text-xs md:text-sm p-2 md:p-4">
+                  {grandTotal}
                 </TableCell>
               </TableRow>
-            ))}
-            <TableRow className="bg-muted/50 font-bold">
-              <TableCell className="sticky left-0 z-10 bg-muted/50">Total</TableCell>
-              {DAYS_OF_WEEK.map(day => (
-                <TableCell key={day} className="text-center">
-                  {dayTotals[day]}
-                </TableCell>
-              ))}
-              <TableCell className="text-center">
-                {grandTotal}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
