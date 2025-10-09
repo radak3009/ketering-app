@@ -25,6 +25,7 @@ import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 import { OrderPivotTable } from "./admin/OrderPivotTable";
 import { AIHelpChat } from "./AIHelpChat";
+import { TagInput } from "./ui/tag-input";
 interface DailyOrders {
   day: string;
   orders: number;
@@ -103,6 +104,7 @@ export function AdminDashboard() {
     price: "",
     status: "aktivan" as "aktivan" | "neaktivan",
     shifts: [] as string[],
+    allergens: [] as string[],
     image_url: ""
   });
   const [menuForm, setMenuForm] = useState({
@@ -332,7 +334,7 @@ export function AdminDashboard() {
         shifts: mealForm.shifts,
         image_url: imageUrl || null,
         is_available: true,
-        allergens: null,
+        allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
         nutritional_info: null
       });
       resetMealForm();
@@ -376,6 +378,7 @@ export function AdminDashboard() {
         price: parseFloat(selectedMeal.price),
         status: selectedMeal.status,
         shifts: selectedMeal.shifts,
+        allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
         image_url: imageUrl || null
       });
 
@@ -488,6 +491,7 @@ export function AdminDashboard() {
       price: "",
       status: "aktivan",
       shifts: [],
+      allergens: [],
       image_url: ""
     });
     setImageFile(null);
@@ -759,6 +763,15 @@ export function AdminDashboard() {
                         </div>
                         
                         <div>
+                          <Label htmlFor="meal-allergens">Alergeni</Label>
+                          <TagInput
+                            value={mealForm.allergens}
+                            onChange={(allergens) => setMealForm({ ...mealForm, allergens })}
+                            placeholder="Dodajte alergene (gluten, laktoza, jaja...)"
+                          />
+                        </div>
+                        
+                        <div>
                           <Label>Status</Label>
                           <Select value={mealForm.status} onValueChange={(value: "aktivan" | "neaktivan") => setMealForm({
                           ...mealForm,
@@ -849,6 +862,20 @@ export function AdminDashboard() {
                               {meal.shifts?.join(', ')} smena
                             </span>
                           </div>
+                          {meal.allergens && meal.allergens.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {meal.allergens.slice(0, 3).map((allergen, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {allergen}
+                                </Badge>
+                              ))}
+                              {meal.allergens.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{meal.allergens.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>)}
                   </div>}
@@ -887,6 +914,15 @@ export function AdminDashboard() {
                     ...selectedMeal,
                     description: e.target.value
                   })} />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="edit-meal-allergens">Alergeni</Label>
+                      <TagInput
+                        value={selectedMeal.allergens || []}
+                        onChange={(allergens) => setSelectedMeal({ ...selectedMeal, allergens })}
+                        placeholder="Dodajte alergene (gluten, laktoza, jaja...)"
+                      />
                     </div>
                     
                     <div>
