@@ -11,7 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
@@ -431,6 +433,18 @@ export function AdminDashboard() {
       });
       return;
     }
+
+    // Check if menu already exists for this date
+    const existingMenu = menus.find(menu => menu.menu_date === menuForm.menu_date);
+    if (existingMenu) {
+      toast({
+        title: "Greška",
+        description: "Jelovnik za ovaj datum već postoji",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const menuName = generateMenuName(menuForm.menu_date);
       await createMenu({
@@ -497,6 +511,15 @@ export function AdminDashboard() {
     setImageFile(null);
   };
   const filteredMenuMeals = meals.filter(meal => meal.status === "aktivan" && meal.name.toLowerCase().includes(menuMealSearch.toLowerCase()));
+  
+  // Helper function to check if a date is disabled (already has a menu)
+  const isDateDisabled = (date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const hasMenu = menus.some(menu => menu.menu_date === dateStr);
+    const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+    return hasMenu || isPast;
+  };
+
   const isNextWeek = (date: Date) => {
     const nextWeek = addWeeks(new Date(), 1);
     const startOfNextWeek = startOfWeek(nextWeek, {
@@ -1050,10 +1073,36 @@ export function AdminDashboard() {
                       <div className="space-y-4 mt-6">
                         <div>
                           <Label htmlFor="menu-date">Datum *</Label>
-                          <Input id="menu-date" type="date" value={menuForm.menu_date} onChange={e => setMenuForm({
-                          ...menuForm,
-                          menu_date: e.target.value
-                        })} min={new Date().toISOString().split('T')[0]} />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {menuForm.menu_date ? format(new Date(menuForm.menu_date), 'dd.MM.yyyy') : "Odaberite datum"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CalendarComponent
+                                mode="single"
+                                selected={menuForm.menu_date ? new Date(menuForm.menu_date) : undefined}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    setMenuForm({
+                                      ...menuForm,
+                                      menu_date: format(date, 'yyyy-MM-dd')
+                                    });
+                                  }
+                                }}
+                                disabled={isDateDisabled}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Datumi koji već imaju jelovnik su onemogućeni
+                          </p>
                         </div>
                         
                         <div>
