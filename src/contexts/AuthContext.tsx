@@ -75,8 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
+      // Don't set state here - let onAuthStateChange handle it to avoid race condition
       if (!session && !hasAuthParams) {
         setLoading(false);
       }
