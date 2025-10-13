@@ -368,6 +368,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_company: {
+        Args: { company_uuid: string }
+        Returns: boolean
+      }
       email_exists: {
         Args: { check_email: string }
         Returns: boolean
