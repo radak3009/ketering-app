@@ -466,11 +466,11 @@ export function AdminDashboard() {
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
     try {
+      // Only update profile fields (not role - roles managed separately)
       await updateUser(selectedUser.id, {
         full_name: selectedUser.full_name,
         email: selectedUser.email,
-        phone: selectedUser.phone,
-        role: selectedUser.role
+        phone: selectedUser.phone
       });
       setSelectedUser(null);
     } catch (error) {
@@ -1501,10 +1501,7 @@ export function AdminDashboard() {
                     
                     <div>
                       <Label>Uloga</Label>
-                      <Select value={selectedUser.role} onValueChange={value => setSelectedUser({
-                    ...selectedUser,
-                    role: value
-                  })}>
+                      <Select value={selectedUser.role || 'employee'} disabled>
                         <SelectTrigger>
                           <SelectValue placeholder="Odaberite ulogu" />
                         </SelectTrigger>
@@ -1513,6 +1510,9 @@ export function AdminDashboard() {
                           <SelectItem value="admin">Administrator</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Uloge se upravljaju posebno iz bezbednosnih razloga
+                      </p>
                     </div>
                     
                     <div className="space-y-2 pt-4">

@@ -13,13 +13,28 @@ export function useUsers() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data: profilesData, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+
+      // Fetch roles for all users from user_roles table
+      const { data: rolesData } = await supabase
+        .from('user_roles' as any)
+        .select('user_id, role');
+
+      // Merge profiles with roles
+      const usersWithRoles = (profilesData || []).map(profile => {
+        const userRole = (rolesData as any)?.find((r: any) => r.user_id === profile.user_id);
+        return {
+          ...profile,
+          role: userRole?.role || null
+        } as any;
+      });
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -32,7 +47,7 @@ export function useUsers() {
     }
   };
 
-  const updateUser = async (id: string, updates: Partial<Profile>) => {
+  const updateUser = async (id: string, updates: Partial<Omit<Profile, 'role'>>) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -43,12 +58,21 @@ export function useUsers() {
 
       if (error) throw error;
 
-      setUsers(prev => prev.map(user => user.id === id ? data : user));
+      // Fetch the updated user with role from user_roles
+      const { data: roleData } = await supabase
+        .from('user_roles' as any)
+        .select('role')
+        .eq('user_id', data.user_id)
+        .maybeSingle();
+
+      const updatedUser = { ...data, role: (roleData as any)?.role || null } as any;
+      setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
+      
       toast({
         title: 'Uspeh',
         description: 'Korisnik je uspešno ažuriran'
       });
-      return data;
+      return updatedUser;
     } catch (error) {
       console.error('Error updating user:', error);
       toast({

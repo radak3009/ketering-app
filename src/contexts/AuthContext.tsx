@@ -9,7 +9,7 @@ interface Profile {
   full_name: string | null;
   email: string | null;
   phone: string | null;
-  role: 'admin' | 'employee';
+  role: 'admin' | 'employee' | null; // Fetched from user_roles table
   created_at: string;
   updated_at: string;
 }
@@ -60,8 +60,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .eq('user_id', session.user.id)
             .maybeSingle();
           
-          console.log('Profile fetched:', profileData);
-          setProfile(profileData);
+          // Fetch user role from user_roles table
+          let userRole: 'admin' | 'employee' | null = null;
+          if (profileData) {
+            const { data: roleData } = await supabase
+              .from('user_roles' as any)
+              .select('role')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+            
+            userRole = (roleData as any)?.role || null;
+          }
+          
+          console.log('Profile fetched:', profileData, 'Role:', userRole);
+          setProfile(profileData ? { ...profileData, role: userRole } as any : null);
           setProcessingAuth(false);
           setLoading(false);
         } else {

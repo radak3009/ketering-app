@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.ai-help-assistant]
 verify_jwt = true
+
+[functions.manage-user-role]
+verify_jwt = true
