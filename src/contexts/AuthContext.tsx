@@ -53,19 +53,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile
-          setTimeout(async () => {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .maybeSingle();
-            
-            console.log('Profile fetched:', profileData);
-            setProfile(profileData);
-            setProcessingAuth(false);
-            setLoading(false);
-          }, 0);
+          // Fetch user profile synchronously before setting loading to false
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          console.log('Profile fetched:', profileData);
+          setProfile(profileData);
+          setProcessingAuth(false);
+          setLoading(false);
         } else {
           setProfile(null);
           setProcessingAuth(false);
