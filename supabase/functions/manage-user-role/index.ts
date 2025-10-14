@@ -17,10 +17,26 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('manage-user-role function invoked');
+    
     // Create Supabase client with service role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing environment variables');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
@@ -44,12 +60,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if caller is admin using the is_admin_user function
-    const { data: isAdmin, error: adminCheckError } = await supabase
-      .rpc('is_admin_user', { user_uuid: user.id });
+    console.log(`Request from user: ${user.email} (${user.id})`);
 
-    if (adminCheckError || !isAdmin) {
+    // Check if caller is admin using the has_role function
+    const { data: isAdmin, error: adminCheckError } = await supabase
+      .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
+    if (adminCheckError) {
       console.error('Admin check failed:', adminCheckError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to verify admin status', details: adminCheckError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!isAdmin) {
+      console.error(`User ${user.email} is not an admin`);
       return new Response(
         JSON.stringify({ error: 'Only admins can manage user roles' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -60,6 +86,7 @@ Deno.serve(async (req) => {
     const { userId, role }: RoleRequest = await req.json();
 
     if (!userId || !role) {
+      console.error('Missing required fields');
       return new Response(
         JSON.stringify({ error: 'userId and role are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -67,6 +94,7 @@ Deno.serve(async (req) => {
     }
 
     if (!['admin', 'employee'].includes(role)) {
+      console.error(`Invalid role: ${role}`);
       return new Response(
         JSON.stringify({ error: 'Invalid role. Must be "admin" or "employee"' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -89,6 +117,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Deleted existing roles for user ${userId}`);
 
     // Insert the new role
     const { data, error: insertError } = await supabase
