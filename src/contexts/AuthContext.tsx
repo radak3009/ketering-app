@@ -63,30 +63,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch user role from user_roles table
           let userRole: 'admin' | 'employee' | null = null;
           if (profileData) {
-            console.log('Fetching role for user:', session.user.id);
-            const { data: roleData, error: roleError } = await supabase
-              .from('user_roles')
+            const { data: roleData } = await supabase
+              .from('user_roles' as any)
               .select('role')
               .eq('user_id', session.user.id)
               .maybeSingle();
             
-            if (roleError) {
-              console.error('Error fetching user role:', roleError);
-              // Fallback: check if role exists in profiles table (legacy)
-              userRole = profileData.role || 'employee';
-              console.log('Using fallback role from profiles:', userRole);
-            } else {
-              userRole = roleData?.role ?? 'employee';
-              console.log('Role fetched from user_roles:', userRole);
-            }
+            userRole = (roleData as any)?.role || null;
           }
           
-          console.log('Profile data:', { 
-            email: profileData?.email, 
-            role: userRole,
-            profileId: profileData?.id 
-          });
-          setProfile(profileData ? { ...profileData, role: userRole } : null);
+          console.log('Profile fetched:', profileData, 'Role:', userRole);
+          setProfile(profileData ? { ...profileData, role: userRole } as any : null);
           setProcessingAuth(false);
           setLoading(false);
         } else {
