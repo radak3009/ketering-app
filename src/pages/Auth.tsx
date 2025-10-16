@@ -33,6 +33,7 @@ export default function Auth() {
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [processingAuth, setProcessingAuth] = useState(false);
   
   const [signUpData, setSignUpData] = useState({
     email: '',
@@ -48,11 +49,22 @@ export default function Auth() {
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
   useEffect(() => {
-    // Only redirect if user exists AND has profile
+    // Postavi processingAuth na true dok čekamo profil
+    if (user && !profile && !authLoading) {
+      setProcessingAuth(true);
+    }
+    
+    // Kada dobijemo profil, rediriguj i resetuj processingAuth
     if (user && profile) {
+      setProcessingAuth(false);
       navigate('/');
     }
-  }, [user, profile, navigate]);
+    
+    // Resetuj processingAuth ako nema user-a
+    if (!user) {
+      setProcessingAuth(false);
+    }
+  }, [user, profile, navigate, authLoading]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,6 +202,18 @@ export default function Auth() {
     }
   };
 
+  // Prikaži loading spinner dok se učitava profil
+  if (user && !profile && (authLoading || processingAuth)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Učitavanje profila...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -198,7 +222,7 @@ export default function Auth() {
           <p className="text-muted-foreground">Prijavite se na vaš nalog</p>
         </div>
 
-        {user && !authLoading && !profile ? (
+        {user && !authLoading && !profile && !processingAuth ? (
           <Card className="shadow-elegant border-destructive/20">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center text-destructive">Profil nije kreiran</CardTitle>
