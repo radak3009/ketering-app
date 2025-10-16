@@ -16,13 +16,17 @@ const Index = () => {
     
     // Don't redirect if we're still loading or processing auth parameters
     if (loading || hasAuthParams) {
-      console.log('Waiting for auth processing...', { loading, hasAuthParams });
       return;
     }
 
-    // If user is not authenticated OR user has no profile, redirect to auth page
-    if (!user || (user && !profile)) {
-      console.log('Redirecting to auth page...', { user: !!user, profile: !!profile });
+    // Samo redirektuj na auth ako nema user-a
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    // Ako ima user ali nema profil, i loading je završen, onda redirektuj
+    if (user && !profile && !loading) {
       navigate('/auth');
     }
   }, [user, profile, loading, navigate]);
@@ -33,6 +37,18 @@ const Index = () => {
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">Učitavanje...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ako ima user i profile, ali još nema role, prikaži loading
+  if (user && profile && !profile.role) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Učitavanje korisničkih podataka...</p>
         </div>
       </div>
     );

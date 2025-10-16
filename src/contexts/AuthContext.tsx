@@ -53,58 +53,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('[AuthContext] Fetching profile for user:', session.user.id);
-          
-          // Fetch user profile synchronously before setting loading to false
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
+          // Paralelno učitavanje profila i uloge za bržu inicijalizaciju
+          const [profileResult, roleResult] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .maybeSingle(),
+            supabase
+              .from('user_roles' as any)
+              .select('role')
+              .eq('user_id', session.user.id)
+              .maybeSingle()
+          ]);
+
+          const { data: profileData, error: profileError } = profileResult;
+          const { data: roleData, error: roleError } = roleResult;
           
           if (profileError) {
             console.error('[AuthContext] Error fetching profile:', profileError);
-          } else {
-            console.log('[AuthContext] Profile data:', profileData);
           }
           
-          // Fetch user role from user_roles table
-          let userRole: 'admin' | 'employee' | null = null;
+          let userRole: 'admin' | 'employee' = 'employee';
+          
           if (profileData) {
-            console.log('[AuthContext] Fetching role from user_roles for user:', session.user.id);
-            
-            try {
-              const { data: roleData, error: roleError } = await supabase
-                .from('user_roles' as any)
-                .select('role')
-                .eq('user_id', session.user.id)
-                .maybeSingle();
-              
-              if (roleError) {
-                console.error('[AuthContext] Error fetching role from user_roles:', roleError);
-                // Fallback to profile.role if user_roles query fails
-                console.log('[AuthContext] Using fallback role from profiles table:', profileData.role);
-                userRole = (profileData.role as 'admin' | 'employee') || 'employee';
-              } else if (roleData) {
-                console.log('[AuthContext] Role data from user_roles:', roleData);
-                const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
-                userRole = typedRoleData.role;
-              } else {
-                console.warn('[AuthContext] No role found in user_roles, defaulting to employee');
-                userRole = 'employee';
-              }
-            } catch (err) {
-              console.error('[AuthContext] Exception fetching role:', err);
+            if (roleError) {
+              console.error('[AuthContext] Error fetching role:', roleError);
+              userRole = (profileData.role as 'admin' | 'employee') || 'employee';
+            } else if (roleData) {
+              const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
+              userRole = typedRoleData.role;
+            } else {
               userRole = (profileData.role as 'admin' | 'employee') || 'employee';
             }
           }
           
-          console.log('[AuthContext] Final profile with role:', { ...profileData, role: userRole });
           setProfile(profileData ? { ...profileData, role: userRole } : null);
           setProcessingAuth(false);
           setLoading(false);
         } else {
-          console.log('[AuthContext] No session user, clearing profile');
           setProfile(null);
           setProcessingAuth(false);
           setLoading(false);
