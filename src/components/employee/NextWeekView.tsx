@@ -1,13 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Plus, Trash2, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Plus, AlertCircle } from 'lucide-react';
 import { WeekOrder } from '@/hooks/useWeekOrders';
 import { format, startOfWeek, addDays, addWeeks } from 'date-fns';
 import { sr } from 'date-fns/locale';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { MealCard } from './MealCard';
 
 interface NextWeekViewProps {
   orders: WeekOrder[];
@@ -153,74 +153,12 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
                   ) : (
                     <div className="space-y-3 mt-3">
                       {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="relative border rounded-lg overflow-hidden bg-card hover:shadow-md transition-shadow"
-                        >
-                          {item.meal.image_url && (
-                            <div className="relative w-full h-48 md:h-32">
-                              <img
-                                src={item.meal.image_url}
-                                alt={item.meal.name}
-                                className="w-full h-full object-cover"
-                              />
-                              {item.pickup_status === 'preuzeto' && (
-                                <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5">
-                                  <CheckCircle2 className="h-5 w-5 text-white" />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h3 className="font-semibold text-base">{item.meal.name}</h3>
-                              {canEdit && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteOrder(item.id)}
-                                  className="h-8 w-8 p-0 flex-shrink-0"
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              {item.meal.description}
-                            </p>
-                            {item.meal.allergens && item.meal.allergens.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mb-3">
-                                {item.meal.allergens.map((allergen, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {allergen}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">Smena:</span>
-                                <span className="text-muted-foreground">
-                                  {item.shift === 'prva' ? 'Prva smena' : item.shift === 'druga' ? 'Druga smena' : 'Treća smena'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">Status:</span>
-                                {item.pickup_status === 'preuzeto' ? (
-                                  <span className="text-green-600 flex items-center gap-1">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    Preuzeto
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground flex items-center gap-1">
-                                    <XCircle className="h-4 w-4" />
-                                    Nije preuzeto
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <MealCard 
+                          key={item.id} 
+                          item={item}
+                          canDelete={canEdit}
+                          onDelete={handleDeleteOrder}
+                        />
                       ))}
                     </div>
                   )}
