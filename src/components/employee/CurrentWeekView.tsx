@@ -90,6 +90,15 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
                             <p className="text-sm text-muted-foreground mb-3">
                               {item.meal.description}
                             </p>
+                            {item.meal.allergens && item.meal.allergens.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mb-3">
+                                {item.meal.allergens.map((allergen, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                    {allergen}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                             <div className="space-y-2">
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="font-medium">Smena:</span>

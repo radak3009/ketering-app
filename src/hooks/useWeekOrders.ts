@@ -17,6 +17,7 @@ export interface OrderItemWithMeal {
     description: string;
     image_url: string | null;
     category: string;
+    allergens: string[] | null;
   };
 }
 
@@ -67,7 +68,8 @@ export const useWeekOrders = (userId: string | undefined) => {
           name,
           description,
           image_url,
-          category
+          category,
+          allergens
         ),
         orders!inner (
           user_id,
