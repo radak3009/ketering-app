@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.manage-user-role]
 verify_jwt = true
+
+[functions.send-employee-reminder]
+verify_jwt = false
+
+[functions.send-admin-menu-alert]
+verify_jwt = false

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekOrders } from '@/hooks/useWeekOrders';
+import { useNotifications } from '@/hooks/useNotifications';
 import { CurrentWeekView } from './employee/CurrentWeekView';
 import { NextWeekView } from './employee/NextWeekView';
 import { OrderMealDialog } from './employee/OrderMealDialog';
@@ -26,6 +28,8 @@ export function EmployeeDashboard() {
     canEditNextWeek,
     refetch
   } = useWeekOrders(user?.id);
+
+  const { employeeNotification } = useNotifications(user?.id, false);
 
   useEffect(() => {
     if (user?.id) {
@@ -90,6 +94,16 @@ export function EmployeeDashboard() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
+        {/* Notification Alert */}
+        {employeeNotification && (
+          <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+            <Bell className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800 dark:text-amber-200">
+              {employeeNotification}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Desktop Navigation */}
         <div className="hidden md:flex gap-2 mb-6">
           <Button

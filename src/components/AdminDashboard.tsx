@@ -9,11 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
@@ -21,6 +22,7 @@ import { useMenus } from "@/hooks/useMenus";
 import { useUsers } from "@/hooks/useUsers";
 import { useOrders } from "@/hooks/useOrders";
 import { useAdminStats } from "@/hooks/useAdminStats";
+import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
@@ -86,6 +88,8 @@ export function AdminDashboard() {
     stats,
     loading: statsLoading
   } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
+
+  const { adminNotification } = useNotifications(undefined, true);
 
   // State management
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
@@ -629,6 +633,16 @@ export function AdminDashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Admin Notification Alert */}
+        {adminNotification && (
+          <Alert className="mb-4 border-red-500 bg-red-50 dark:bg-red-950/20">
+            <Bell className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800 dark:text-red-200">
+              {adminNotification}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-6 md:mb-8">
