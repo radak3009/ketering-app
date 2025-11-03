@@ -588,7 +588,12 @@ export function AdminDashboard() {
       });
   };
 
-  const groupedMenus = groupMenusByWeek(menus);
+  const groupedMenus = groupMenusByWeek(menus).filter(([_, weekData]) => {
+    // Filter out past weeks - only show current week and future weeks
+    const firstMenuDate = new Date(weekData.menus[0].menu_date);
+    const startOfCurrentWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return firstMenuDate >= startOfCurrentWeek;
+  });
   const handleExportReport = async () => {
     try {
       let csvContent = '';
