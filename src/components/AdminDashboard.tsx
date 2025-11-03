@@ -19,12 +19,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
+
+type MenuWithMeals = {
+  id: string;
+  menu_date: string;
+  name: string;
+  description?: string | null;
+  meals?: Array<{
+    id: string;
+    meal_id: string;
+    meal: any;
+  }>;
+  [key: string]: any;
+};
 import { useUsers } from "@/hooks/useUsers";
 import { useOrders } from "@/hooks/useOrders";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek, getWeek, getYear } from "date-fns";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 import { OrderPivotTable } from "./admin/OrderPivotTable";
@@ -455,14 +469,16 @@ export function AdminDashboard() {
         name: menuName,
         description: menuForm.description || undefined,
         menu_date: menuForm.menu_date,
-        meal_ids: menuForm.selectedMeals
-      });
-      setMenuForm({
-        description: "",
-        menu_date: "",
-        selectedMeals: []
-      });
-      setIsCreateMenuOpen(false);
+      meal_ids: menuForm.selectedMeals
+    });
+    
+    // Reset form but keep it open
+    setMenuForm({
+      description: "",
+      menu_date: "",
+      selectedMeals: []
+    });
+    // Form stays open - user clicks "Završi" to close
     } catch (error) {
       console.error('Error creating menu:', error);
     }
@@ -534,8 +550,45 @@ export function AdminDashboard() {
     });
     return date >= startOfNextWeek && date <= endOfNextWeek;
   };
-  const thisWeekMenus = menus.filter(menu => isThisWeek(new Date(menu.menu_date)));
-  const nextWeekMenus = menus.filter(menu => isNextWeek(new Date(menu.menu_date)));
+  // Group menus by week
+  const groupMenusByWeek = (menus: MenuWithMeals[]) => {
+    const grouped = new Map<string, { 
+      weekNumber: number, 
+      year: number, 
+      menus: MenuWithMeals[],
+      isCurrentWeek: boolean,
+      isNextWeek: boolean 
+    }>();
+    
+    menus.forEach(menu => {
+      const date = new Date(menu.menu_date);
+      const weekNumber = getWeek(date, { weekStartsOn: 1 });
+      const year = getYear(date);
+      const key = `${year}-W${weekNumber}`;
+      
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          weekNumber,
+          year,
+          menus: [],
+          isCurrentWeek: isThisWeek(date),
+          isNextWeek: isNextWeek(date)
+        });
+      }
+      
+      grouped.get(key)!.menus.push(menu);
+    });
+    
+    // Sort chronologically
+    return Array.from(grouped.entries())
+      .sort((a, b) => {
+        const [keyA] = a;
+        const [keyB] = b;
+        return keyA.localeCompare(keyB);
+      });
+  };
+
+  const groupedMenus = groupMenusByWeek(menus);
   const handleExportReport = async () => {
     try {
       let csvContent = '';
@@ -1165,51 +1218,82 @@ export function AdminDashboard() {
                           </div>
                         </div>
                         
-                        <Button onClick={handleCreateMenu} className="w-full" disabled={menusLoading}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Kreiraj jelovnik
-                        </Button>
+                        <div className="space-y-2">
+                          <Button 
+                            onClick={handleCreateMenu} 
+                            className="w-full" 
+                            disabled={menusLoading || !menuForm.menu_date || menuForm.selectedMeals.length === 0}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Kreiraj jelovnik za ovaj datum
+                          </Button>
+                          
+                          <Button 
+                            onClick={() => setIsCreateMenuOpen(false)}
+                            className="w-full"
+                            variant="outline"
+                          >
+                            Završi
+                          </Button>
+                        </div>
                       </div>
                     </SheetContent>
                   </Sheet>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 md:space-y-6">
-                {/* This Week */}
-                <div>
-                  <h3 className="text-base md:text-lg font-medium mb-3">Tekuća nedelja</h3>
-                  {thisWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4 text-sm">Nema jelovnika za tekuću nedelju</p> : <div className="grid gap-2 md:gap-3">
-                      {thisWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
-                    ...menu
-                  })}>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
-                            {menu.description && <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{menu.description}</p>}
-                            <p className="text-xs md:text-sm text-muted-foreground">
-                              {menu.meals?.length || 0} obroka
-                            </p>
+                {groupedMenus.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
+                ) : (
+                  <div className="space-y-2">
+                    {groupedMenus.map(([key, weekData]) => (
+                      <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-accent/50 group">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base md:text-lg font-medium">
+                                {weekData.isCurrentWeek 
+                                  ? "Tekuća nedelja" 
+                                  : weekData.isNextWeek 
+                                    ? "Sledeća nedelja"
+                                    : `Nedelja ${weekData.weekNumber}`
+                                }
+                              </h3>
+                              <Badge variant="secondary">
+                                {weekData.menus.length} {weekData.menus.length === 1 ? 'jelovnik' : 'jelovnika'}
+                              </Badge>
+                            </div>
+                            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          </Button>
+                        </CollapsibleTrigger>
+                        
+                        <CollapsibleContent className="px-2 pb-4">
+                          <div className="grid gap-2 md:gap-3 mt-2">
+                            {weekData.menus.map(menu => (
+                              <div 
+                                key={menu.id} 
+                                className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" 
+                                onClick={() => setSelectedMenu({ ...menu })}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
+                                  {menu.description && (
+                                    <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">
+                                      {menu.description}
+                                    </p>
+                                  )}
+                                  <p className="text-xs md:text-sm text-muted-foreground">
+                                    {menu.meals?.length || 0} obroka
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>)}
-                    </div>}
-                </div>
-
-                {/* Next Week */}
-                <div>
-                  <h3 className="text-base md:text-lg font-medium mb-3">Sledeća nedelja</h3>
-                  {nextWeekMenus.length === 0 ? <p className="text-muted-foreground text-center py-4 text-sm">Nema jelovnika za sledeću nedelju</p> : <div className="grid gap-2 md:gap-3">
-                      {nextWeekMenus.map(menu => <div key={menu.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMenu({
-                    ...menu
-                  })}>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
-                            {menu.description && <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{menu.description}</p>}
-                            <p className="text-xs md:text-sm text-muted-foreground">
-                              {menu.meals?.length || 0} obroka
-                            </p>
-                          </div>
-                        </div>)}
-                    </div>}
-                </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1647,11 +1731,15 @@ export function AdminDashboard() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Jelovnici ove nedelje</span>
-                    <span className="font-bold">{thisWeekMenus.length}</span>
+                    <span className="font-bold">
+                      {groupedMenus.find(([_, data]) => data.isCurrentWeek)?.[1]?.menus.length || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Jelovnici sledeće nedelje</span>
-                    <span className="font-bold">{nextWeekMenus.length}</span>
+                    <span className="font-bold">
+                      {groupedMenus.find(([_, data]) => data.isNextWeek)?.[1]?.menus.length || 0}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
