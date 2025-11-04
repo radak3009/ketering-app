@@ -588,7 +588,18 @@ export function AdminDashboard() {
       });
   };
 
-  const groupedMenus = groupMenusByWeek(menus);
+  // Filter menus to show only from current week onwards
+  const groupedMenus = groupMenusByWeek(menus).filter(([key, weekData]) => {
+    // Get the first menu date in this week to check if week is current or future
+    const firstMenuDate = weekData.menus[0]?.menu_date;
+    if (!firstMenuDate) return false;
+    
+    const weekStart = startOfWeek(new Date(firstMenuDate), { weekStartsOn: 1 });
+    const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    
+    // Include current week and all future weeks
+    return weekStart >= currentWeekStart;
+  });
   const handleExportReport = async () => {
     try {
       let csvContent = '';
