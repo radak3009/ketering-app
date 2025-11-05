@@ -7,7 +7,7 @@ type Menu = Tables<'menus'>;
 type MenuMeal = Tables<'menu_meals'>;
 type Meal = Tables<'meals'>;
 
-interface MenuWithMeals extends Menu {
+export interface MenuWithMeals extends Menu {
   meals?: (MenuMeal & { meal: Meal })[];
 }
 
@@ -192,6 +192,64 @@ export function useMenus() {
     }
   };
 
+  const cloneWeekMenus = async (sourceMenus: MenuWithMeals[], targetWeekStart: Date) => {
+    try {
+      // Izračunaj razliku u danima između source i target nedelje
+      const sourceDates = sourceMenus.map(m => new Date(m.menu_date));
+      const sourceWeekStart = new Date(Math.min(...sourceDates.map(d => d.getTime())));
+      const daysDiff = Math.floor((targetWeekStart.getTime() - sourceWeekStart.getTime()) / (1000 * 60 * 60 * 24));
+
+      for (const sourceMenu of sourceMenus) {
+        const sourceDate = new Date(sourceMenu.menu_date);
+        const targetDate = new Date(sourceDate.getTime() + (daysDiff * 24 * 60 * 60 * 1000));
+        
+        // Kreiraj novi jelovnik
+        const { data: newMenu, error: menuError } = await supabase
+          .from('menus')
+          .insert([{
+            name: sourceMenu.name,
+            description: sourceMenu.description,
+            menu_date: targetDate.toISOString().split('T')[0],
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (menuError) throw menuError;
+
+        // Kopiraj meal asocijacije
+        if (sourceMenu.meals && sourceMenu.meals.length > 0) {
+          const menuMeals = sourceMenu.meals.map(mm => ({
+            menu_id: newMenu.id,
+            meal_id: mm.meal_id,
+            quantity: mm.quantity
+          }));
+
+          const { error: menuMealsError } = await supabase
+            .from('menu_meals')
+            .insert(menuMeals);
+
+          if (menuMealsError) throw menuMealsError;
+        }
+      }
+
+      await fetchMenus();
+      
+      toast({
+        title: 'Uspeh',
+        description: `Klonirano ${sourceMenus.length} jelovnika`
+      });
+    } catch (error) {
+      console.error('Error cloning menus:', error);
+      toast({
+        title: 'Greška',
+        description: 'Nije moguće klonirati jelovnike',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchMenus();
   }, []);
@@ -202,6 +260,7 @@ export function useMenus() {
     createMenu,
     updateMenu,
     deleteMenu,
+    cloneWeekMenus,
     refetch: fetchMenus
   };
 }

@@ -14,30 +14,17 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon, Bell } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon, Bell, Copy } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
-import { useMenus } from "@/hooks/useMenus";
-
-type MenuWithMeals = {
-  id: string;
-  menu_date: string;
-  name: string;
-  description?: string | null;
-  meals?: Array<{
-    id: string;
-    meal_id: string;
-    meal: any;
-  }>;
-  [key: string]: any;
-};
+import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
 import { useUsers } from "@/hooks/useUsers";
 import { useOrders } from "@/hooks/useOrders";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
@@ -68,7 +55,8 @@ export function AdminDashboard() {
     loading: menusLoading,
     createMenu,
     updateMenu,
-    deleteMenu
+    deleteMenu,
+    cloneWeekMenus
   } = useMenus();
   const {
     users,
@@ -138,6 +126,11 @@ export function AdminDashboard() {
     phone: "",
     role: "employee" as "admin" | "employee"
   });
+
+  // Clone dialog state
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [cloneSourceMenus, setCloneSourceMenus] = useState<MenuWithMeals[]>([]);
+  const [cloneTargetDate, setCloneTargetDate] = useState<Date>();
 
   // Report states
   const [reportType, setReportType] = useState("orders");
@@ -509,6 +502,25 @@ export function AdminDashboard() {
       setSelectedMenu(null);
     } catch (error) {
       console.error('Error updating menu:', error);
+    }
+  };
+
+  const handleCloneWeek = (weekMenus: MenuWithMeals[]) => {
+    setCloneSourceMenus(weekMenus);
+    setCloneTargetDate(undefined);
+    setShowCloneDialog(true);
+  };
+
+  const handleConfirmClone = async () => {
+    if (!cloneTargetDate || cloneSourceMenus.length === 0) return;
+    
+    try {
+      await cloneWeekMenus(cloneSourceMenus, cloneTargetDate);
+      setShowCloneDialog(false);
+      setCloneSourceMenus([]);
+      setCloneTargetDate(undefined);
+    } catch (error) {
+      console.error('Error cloning week:', error);
     }
   };
   const handleSendMagicLink = async (email: string) => {
@@ -1269,24 +1281,37 @@ export function AdminDashboard() {
                   <div className="space-y-2">
                     {groupedMenus.map(([key, weekData]) => (
                       <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-accent/50 group">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-base md:text-lg font-medium">
-                                {weekData.isCurrentWeek 
-                                  ? "Tekuća nedelja" 
-                                  : weekData.isNextWeek 
-                                    ? "Sledeća nedelja"
-                                    : `Nedelja ${weekData.weekNumber}`
-                                }
-                              </h3>
-                              <Badge variant="secondary">
-                                {weekData.menus.length} {weekData.menus.length === 1 ? 'jelovnik' : 'jelovnika'}
-                              </Badge>
-                            </div>
-                            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        <div className="flex items-center gap-2">
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="flex-1 justify-between p-4 h-auto hover:bg-accent/50 group">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-base md:text-lg font-medium">
+                                  {weekData.isCurrentWeek 
+                                    ? "Tekuća nedelja" 
+                                    : weekData.isNextWeek 
+                                      ? "Sledeća nedelja"
+                                      : `Nedelja ${weekData.weekNumber}`
+                                  }
+                                </h3>
+                                <Badge variant="secondary">
+                                  {weekData.menus.length} {weekData.menus.length === 1 ? 'jelovnik' : 'jelovnika'}
+                                </Badge>
+                              </div>
+                              <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                            </Button>
+                          </CollapsibleTrigger>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCloneWeek(weekData.menus);
+                            }}
+                            title="Kloniraj nedelju"
+                          >
+                            <Copy className="h-4 w-4" />
                           </Button>
-                        </CollapsibleTrigger>
+                        </div>
                         
                         <CollapsibleContent className="px-2 pb-4">
                           <div className="grid gap-2 md:gap-3 mt-2">
@@ -1776,5 +1801,58 @@ export function AdminDashboard() {
 
       {/* AI Help Chat */}
       <AIHelpChat />
+
+      {/* Clone Week Dialog */}
+      <Sheet open={showCloneDialog} onOpenChange={setShowCloneDialog}>
+        <SheetContent className="w-full md:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Kloniranje nedelje</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-6">
+            <div className="space-y-2">
+              <Label>Izvor:</Label>
+              <p className="text-sm text-muted-foreground">
+                {cloneSourceMenus.length} {cloneSourceMenus.length === 1 ? 'jelovnik' : 'jelovnika'}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Ciljna nedelja (ponedeljak):</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {cloneTargetDate ? format(cloneTargetDate, "PPP", { locale: require('date-fns/locale/sr-Latn') }) : "Izaberite datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={cloneTargetDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        // Pronađi ponedeljak te nedelje
+                        const monday = startOfWeek(date, { weekStartsOn: 1 });
+                        setCloneTargetDate(monday);
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-6">
+            <Button variant="outline" onClick={() => setShowCloneDialog(false)} className="flex-1">
+              Otkaži
+            </Button>
+            <Button onClick={handleConfirmClone} disabled={!cloneTargetDate} className="flex-1">
+              Kloniraj
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>;
 }
