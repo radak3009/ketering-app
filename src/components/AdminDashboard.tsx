@@ -37,7 +37,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, addWeeks, isThisWeek, getWeek, getYear } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
@@ -560,6 +560,15 @@ export function AdminDashboard() {
       isNextWeek: boolean 
     }>();
     
+    // Izračunaj broj tekuće i sledeće nedelje
+    const now = new Date();
+    const currentWeekNumber = getWeek(now, { weekStartsOn: 1 });
+    const currentYear = getYear(now);
+    
+    const nextWeek = addWeeks(now, 1);
+    const nextWeekNumber = getWeek(nextWeek, { weekStartsOn: 1 });
+    const nextWeekYear = getYear(nextWeek);
+    
     menus.forEach(menu => {
       const date = new Date(menu.menu_date);
       const weekNumber = getWeek(date, { weekStartsOn: 1 });
@@ -571,8 +580,9 @@ export function AdminDashboard() {
           weekNumber,
           year,
           menus: [],
-          isCurrentWeek: isThisWeek(date),
-          isNextWeek: isNextWeek(date)
+          // Uporedi brojeve nedelja umesto datuma
+          isCurrentWeek: weekNumber === currentWeekNumber && year === currentYear,
+          isNextWeek: weekNumber === nextWeekNumber && year === nextWeekYear
         });
       }
       
