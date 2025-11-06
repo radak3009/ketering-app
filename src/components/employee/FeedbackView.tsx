@@ -9,11 +9,36 @@ import { MessageSquare, Lightbulb, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeedback } from '@/hooks/useFeedback';
 import { useSuggestions } from '@/hooks/useSuggestions';
+import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+
+const feedbackSchema = z.object({
+  content: z.string()
+    .trim()
+    .min(10, 'Utisak mora imati najmanje 10 karaktera')
+    .max(2000, 'Utisak može imati najviše 2000 karaktera'),
+});
+
+const suggestionSchema = z.object({
+  mealName: z.string()
+    .trim()
+    .min(2, 'Naziv obroka mora imati najmanje 2 karaktera')
+    .max(100, 'Naziv obroka može imati najviše 100 karaktera'),
+  description: z.string()
+    .trim()
+    .min(10, 'Opis mora imati najmanje 10 karaktera')
+    .max(500, 'Opis može imati najviše 500 karaktera'),
+  additionalNotes: z.string()
+    .trim()
+    .max(1000, 'Dodatne napomene mogu imati najviše 1000 karaktera')
+    .optional(),
+});
 
 export function FeedbackView() {
   const { user } = useAuth();
   const { createFeedback } = useFeedback();
   const { createSuggestion } = useSuggestions();
+  const { toast } = useToast();
 
   const [feedbackContent, setFeedbackContent] = useState('');
   const [mealName, setMealName] = useState('');
@@ -23,28 +48,58 @@ export function FeedbackView() {
   const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
 
   const handleSubmitFeedback = async () => {
-    if (!user?.id || !feedbackContent.trim()) return;
+    if (!user?.id) return;
 
-    setSubmittingFeedback(true);
-    await createFeedback(feedbackContent, user.id);
-    setFeedbackContent('');
-    setSubmittingFeedback(false);
+    try {
+      const validatedData = feedbackSchema.parse({ content: feedbackContent });
+      
+      setSubmittingFeedback(true);
+      await createFeedback(validatedData.content, user.id);
+      setFeedbackContent('');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Greška validacije',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setSubmittingFeedback(false);
+    }
   };
 
   const handleSubmitSuggestion = async () => {
-    if (!user?.id || !mealName.trim() || !description.trim()) return;
+    if (!user?.id) return;
 
-    setSubmittingSuggestion(true);
-    await createSuggestion(
-      mealName,
-      description,
-      additionalNotes.trim() || null,
-      user.id
-    );
-    setMealName('');
-    setDescription('');
-    setAdditionalNotes('');
-    setSubmittingSuggestion(false);
+    try {
+      const validatedData = suggestionSchema.parse({
+        mealName,
+        description,
+        additionalNotes: additionalNotes || undefined,
+      });
+
+      setSubmittingSuggestion(true);
+      await createSuggestion(
+        validatedData.mealName,
+        validatedData.description,
+        validatedData.additionalNotes || null,
+        user.id
+      );
+      setMealName('');
+      setDescription('');
+      setAdditionalNotes('');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Greška validacije',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setSubmittingSuggestion(false);
+    }
   };
 
   return (
