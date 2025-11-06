@@ -7,6 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ProfileDialogProps {
   open: boolean;
@@ -17,6 +22,7 @@ interface ProfileDialogProps {
 export function ProfileDialog({ open, onOpenChange, user }: ProfileDialogProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +43,7 @@ export function ProfileDialog({ open, onOpenChange, user }: ProfileDialogProps) 
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, phone')
+      .select('full_name, phone, date_of_birth')
       .eq('user_id', user.id)
       .single();
 
@@ -49,6 +55,7 @@ export function ProfileDialog({ open, onOpenChange, user }: ProfileDialogProps) 
     if (data) {
       setFullName(data.full_name || '');
       setPhone(data.phone || '');
+      setDateOfBirth(data.date_of_birth ? new Date(data.date_of_birth) : undefined);
     }
   };
 
@@ -61,7 +68,8 @@ export function ProfileDialog({ open, onOpenChange, user }: ProfileDialogProps) 
       .from('profiles')
       .update({
         full_name: fullName,
-        phone: phone
+        phone: phone,
+        date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null
       })
       .eq('user_id', user.id);
 
@@ -172,6 +180,34 @@ export function ProfileDialog({ open, onOpenChange, user }: ProfileDialogProps) 
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Unesite broj telefona"
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Datum rođenja</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateOfBirth && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateOfBirth ? format(dateOfBirth, "dd.MM.yyyy") : "Izaberite datum"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateOfBirth}
+                  onSelect={setDateOfBirth}
+                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Separator className="my-4" />

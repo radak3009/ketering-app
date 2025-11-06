@@ -114,6 +114,7 @@ export function useUsers() {
     full_name: string;
     email: string;
     phone?: string;
+    date_of_birth?: Date;
     role: 'admin' | 'employee';
   }) => {
     try {

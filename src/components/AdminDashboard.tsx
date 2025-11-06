@@ -31,6 +31,7 @@ import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 import { OrderPivotTable } from "./admin/OrderPivotTable";
 import { AIHelpChat } from "./AIHelpChat";
 import { TagInput } from "./ui/tag-input";
+import { cn } from "@/lib/utils";
 interface DailyOrders {
   day: string;
   orders: number;
@@ -124,6 +125,7 @@ export function AdminDashboard() {
     full_name: "",
     email: "",
     phone: "",
+    date_of_birth: undefined as Date | undefined,
     role: "employee" as "admin" | "employee"
   });
 
@@ -148,6 +150,7 @@ export function AdminDashboard() {
       full_name: "",
       email: "",
       phone: "",
+      date_of_birth: undefined,
       role: "employee"
     });
   };
@@ -483,7 +486,8 @@ export function AdminDashboard() {
       await updateUser(selectedUser.id, {
         full_name: selectedUser.full_name,
         email: selectedUser.email,
-        phone: selectedUser.phone
+        phone: selectedUser.phone,
+        date_of_birth: selectedUser.date_of_birth || null
       });
       setSelectedUser(null);
     } catch (error) {
@@ -1548,6 +1552,34 @@ export function AdminDashboard() {
                           </div>
                           
                           <div>
+                            <Label>Datum rođenja</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !userForm.date_of_birth && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {userForm.date_of_birth ? format(userForm.date_of_birth, "dd.MM.yyyy") : "Izaberite datum"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={userForm.date_of_birth}
+                                  onSelect={(date) => setUserForm({ ...userForm, date_of_birth: date })}
+                                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                  initialFocus
+                                  className={cn("p-3 pointer-events-auto")}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          <div>
                             <Label>Uloga</Label>
                             <Select value={userForm.role} onValueChange={(value: "admin" | "employee") => setUserForm({
                             ...userForm,
@@ -1641,6 +1673,39 @@ export function AdminDashboard() {
                     ...selectedUser,
                     phone: e.target.value
                   })} placeholder="069123456" />
+                    </div>
+                    
+                    <div>
+                      <Label>Datum rođenja</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !selectedUser.date_of_birth && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedUser.date_of_birth 
+                              ? format(new Date(selectedUser.date_of_birth), "dd.MM.yyyy") 
+                              : "Izaberite datum"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={selectedUser.date_of_birth ? new Date(selectedUser.date_of_birth) : undefined}
+                            onSelect={(date) => setSelectedUser({
+                              ...selectedUser,
+                              date_of_birth: date ? format(date, 'yyyy-MM-dd') : null
+                            })}
+                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     
                     <div>

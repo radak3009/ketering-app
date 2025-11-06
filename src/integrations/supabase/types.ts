@@ -291,6 +291,7 @@ export type Database = {
           company_card_id: string | null
           company_id: string | null
           created_at: string
+          date_of_birth: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -303,6 +304,7 @@ export type Database = {
           company_card_id?: string | null
           company_id?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -315,6 +317,7 @@ export type Database = {
           company_card_id?: string | null
           company_id?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
