@@ -41,56 +41,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
     
     if (hasAuthParams) {
-      console.log('Processing auth hash parameters...');
+      console.log('[AuthContext] Processing auth hash parameters...');
       setProcessingAuth(true);
     }
 
-    // Set up auth state listener
+    // Helper function to fetch user profile - OUTSIDE the callback
+    const fetchUserProfile = async (userId: string) => {
+      try {
+        console.log('[AuthContext] Fetching profile for user:', userId);
+        
+        const [profileResult, roleResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle(),
+          supabase
+            .from('user_roles' as any)
+            .select('role')
+            .eq('user_id', userId)
+            .maybeSingle()
+        ]);
+
+        const { data: profileData, error: profileError } = profileResult;
+        const { data: roleData, error: roleError } = roleResult;
+        
+        if (profileError) {
+          console.error('[AuthContext] Error fetching profile:', profileError);
+          setLoading(false);
+          setProcessingAuth(false);
+          return;
+        }
+        
+        let userRole: 'admin' | 'employee' = 'employee';
+        
+        if (profileData) {
+          if (roleError) {
+            console.error('[AuthContext] Error fetching role:', roleError);
+            userRole = (profileData.role as 'admin' | 'employee') || 'employee';
+          } else if (roleData) {
+            const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
+            userRole = typedRoleData.role;
+          } else {
+            userRole = (profileData.role as 'admin' | 'employee') || 'employee';
+          }
+        }
+        
+        console.log('[AuthContext] Profile loaded successfully:', { userId, role: userRole });
+        setProfile(profileData ? { ...profileData, role: userRole } : null);
+      } catch (error) {
+        console.error('[AuthContext] Unexpected error fetching profile:', error);
+      } finally {
+        setProcessingAuth(false);
+        setLoading(false);
+      }
+    };
+
+    // Set up auth state listener - SYNCHRONOUS callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+      (event, session) => {
+        console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Paralelno učitavanje profila i uloge za bržu inicijalizaciju
-          const [profileResult, roleResult] = await Promise.all([
-            supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .maybeSingle(),
-            supabase
-              .from('user_roles' as any)
-              .select('role')
-              .eq('user_id', session.user.id)
-              .maybeSingle()
-          ]);
-
-          const { data: profileData, error: profileError } = profileResult;
-          const { data: roleData, error: roleError } = roleResult;
-          
-          if (profileError) {
-            console.error('[AuthContext] Error fetching profile:', profileError);
-          }
-          
-          let userRole: 'admin' | 'employee' = 'employee';
-          
-          if (profileData) {
-            if (roleError) {
-              console.error('[AuthContext] Error fetching role:', roleError);
-              userRole = (profileData.role as 'admin' | 'employee') || 'employee';
-            } else if (roleData) {
-              const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
-              userRole = typedRoleData.role;
-            } else {
-              userRole = (profileData.role as 'admin' | 'employee') || 'employee';
-            }
-          }
-          
-          setProfile(profileData ? { ...profileData, role: userRole } : null);
-          setProcessingAuth(false);
-          setLoading(false);
+          // Use setTimeout(0) to defer async Supabase calls and prevent deadlock
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
           setProcessingAuth(false);
@@ -101,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
+      console.log('[AuthContext] Initial session check:', session?.user?.email);
       // Don't set state here - let onAuthStateChange handle it to avoid race condition
       if (!session && !hasAuthParams) {
         setLoading(false);
