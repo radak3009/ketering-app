@@ -3,14 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Loader2, User as UserIcon, CalendarIcon } from 'lucide-react';
+import { Loader2, User as UserIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 interface ProfileViewProps {
   user: User | null;
@@ -146,32 +144,14 @@ export function ProfileView({ user }: ProfileViewProps) {
 
           <div className="space-y-2">
             <Label>Datum rođenja</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateOfBirth && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateOfBirth ? format(dateOfBirth, "dd.MM.yyyy") : <span>Izaberite datum</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateOfBirth}
-                  onSelect={setDateOfBirth}
-                  disabled={(date) =>
-                    date > new Date() || date < new Date("1900-01-01")
-                  }
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <EnhancedDatePicker
+              date={dateOfBirth}
+              onDateChange={setDateOfBirth}
+              disabled={(date) =>
+                date > new Date() || date < new Date("1900-01-01")
+              }
+              placeholder="Izaberite datum"
+            />
           </div>
 
           <div className="flex justify-end pt-4">

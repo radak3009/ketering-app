@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
 import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon, Bell, Copy } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -1553,30 +1554,14 @@ export function AdminDashboard() {
                           
                           <div>
                             <Label>Datum rođenja</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal",
-                                    !userForm.date_of_birth && "text-muted-foreground"
-                                  )}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {userForm.date_of_birth ? format(userForm.date_of_birth, "dd.MM.yyyy") : "Izaberite datum"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <CalendarComponent
-                                  mode="single"
-                                  selected={userForm.date_of_birth}
-                                  onSelect={(date) => setUserForm({ ...userForm, date_of_birth: date })}
-                                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                                  initialFocus
-                                  className={cn("p-3 pointer-events-auto")}
-                                />
-                              </PopoverContent>
-                            </Popover>
+                            <EnhancedDatePicker
+                              date={userForm.date_of_birth}
+                              onDateChange={(date) => setUserForm({ ...userForm, date_of_birth: date })}
+                              disabled={(date) =>
+                                date > new Date() || date < new Date("1900-01-01")
+                              }
+                              placeholder="Izaberite datum"
+                            />
                           </div>
                           
                           <div>
@@ -1677,35 +1662,17 @@ export function AdminDashboard() {
                     
                     <div>
                       <Label>Datum rođenja</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !selectedUser.date_of_birth && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {selectedUser.date_of_birth 
-                              ? format(new Date(selectedUser.date_of_birth), "dd.MM.yyyy") 
-                              : "Izaberite datum"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarComponent
-                            mode="single"
-                            selected={selectedUser.date_of_birth ? new Date(selectedUser.date_of_birth) : undefined}
-                            onSelect={(date) => setSelectedUser({
-                              ...selectedUser,
-                              date_of_birth: date ? format(date, 'yyyy-MM-dd') : null
-                            })}
-                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <EnhancedDatePicker
+                        date={selectedUser.date_of_birth ? new Date(selectedUser.date_of_birth) : undefined}
+                        onDateChange={(date) => setSelectedUser({
+                          ...selectedUser,
+                          date_of_birth: date ? format(date, 'yyyy-MM-dd') : null
+                        })}
+                        disabled={(date) =>
+                          date > new Date() || date < new Date("1900-01-01")
+                        }
+                        placeholder="Izaberite datum"
+                      />
                     </div>
                     
                     <div>

@@ -7,11 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Separator } from '@/components/ui/separator';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 interface ProfileDialogProps {
   open: boolean;
@@ -184,30 +181,14 @@ export function ProfileDialog({ open, onOpenChange, user }: ProfileDialogProps) 
           
           <div className="space-y-2">
             <Label>Datum rođenja</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !dateOfBirth && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateOfBirth ? format(dateOfBirth, "dd.MM.yyyy") : "Izaberite datum"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateOfBirth}
-                  onSelect={setDateOfBirth}
-                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
+            <EnhancedDatePicker
+              date={dateOfBirth}
+              onDateChange={setDateOfBirth}
+              disabled={(date) =>
+                date > new Date() || date < new Date("1900-01-01")
+              }
+              placeholder="Izaberite datum"
+            />
           </div>
 
           <Separator className="my-4" />
