@@ -3,10 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Loader2, User as UserIcon } from 'lucide-react';
+import { Loader2, User as UserIcon, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ProfileViewProps {
   user: User | null;
@@ -15,6 +19,7 @@ interface ProfileViewProps {
 export function ProfileView({ user }: ProfileViewProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const { toast } = useToast();
@@ -31,7 +36,7 @@ export function ProfileView({ user }: ProfileViewProps) {
     setFetching(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, phone')
+      .select('full_name, phone, date_of_birth')
       .eq('user_id', user.id)
       .single();
 
@@ -45,6 +50,7 @@ export function ProfileView({ user }: ProfileViewProps) {
     if (data) {
       setFullName(data.full_name || '');
       setPhone(data.phone || '');
+      setDateOfBirth(data.date_of_birth ? new Date(data.date_of_birth) : undefined);
     }
   };
 
@@ -57,7 +63,8 @@ export function ProfileView({ user }: ProfileViewProps) {
       .from('profiles')
       .update({
         full_name: fullName,
-        phone: phone
+        phone: phone,
+        date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null
       })
       .eq('user_id', user.id);
 
@@ -135,6 +142,36 @@ export function ProfileView({ user }: ProfileViewProps) {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Unesite broj telefona"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Datum rođenja</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateOfBirth && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateOfBirth ? format(dateOfBirth, "dd.MM.yyyy") : <span>Izaberite datum</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateOfBirth}
+                  onSelect={setDateOfBirth}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1900-01-01")
+                  }
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="flex justify-end pt-4">
