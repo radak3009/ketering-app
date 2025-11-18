@@ -114,12 +114,14 @@ export function useUsers() {
     full_name: string;
     email: string;
     phone?: string;
+    company_card_id?: string;
     date_of_birth?: Date;
     role: 'admin' | 'employee';
   }) => {
     try {
       // Instead of creating a profile directly, we just send a magic link
       // The profile will be created automatically by the trigger when the user signs up
+      // Note: company_card_id will need to be set by admin after user's first login
       await sendMagicLink(userData.email);
       
       toast({
