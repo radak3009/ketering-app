@@ -17,6 +17,7 @@ interface ProfileViewProps {
 export function ProfileView({ user }: ProfileViewProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [companyCardId, setCompanyCardId] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -34,7 +35,7 @@ export function ProfileView({ user }: ProfileViewProps) {
     setFetching(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, phone, date_of_birth')
+      .select('full_name, phone, company_card_id, date_of_birth')
       .eq('user_id', user.id)
       .single();
 
@@ -48,6 +49,7 @@ export function ProfileView({ user }: ProfileViewProps) {
     if (data) {
       setFullName(data.full_name || '');
       setPhone(data.phone || '');
+      setCompanyCardId(data.company_card_id || '');
       setDateOfBirth(data.date_of_birth ? new Date(data.date_of_birth) : undefined);
     }
   };
@@ -140,6 +142,18 @@ export function ProfileView({ user }: ProfileViewProps) {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Unesite broj telefona"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ID</Label>
+            <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+              {companyCardId || (
+                <span className="text-muted-foreground">Nema dodeljenog ID-a</span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Vaš identifikacioni broj. Kontaktirajte administratora za izmenu.
+            </p>
           </div>
 
           <div className="space-y-2">

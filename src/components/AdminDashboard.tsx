@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -126,8 +127,19 @@ export function AdminDashboard() {
     full_name: "",
     email: "",
     phone: "",
+    company_card_id: "",
     date_of_birth: undefined as Date | undefined,
     role: "employee" as "admin" | "employee"
+  });
+
+  // Filter states for user table
+  const [userFilters, setUserFilters] = useState({
+    id: '',
+    fullName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    role: ''
   });
 
   // Clone dialog state
@@ -151,6 +163,7 @@ export function AdminDashboard() {
       full_name: "",
       email: "",
       phone: "",
+      company_card_id: "",
       date_of_birth: undefined,
       role: "employee"
     });
@@ -164,6 +177,46 @@ export function AdminDashboard() {
       });
       return;
     }
+
+    // Validacija ID-a
+    if (!userForm.company_card_id) {
+      toast({
+        title: 'Greška',
+        description: 'ID je obavezno polje',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(userForm.company_card_id)) {
+      toast({
+        title: 'Greška',
+        description: 'ID mora biti numerička vrednost',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (userForm.company_card_id.length > 10) {
+      toast({
+        title: 'Greška',
+        description: 'ID može imati maksimalno 10 cifara',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Provera da li ID već postoji
+    const existingUser = users.find(u => u.company_card_id === userForm.company_card_id);
+    if (existingUser) {
+      toast({
+        title: 'Greška',
+        description: `ID ${userForm.company_card_id} je već dodeljen korisniku ${existingUser.full_name}`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       await createUser(userForm);
       resetUserForm();
@@ -482,12 +535,56 @@ export function AdminDashboard() {
   };
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
+
+    // Validacija ID-a
+    if (!selectedUser.company_card_id) {
+      toast({
+        title: 'Greška',
+        description: 'ID je obavezno polje',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(selectedUser.company_card_id)) {
+      toast({
+        title: 'Greška',
+        description: 'ID mora biti numerička vrednost',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (selectedUser.company_card_id.length > 10) {
+      toast({
+        title: 'Greška',
+        description: 'ID može imati maksimalno 10 cifara',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Provera da li ID već postoji (exclude trenutnog korisnika)
+    const existingUser = users.find(u => 
+      u.company_card_id === selectedUser.company_card_id && 
+      u.id !== selectedUser.id
+    );
+    if (existingUser) {
+      toast({
+        title: 'Greška',
+        description: `ID ${selectedUser.company_card_id} je već dodeljen korisniku ${existingUser.full_name}`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
       // Only update profile fields (not role - roles managed separately)
       await updateUser(selectedUser.id, {
         full_name: selectedUser.full_name,
         email: selectedUser.email,
         phone: selectedUser.phone,
+        company_card_id: selectedUser.company_card_id,
         date_of_birth: selectedUser.date_of_birth || null
       });
       setSelectedUser(null);
@@ -1553,6 +1650,26 @@ export function AdminDashboard() {
                           </div>
                           
                           <div>
+                            <Label htmlFor="user-id">ID *</Label>
+                            <Input 
+                              id="user-id" 
+                              type="text"
+                              pattern="[0-9]*"
+                              maxLength={10}
+                              value={userForm.company_card_id} 
+                              onChange={e => {
+                                const value = e.target.value.replace(/\D/g, '');
+                                setUserForm({ ...userForm, company_card_id: value });
+                              }}
+                              placeholder="1234567890"
+                              className={!userForm.company_card_id ? 'border-destructive' : ''}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Identifikacioni broj korisnika (max 10 cifara)
+                            </p>
+                          </div>
+                          
+                          <div>
                             <Label>Datum rođenja</Label>
                             <EnhancedDatePicker
                               date={userForm.date_of_birth}
@@ -1591,41 +1708,164 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {usersLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="space-y-2 md:space-y-3">
-                    {users.map(user => <div key={user.id} className="flex items-center justify-between gap-3 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedUser(user)}>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm md:text-base truncate">{user.full_name || 'Bez imena'}</p>
-                          <p className="text-xs md:text-sm text-muted-foreground truncate">{user.email}</p>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="outline" className="text-xs">{user.role}</Badge>
-                            {user.phone && <span className="text-xs text-muted-foreground">{user.phone}</span>}
-                          </div>
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-8 w-8 md:h-9 md:w-auto md:px-3">
-                                <Mail className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Pošalji magic link</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Da li ste sigurni da želite da pošaljete magic link za prijavu korisniku {user.full_name} na email {user.email}?
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleSendMagicLink(user.email || '')}>
-                                  Pošalji
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>)}
-                  </div>}
+                {usersLoading ? (
+                  <div className="text-center py-8">Učitavanje...</div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold">ID</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={userFilters.id}
+                                onChange={(e) => setUserFilters(prev => ({...prev, id: e.target.value}))}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="space-y-1">
+                              <span className="font-semibold">Ime i prezime</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={userFilters.fullName}
+                                onChange={(e) => setUserFilters(prev => ({...prev, fullName: e.target.value}))}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="space-y-1">
+                              <span className="font-semibold">Email</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={userFilters.email}
+                                onChange={(e) => setUserFilters(prev => ({...prev, email: e.target.value}))}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[130px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold">Telefon</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={userFilters.phone}
+                                onChange={(e) => setUserFilters(prev => ({...prev, phone: e.target.value}))}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[130px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold">Datum rođenja</span>
+                              <Input
+                                placeholder="dd.mm.yyyy"
+                                value={userFilters.dateOfBirth}
+                                onChange={(e) => setUserFilters(prev => ({...prev, dateOfBirth: e.target.value}))}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[120px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold">Uloga</span>
+                              <Select 
+                                value={userFilters.role} 
+                                onValueChange={(value) => setUserFilters(prev => ({...prev, role: value}))}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Sve" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">Sve</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="employee">Employee</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[70px]">
+                            <span className="font-semibold">Akcije</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(() => {
+                          const filteredUsers = users.filter(user => {
+                            const matchesId = !userFilters.id || 
+                              (user.company_card_id && user.company_card_id.includes(userFilters.id));
+                            const matchesName = !userFilters.fullName || 
+                              (user.full_name && user.full_name.toLowerCase().includes(userFilters.fullName.toLowerCase()));
+                            const matchesEmail = !userFilters.email || 
+                              (user.email && user.email.toLowerCase().includes(userFilters.email.toLowerCase()));
+                            const matchesPhone = !userFilters.phone || 
+                              (user.phone && user.phone.includes(userFilters.phone));
+                            const matchesDob = !userFilters.dateOfBirth || 
+                              (user.date_of_birth && user.date_of_birth.includes(userFilters.dateOfBirth));
+                            const matchesRole = !userFilters.role || user.role === userFilters.role;
+                            
+                            return matchesId && matchesName && matchesEmail && matchesPhone && matchesDob && matchesRole;
+                          });
+
+                          return filteredUsers.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                                Nema korisnika koji odgovaraju filterima
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredUsers.map(user => (
+                              <TableRow 
+                                key={user.id}
+                                className="cursor-pointer hover:bg-muted/50"
+                                onClick={() => setSelectedUser(user)}
+                              >
+                                <TableCell className="font-mono text-xs">
+                                  {user.company_card_id || (
+                                    <span className="text-destructive font-semibold">Nema ID</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {user.full_name || 'Bez imena'}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {user.email}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {user.phone || '-'}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {user.date_of_birth ? format(new Date(user.date_of_birth), 'dd.MM.yyyy') : '-'}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
+                                    {user.role}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSendMagicLink(user.email || '');
+                                    }}
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          );
+                        })()}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1658,6 +1898,29 @@ export function AdminDashboard() {
                     ...selectedUser,
                     phone: e.target.value
                   })} placeholder="069123456" />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="edit-user-id">ID *</Label>
+                      <Input 
+                        id="edit-user-id" 
+                        type="text"
+                        pattern="[0-9]*"
+                        maxLength={10}
+                        value={selectedUser.company_card_id || ''} 
+                        onChange={e => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          setSelectedUser({ ...selectedUser, company_card_id: value });
+                        }}
+                        placeholder="1234567890"
+                        className={!selectedUser.company_card_id ? 'border-destructive' : ''}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Identifikacioni broj korisnika (max 10 cifara)
+                      </p>
+                      {!selectedUser.company_card_id && (
+                        <p className="text-xs text-destructive mt-1">ID je obavezno polje</p>
+                      )}
                     </div>
                     
                     <div>
