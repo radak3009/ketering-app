@@ -139,7 +139,7 @@ export function AdminDashboard() {
     email: '',
     phone: '',
     dateOfBirth: '',
-    role: ''
+    role: 'all'
   });
 
   // Clone dialog state
@@ -1781,7 +1781,7 @@ export function AdminDashboard() {
                                   <SelectValue placeholder="Sve" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">Sve</SelectItem>
+                                  <SelectItem value="all">Sve</SelectItem>
                                   <SelectItem value="admin">Admin</SelectItem>
                                   <SelectItem value="employee">Employee</SelectItem>
                                 </SelectContent>
@@ -1806,7 +1806,7 @@ export function AdminDashboard() {
                               (user.phone && user.phone.includes(userFilters.phone));
                             const matchesDob = !userFilters.dateOfBirth || 
                               (user.date_of_birth && user.date_of_birth.includes(userFilters.dateOfBirth));
-                            const matchesRole = !userFilters.role || user.role === userFilters.role;
+                            const matchesRole = userFilters.role === 'all' || user.role === userFilters.role;
                             
                             return matchesId && matchesName && matchesEmail && matchesPhone && matchesDob && matchesRole;
                           });
