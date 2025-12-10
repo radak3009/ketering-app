@@ -109,14 +109,25 @@ export function AdminDashboard() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
-  const [mealForm, setMealForm] = useState({
+const [mealForm, setMealForm] = useState({
     name: "",
     description: "",
     price: "",
+    code: "",
     status: "aktivan" as "aktivan" | "neaktivan",
     shifts: [] as string[],
     allergens: [] as string[],
     image_url: ""
+  });
+
+  // Filter states for meal table
+  const [mealFilters, setMealFilters] = useState({
+    code: '',
+    name: '',
+    description: '',
+    allergens: '',
+    shifts: [] as string[],
+    status: 'all'
   });
   const [menuForm, setMenuForm] = useState({
     description: "",
@@ -394,12 +405,25 @@ export function AdminDashboard() {
         imageUrl = await uploadImage(imageFile);
         if (!imageUrl) return;
       }
+      // Provera da li šifra već postoji (ako je uneta)
+      if (mealForm.code) {
+        const existingMeal = meals.find(m => m.code === mealForm.code);
+        if (existingMeal) {
+          toast({
+            title: 'Greška',
+            description: `Šifra "${mealForm.code}" već postoji za obrok "${existingMeal.name}"`,
+            variant: 'destructive'
+          });
+          return;
+        }
+      }
+
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
         price: parseFloat(mealForm.price),
         category: "Glavno jelo",
-        // Default category
+        code: mealForm.code || null,
         status: mealForm.status,
         shifts: mealForm.shifts,
         image_url: imageUrl || null,
@@ -442,10 +466,26 @@ export function AdminDashboard() {
         shifts: selectedMeal.shifts,
         image_url: imageUrl || null
       });
+      // Provera da li šifra već postoji (ako je uneta)
+      if (selectedMeal.code) {
+        const existingMeal = meals.find(m => 
+          m.code === selectedMeal.code && m.id !== selectedMeal.id
+        );
+        if (existingMeal) {
+          toast({
+            title: 'Greška',
+            description: `Šifra "${selectedMeal.code}" već postoji za obrok "${existingMeal.name}"`,
+            variant: 'destructive'
+          });
+          return;
+        }
+      }
+
       const updatedMeal = await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
         price: parseFloat(selectedMeal.price),
+        code: selectedMeal.code || null,
         status: selectedMeal.status,
         shifts: selectedMeal.shifts,
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
@@ -637,6 +677,7 @@ export function AdminDashboard() {
       name: "",
       description: "",
       price: "",
+      code: "",
       status: "aktivan",
       shifts: [],
       allergens: [],
@@ -964,6 +1005,23 @@ export function AdminDashboard() {
                       </SheetHeader>
                       <div className="space-y-4 mt-6">
                         <div>
+                          <Label htmlFor="meal-code">Šifra obroka</Label>
+                          <Input 
+                            id="meal-code" 
+                            value={mealForm.code} 
+                            onChange={e => {
+                              const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+                              setMealForm({...mealForm, code: value});
+                            }}
+                            maxLength={8}
+                            placeholder="npr. OBR001" 
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Alfanumerička vrednost, max 8 karaktera
+                          </p>
+                        </div>
+                        
+                        <div>
                           <Label htmlFor="meal-name">Naziv obroka *</Label>
                           <Input id="meal-name" value={mealForm.name} onChange={e => setMealForm({
                           ...mealForm,
@@ -1063,47 +1121,210 @@ export function AdminDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {mealsLoading ? <div className="text-center py-8">Učitavanje...</div> : <div className="grid gap-3 md:gap-4">
-                    {meals.map(meal => <div key={meal.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedMeal({
-                  ...meal,
-                  shifts: meal.shifts || []
-                })}>
-                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                          {meal.image_url ? <img src={meal.image_url} alt={meal.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
-                            </div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-medium text-sm md:text-base truncate">{meal.name}</p>
-                            <Badge variant={meal.status === "aktivan" ? "default" : "secondary"} className="text-xs">
-                              {meal.status}
-                            </Badge>
-                          </div>
-                          <p className="text-xs md:text-sm text-muted-foreground">{meal.price} RSD</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {meal.shifts?.join(', ')} smena
-                            </span>
-                          </div>
-                          {meal.allergens && meal.allergens.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {meal.allergens.slice(0, 3).map((allergen, idx) => (
-                                <Badge key={idx} variant="outline" className="text-xs">
-                                  {allergen}
-                                </Badge>
-                              ))}
-                              {meal.allergens.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{meal.allergens.length - 3}
-                                </Badge>
-                              )}
+                {mealsLoading ? <div className="text-center py-8">Učitavanje...</div> : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold text-xs">Šifra</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={mealFilters.code}
+                                onChange={(e) => setMealFilters(prev => ({...prev, code: e.target.value}))}
+                                className="h-7 text-xs"
+                              />
                             </div>
-                          )}
-                        </div>
-                      </div>)}
-                  </div>}
+                          </TableHead>
+                          <TableHead>
+                            <div className="space-y-1">
+                              <span className="font-semibold text-xs">Naziv obroka</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={mealFilters.name}
+                                onChange={(e) => setMealFilters(prev => ({...prev, name: e.target.value}))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[200px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold text-xs">Opis</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={mealFilters.description}
+                                onChange={(e) => setMealFilters(prev => ({...prev, description: e.target.value}))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[150px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold text-xs">Alergeni</span>
+                              <Input
+                                placeholder="Pretraži..."
+                                value={mealFilters.allergens}
+                                onChange={(e) => setMealFilters(prev => ({...prev, allergens: e.target.value}))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[180px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold text-xs">Smene</span>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" className="h-7 text-xs w-full justify-start font-normal">
+                                    {mealFilters.shifts.length === 0 
+                                      ? "Sve smene" 
+                                      : mealFilters.shifts.join(', ')}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2 bg-popover border" align="start">
+                                  {['prva', 'druga', 'treća'].map(shift => (
+                                    <div key={shift} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                                      <Checkbox
+                                        id={`filter-shift-${shift}`}
+                                        checked={mealFilters.shifts.includes(shift)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setMealFilters(prev => ({
+                                              ...prev, 
+                                              shifts: [...prev.shifts, shift]
+                                            }));
+                                          } else {
+                                            setMealFilters(prev => ({
+                                              ...prev, 
+                                              shifts: prev.shifts.filter(s => s !== shift)
+                                            }));
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor={`filter-shift-${shift}`} className="text-sm capitalize cursor-pointer">{shift}</Label>
+                                    </div>
+                                  ))}
+                                  {mealFilters.shifts.length > 0 && (
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="w-full mt-2 text-xs"
+                                      onClick={() => setMealFilters(prev => ({...prev, shifts: []}))}
+                                    >
+                                      Resetuj filter
+                                    </Button>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[100px]">
+                            <span className="font-semibold text-xs">Cena</span>
+                          </TableHead>
+                          <TableHead className="w-[130px]">
+                            <div className="space-y-1">
+                              <span className="font-semibold text-xs">Status</span>
+                              <Select 
+                                value={mealFilters.status} 
+                                onValueChange={(value) => setMealFilters(prev => ({...prev, status: value}))}
+                              >
+                                <SelectTrigger className="h-7 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Svi</SelectItem>
+                                  <SelectItem value="aktivan">Aktivan</SelectItem>
+                                  <SelectItem value="neaktivan">Neaktivan</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableHead>
+                          <TableHead className="w-[80px]">
+                            <span className="font-semibold text-xs">Slika</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(() => {
+                          const filteredMeals = meals.filter(meal => {
+                            const matchesCode = !mealFilters.code || 
+                              (meal.code && meal.code.toLowerCase().includes(mealFilters.code.toLowerCase()));
+                            const matchesName = !mealFilters.name || 
+                              meal.name.toLowerCase().includes(mealFilters.name.toLowerCase());
+                            const matchesDescription = !mealFilters.description || 
+                              (meal.description && meal.description.toLowerCase().includes(mealFilters.description.toLowerCase()));
+                            const matchesAllergens = !mealFilters.allergens || 
+                              (meal.allergens && meal.allergens.some(a => 
+                                a.toLowerCase().includes(mealFilters.allergens.toLowerCase())));
+                            const matchesShifts = mealFilters.shifts.length === 0 || 
+                              mealFilters.shifts.some(shift => meal.shifts?.includes(shift));
+                            const matchesStatus = mealFilters.status === 'all' || meal.status === mealFilters.status;
+                            
+                            return matchesCode && matchesName && matchesDescription && 
+                                   matchesAllergens && matchesShifts && matchesStatus;
+                          });
+                          
+                          if (filteredMeals.length === 0) {
+                            return (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                                  Nema obroka koji odgovaraju filterima
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+                          
+                          return filteredMeals.map(meal => (
+                            <TableRow 
+                              key={meal.id}
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                            >
+                              <TableCell className="font-mono text-xs font-medium">
+                                {meal.code || <span className="text-muted-foreground">-</span>}
+                              </TableCell>
+                              <TableCell className="font-medium">{meal.name}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
+                                {meal.description || '-'}
+                              </TableCell>
+                              <TableCell>
+                                {meal.allergens && meal.allergens.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {meal.allergens.slice(0, 2).map((a, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">{a}</Badge>
+                                    ))}
+                                    {meal.allergens.length > 2 && (
+                                      <Badge variant="outline" className="text-xs">+{meal.allergens.length - 2}</Badge>
+                                    )}
+                                  </div>
+                                ) : '-'}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {meal.shifts?.join(', ') || '-'}
+                              </TableCell>
+                              <TableCell className="font-medium">{meal.price} RSD</TableCell>
+                              <TableCell>
+                                <Badge variant={meal.status === 'aktivan' ? 'default' : 'secondary'}>
+                                  {meal.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {meal.image_url ? (
+                                  <img src={meal.image_url} alt={meal.name} 
+                                    className="w-10 h-10 rounded object-cover" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ));
+                        })()}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1117,6 +1338,23 @@ export function AdminDashboard() {
                   <SheetTitle>Izmeni obrok</SheetTitle>
                 </SheetHeader>
                 {selectedMeal && <div className="space-y-4 mt-6 pb-6">
+                    <div>
+                      <Label htmlFor="edit-meal-code">Šifra obroka</Label>
+                      <Input 
+                        id="edit-meal-code" 
+                        value={selectedMeal.code || ''} 
+                        onChange={e => {
+                          const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+                          setSelectedMeal({...selectedMeal, code: value});
+                        }}
+                        maxLength={8}
+                        placeholder="npr. OBR001"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Alfanumerička vrednost, max 8 karaktera
+                      </p>
+                    </div>
+                    
                     <div>
                       <Label htmlFor="edit-meal-name">Naziv obroka *</Label>
                       <Input id="edit-meal-name" value={selectedMeal.name} onChange={e => setSelectedMeal({
