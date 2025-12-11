@@ -113,6 +113,7 @@ const [mealForm, setMealForm] = useState({
     name: "",
     description: "",
     price: "",
+    purchase_price: "",
     code: "",
     status: "aktivan" as "aktivan" | "neaktivan",
     shifts: [] as string[],
@@ -422,6 +423,7 @@ const [mealForm, setMealForm] = useState({
         name: mealForm.name,
         description: mealForm.description || null,
         price: parseFloat(mealForm.price),
+        purchase_price: mealForm.purchase_price ? parseFloat(mealForm.purchase_price) : null,
         category: "Glavno jelo",
         code: mealForm.code || null,
         status: mealForm.status,
@@ -485,6 +487,7 @@ const [mealForm, setMealForm] = useState({
         name: selectedMeal.name,
         description: selectedMeal.description || null,
         price: parseFloat(selectedMeal.price),
+        purchase_price: selectedMeal.purchase_price ? parseFloat(selectedMeal.purchase_price) : null,
         code: selectedMeal.code || null,
         status: selectedMeal.status,
         shifts: selectedMeal.shifts,
@@ -677,6 +680,7 @@ const [mealForm, setMealForm] = useState({
       name: "",
       description: "",
       price: "",
+      purchase_price: "",
       code: "",
       status: "aktivan",
       shifts: [],
@@ -1030,6 +1034,14 @@ const [mealForm, setMealForm] = useState({
                         </div>
                         
                         <div>
+                          <Label htmlFor="meal-purchase-price">Nabavna cena (RSD)</Label>
+                          <Input id="meal-purchase-price" type="number" value={mealForm.purchase_price} onChange={e => setMealForm({
+                          ...mealForm,
+                          purchase_price: e.target.value
+                        })} placeholder="300" />
+                        </div>
+                        
+                        <div>
                           <Label htmlFor="meal-price">Cena (RSD) *</Label>
                           <Input id="meal-price" type="number" value={mealForm.price} onChange={e => setMealForm({
                           ...mealForm,
@@ -1219,6 +1231,9 @@ const [mealForm, setMealForm] = useState({
                             </div>
                           </TableHead>
                           <TableHead className="w-[100px]">
+                            <span className="font-semibold text-xs">Nabavna cena</span>
+                          </TableHead>
+                          <TableHead className="w-[100px]">
                             <span className="font-semibold text-xs">Cena</span>
                           </TableHead>
                           <TableHead className="w-[130px]">
@@ -1267,7 +1282,7 @@ const [mealForm, setMealForm] = useState({
                           if (filteredMeals.length === 0) {
                             return (
                               <TableRow>
-                                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                                   Nema obroka koji odgovaraju filterima
                                 </TableCell>
                               </TableRow>
@@ -1301,6 +1316,9 @@ const [mealForm, setMealForm] = useState({
                               </TableCell>
                               <TableCell className="text-xs">
                                 {meal.shifts?.join(', ') || '-'}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {meal.purchase_price ? `${meal.purchase_price} RSD` : '-'}
                               </TableCell>
                               <TableCell className="font-medium">{meal.price} RSD</TableCell>
                               <TableCell>
@@ -1360,6 +1378,14 @@ const [mealForm, setMealForm] = useState({
                       <Input id="edit-meal-name" value={selectedMeal.name} onChange={e => setSelectedMeal({
                     ...selectedMeal,
                     name: e.target.value
+                  })} />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="edit-meal-purchase-price">Nabavna cena (RSD)</Label>
+                      <Input id="edit-meal-purchase-price" type="number" value={selectedMeal.purchase_price || ''} onChange={e => setSelectedMeal({
+                    ...selectedMeal,
+                    purchase_price: e.target.value
                   })} />
                     </div>
                     

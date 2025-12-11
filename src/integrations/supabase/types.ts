@@ -81,6 +81,7 @@ export type Database = {
           name: string
           nutritional_info: Json | null
           price: number
+          purchase_price: number | null
           shifts: string[]
           status: string
           updated_at: string
@@ -97,6 +98,7 @@ export type Database = {
           name: string
           nutritional_info?: Json | null
           price: number
+          purchase_price?: number | null
           shifts?: string[]
           status?: string
           updated_at?: string
@@ -113,6 +115,7 @@ export type Database = {
           name?: string
           nutritional_info?: Json | null
           price?: number
+          purchase_price?: number | null
           shifts?: string[]
           status?: string
           updated_at?: string
