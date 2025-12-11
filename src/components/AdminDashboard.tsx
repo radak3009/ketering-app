@@ -942,32 +942,28 @@ const [mealForm, setMealForm] = useState({
             <div className="space-y-4 md:space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-                      <div>
-                        <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
-                        <CardDescription className="text-xs md:text-sm">Filtriraj i pretraži porudžbine</CardDescription>
-                      </div>
-                      <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                        <Input placeholder="Pretraži po nazivu obroka..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="w-full md:w-48 h-10 md:h-9" />
-                        <Button variant="outline" size="sm" onClick={handleSearchOrders} className="w-full md:w-auto h-10 md:h-9">
-                          <Search className="h-4 w-4 mr-1" />
-                          Pretraži
-                        </Button>
-                      </div>
+                    <div className="flex flex-col gap-4">
+                    <div>
+                      <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
+                      <CardDescription className="text-xs md:text-sm">Filtriraj i pretraži porudžbine</CardDescription>
                     </div>
-                    <div className="flex flex-col md:flex-row gap-2">
+                    <div className="flex flex-col md:flex-row gap-2 flex-wrap">
                       <Input type="date" placeholder="Od datuma" value={orderDateRange.startDate} onChange={e => setOrderDateRange({
                       ...orderDateRange,
                       startDate: e.target.value
-                    })} className="w-full h-10 md:h-9" />
+                    })} className="w-full md:w-auto h-10 md:h-9" />
                       <Input type="date" placeholder="Do datuma" value={orderDateRange.endDate} onChange={e => setOrderDateRange({
                       ...orderDateRange,
                       endDate: e.target.value
-                    })} className="w-full h-10 md:h-9" />
+                    })} className="w-full md:w-auto h-10 md:h-9" />
                       <Button variant="outline" size="sm" onClick={handleDateRangeFilter} className="w-full md:w-auto h-10 md:h-9">
                         <Filter className="h-4 w-4 mr-1" />
                         Filtriraj
+                      </Button>
+                      <Input placeholder="Pretraži po nazivu obroka..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="w-full md:w-48 h-10 md:h-9" />
+                      <Button variant="outline" size="sm" onClick={handleSearchOrders} className="w-full md:w-auto h-10 md:h-9">
+                        <Search className="h-4 w-4 mr-1" />
+                        Pretraži
                       </Button>
                     </div>
                   </div>
