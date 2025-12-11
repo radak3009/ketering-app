@@ -112,8 +112,8 @@ export function AdminDashboard() {
 const [mealForm, setMealForm] = useState({
     name: "",
     description: "",
-    price: "",
-    purchase_price: "",
+    price: "400",
+    purchase_price: "200",
     code: "",
     status: "aktivan" as "aktivan" | "neaktivan",
     shifts: [] as string[],
@@ -679,8 +679,8 @@ const [mealForm, setMealForm] = useState({
     setMealForm({
       name: "",
       description: "",
-      price: "",
-      purchase_price: "",
+      price: "400",
+      purchase_price: "200",
       code: "",
       status: "aktivan",
       shifts: [],
@@ -1042,7 +1042,7 @@ const [mealForm, setMealForm] = useState({
                         </div>
                         
                         <div>
-                          <Label htmlFor="meal-price">Cena (RSD) *</Label>
+                          <Label htmlFor="meal-price">Cena (RSD)</Label>
                           <Input id="meal-price" type="number" value={mealForm.price} onChange={e => setMealForm({
                           ...mealForm,
                           price: e.target.value
