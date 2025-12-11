@@ -1390,7 +1390,7 @@ const [mealForm, setMealForm] = useState({
                     </div>
                     
                     <div>
-                      <Label htmlFor="edit-meal-price">Cena (RSD) *</Label>
+                      <Label htmlFor="edit-meal-price">Cena (RSD)</Label>
                       <Input id="edit-meal-price" type="number" value={selectedMeal.price} onChange={e => setSelectedMeal({
                     ...selectedMeal,
                     price: e.target.value
