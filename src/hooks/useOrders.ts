@@ -7,8 +7,15 @@ type Order = Tables<'orders'>;
 type OrderItem = Tables<'order_items'>;
 type Meal = Tables<'meals'>;
 
+interface Profile {
+  id: string;
+  full_name: string | null;
+  company_card_id: string | null;
+}
+
 interface OrderWithItems extends Order {
   order_items?: (OrderItem & { meal: Meal })[];
+  profile?: Profile;
 }
 
 interface MealOrderSummary {
@@ -26,6 +33,8 @@ export function useOrders() {
   const fetchOrders = async (startDate?: string, endDate?: string) => {
     try {
       setLoading(true);
+      
+      // First fetch orders with order items
       let query = supabase
         .from('orders')
         .select(`
@@ -45,15 +54,36 @@ export function useOrders() {
         query = query.lte('delivery_date', endDate);
       }
 
-      const { data, error } = await query;
+      const { data: ordersData, error: ordersError } = await query;
 
-      if (error) throw error;
+      if (ordersError) throw ordersError;
       
-      const formattedOrders = data?.map(order => ({
+      // Get unique user IDs from orders
+      const userIds = [...new Set(ordersData?.map(o => o.user_id) || [])];
+      
+      // Fetch profiles for those users
+      let profilesMap: Record<string, Profile> = {};
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, user_id, full_name, company_card_id')
+          .in('user_id', userIds);
+        
+        profilesData?.forEach(p => {
+          profilesMap[p.user_id] = {
+            id: p.id,
+            full_name: p.full_name,
+            company_card_id: p.company_card_id
+          };
+        });
+      }
+      
+      const formattedOrders: OrderWithItems[] = ordersData?.map(order => ({
         ...order,
+        profile: profilesMap[order.user_id],
         order_items: order.order_items?.map(oi => ({
           ...oi,
-          meal: oi.meals
+          meal: oi.meals as unknown as Meal
         }))
       })) || [];
       
