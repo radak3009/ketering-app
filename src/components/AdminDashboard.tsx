@@ -31,6 +31,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { FeedbackManagement } from "./admin/FeedbackManagement";
 import { SuggestionsManagement } from "./admin/SuggestionsManagement";
 import { OrderPivotTable } from "./admin/OrderPivotTable";
+import { UserOrderPivotTable } from "./admin/UserOrderPivotTable";
 import { AIHelpChat } from "./AIHelpChat";
 import { TagInput } from "./ui/tag-input";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,8 @@ export function AdminDashboard() {
   // Search states
   const [menuMealSearch, setMenuMealSearch] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
+  const [userCardFilter, setUserCardFilter] = useState("");
+  const [pivotView, setPivotView] = useState<"meals" | "users">("meals");
   const [orderDateRange, setOrderDateRange] = useState({
     startDate: format(startOfWeek(addWeeks(new Date(), 1), {
       weekStartsOn: 1
@@ -942,20 +945,20 @@ const [mealForm, setMealForm] = useState({
             <div className="space-y-4 md:space-y-6">
               <Card>
                 <CardHeader>
-                    <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-4">
                     <div>
                       <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
                       <CardDescription className="text-xs md:text-sm">Filtriraj i pretraži porudžbine</CardDescription>
                     </div>
                     <div className="flex flex-col md:flex-row gap-2 flex-wrap">
                       <Input type="date" placeholder="Od datuma" value={orderDateRange.startDate} onChange={e => setOrderDateRange({
-                      ...orderDateRange,
-                      startDate: e.target.value
-                    })} className="w-full md:w-auto h-10 md:h-9" />
+                        ...orderDateRange,
+                        startDate: e.target.value
+                      })} className="w-full md:w-auto h-10 md:h-9" />
                       <Input type="date" placeholder="Do datuma" value={orderDateRange.endDate} onChange={e => setOrderDateRange({
-                      ...orderDateRange,
-                      endDate: e.target.value
-                    })} className="w-full md:w-auto h-10 md:h-9" />
+                        ...orderDateRange,
+                        endDate: e.target.value
+                      })} className="w-full md:w-auto h-10 md:h-9" />
                       <Button variant="outline" size="sm" onClick={handleDateRangeFilter} className="w-full md:w-auto h-10 md:h-9">
                         <Filter className="h-4 w-4 mr-1" />
                         Filtriraj
@@ -965,16 +968,48 @@ const [mealForm, setMealForm] = useState({
                         <Search className="h-4 w-4 mr-1" />
                         Pretraži
                       </Button>
+                      <Input 
+                        placeholder="ID kartice korisnika..." 
+                        value={userCardFilter} 
+                        onChange={e => setUserCardFilter(e.target.value)} 
+                        className="w-full md:w-44 h-10 md:h-9" 
+                      />
                     </div>
                   </div>
                 </CardHeader>
               </Card>
 
-              {ordersLoading ? <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center py-8">Učitavanje...</div>
-                  </CardContent>
-                </Card> : <OrderPivotTable orders={orders} />}
+              {/* Toggle tabs for pivot view */}
+              <Tabs value={pivotView} onValueChange={(v) => setPivotView(v as "meals" | "users")} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 max-w-md">
+                  <TabsTrigger value="meals" className="text-xs md:text-sm">Po obrocima</TabsTrigger>
+                  <TabsTrigger value="users" className="text-xs md:text-sm">Po korisnicima</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="meals" className="mt-4">
+                  {ordersLoading ? (
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="text-center py-8">Učitavanje...</div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <OrderPivotTable orders={orders} />
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="users" className="mt-4">
+                  {ordersLoading ? (
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="text-center py-8">Učitavanje...</div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <UserOrderPivotTable orders={orders} userCardFilter={userCardFilter} />
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           </TabsContent>
 
