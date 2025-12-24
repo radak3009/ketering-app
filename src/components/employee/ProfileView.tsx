@@ -157,7 +157,7 @@ export function ProfileView({ user }: ProfileViewProps) {
   }
 
   return (
-    <Card>
+    <Card className="mb-24 sm:mb-0">
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
