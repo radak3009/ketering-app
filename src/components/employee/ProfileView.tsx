@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Loader2, User as UserIcon } from 'lucide-react';
+import { Loader2, User as UserIcon, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ProfileViewProps {
@@ -21,6 +22,12 @@ export function ProfileView({ user }: ProfileViewProps) {
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,6 +90,58 @@ export function ProfileView({ user }: ProfileViewProps) {
       title: 'Uspešno',
       description: 'Profil je ažuriran',
     });
+  };
+
+  const handlePasswordChange = async () => {
+    if (!newPassword) {
+      toast({
+        title: 'Greška',
+        description: 'Unesite novu lozinku',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Greška',
+        description: 'Lozinka mora imati najmanje 6 karaktera',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Greška',
+        description: 'Lozinke se ne podudaraju',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    setPasswordLoading(false);
+
+    if (error) {
+      toast({
+        title: 'Greška',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Uspešno',
+      description: 'Lozinka je uspešno promenjena',
+    });
+    
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   if (fetching) {
@@ -173,6 +232,58 @@ export function ProfileView({ user }: ProfileViewProps) {
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? 'Čuvanje...' : 'Sačuvaj promene'}
             </Button>
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Password Change Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Lock className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Promena lozinke</h3>
+                <p className="text-sm text-muted-foreground">Ažurirajte lozinku za pristup aplikaciji</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nova lozinka</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Unesite novu lozinku"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Potvrdi lozinku</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Ponovite novu lozinku"
+              />
+              <p className="text-xs text-muted-foreground">
+                Lozinka mora imati najmanje 6 karaktera
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button 
+                onClick={handlePasswordChange} 
+                disabled={passwordLoading} 
+                variant="outline"
+                className="gap-2"
+              >
+                {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {passwordLoading ? 'Menjanje...' : 'Promeni lozinku'}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
