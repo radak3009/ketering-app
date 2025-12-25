@@ -13,6 +13,13 @@ const Index = () => {
     // Check if we're processing hash parameters (email verification or magic link)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
+    const isRecoveryMode = hashParams.get('type') === 'recovery';
+    
+    // Ako je recovery mode, redirektuj na /auth sa recovery parametrom
+    if (isRecoveryMode) {
+      navigate('/auth?recovery=true');
+      return;
+    }
     
     // Don't redirect if we're still loading or processing auth parameters
     if (loading || hasAuthParams) {

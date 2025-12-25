@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building2, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
@@ -26,14 +26,30 @@ const magicLinkSchema = z.object({
   email: z.string().email('Neispravna email adresa').max(255)
 });
 
+const passwordResetSchema = z.object({
+  password: z.string().min(6, 'Lozinka mora imati najmanje 6 karaktera').max(100),
+  confirmPassword: z.string().min(6, 'Potvrdite lozinku').max(100)
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Lozinke se ne poklapaju",
+  path: ["confirmPassword"]
+});
+
 export default function Auth() {
-  const { signUp, signIn, signInWithGoogle, signInWithMagicLink, signOut, user, profile, loading: authLoading } = useAuth();
+  const { signUp, signIn, signInWithGoogle, signInWithMagicLink, signOut, resetPassword, updatePassword, user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [processingAuth, setProcessingAuth] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [passwordResetData, setPasswordResetData] = useState({
+    password: '',
+    confirmPassword: ''
+  });
   
   const [signUpData, setSignUpData] = useState({
     email: '',
@@ -49,6 +65,19 @@ export default function Auth() {
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
   useEffect(() => {
+    // Proveri da li je recovery mode iz URL parametra
+    const recoveryParam = searchParams.get('recovery');
+    if (recoveryParam === 'true') {
+      setIsRecoveryMode(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    // Ako je recovery mode, ne redirektuj na dashboard
+    if (isRecoveryMode) {
+      return;
+    }
+    
     // Postavi processingAuth na true dok čekamo profil
     if (user && !profile && !authLoading) {
       setProcessingAuth(true);
@@ -64,7 +93,7 @@ export default function Auth() {
     if (!user) {
       setProcessingAuth(false);
     }
-  }, [user, profile, navigate, authLoading]);
+  }, [user, profile, navigate, authLoading, isRecoveryMode]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,13 +231,228 @@ export default function Auth() {
     }
   };
 
-  // Prikaži loading spinner dok se učitava profil
-  if (user && !profile && (authLoading || processingAuth)) {
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const validatedData = magicLinkSchema.parse({ email: forgotPasswordEmail });
+      setLoading(true);
+      
+      const { error } = await resetPassword(validatedData.email);
+      
+      if (error) {
+        toast({
+          title: 'Greška',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Email poslat!',
+          description: 'Proverite vaš email za link za resetovanje lozinke.',
+        });
+        setForgotPasswordEmail('');
+        setShowForgotPassword(false);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Greška u podacima',
+          description: error.errors[0].message,
+          variant: 'destructive'
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const validatedData = passwordResetSchema.parse(passwordResetData);
+      setLoading(true);
+      
+      const { error } = await updatePassword(validatedData.password);
+      
+      if (error) {
+        toast({
+          title: 'Greška',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Lozinka uspešno postavljena!',
+          description: 'Sada se možete prijaviti sa vašom novom lozinkom.',
+        });
+        setIsRecoveryMode(false);
+        setPasswordResetData({ password: '', confirmPassword: '' });
+        // Očisti URL parametar
+        navigate('/auth', { replace: true });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Greška u podacima',
+          description: error.errors[0].message,
+          variant: 'destructive'
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Prikaži loading spinner dok se učitava profil (ali ne u recovery mode)
+  if (!isRecoveryMode && user && !profile && (authLoading || processingAuth)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">Učitavanje profila...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Prikaži formu za postavljanje nove lozinke u recovery mode
+  if (isRecoveryMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Ketering Portal</h1>
+            <p className="text-muted-foreground">Postavite novu lozinku</p>
+          </div>
+
+          <Card className="shadow-elegant border-primary/20">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
+                <KeyRound className="h-6 w-6" />
+                Nova lozinka
+              </CardTitle>
+              <CardDescription className="text-center">
+                Unesite novu lozinku za vaš nalog
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nova lozinka</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Najmanje 6 karaktera"
+                      className="pl-10 pr-10"
+                      value={passwordResetData.password}
+                      onChange={(e) => setPasswordResetData({ ...passwordResetData, password: e.target.value })}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Potvrdite lozinku</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Ponovite lozinku"
+                      className="pl-10 pr-10"
+                      value={passwordResetData.confirmPassword}
+                      onChange={(e) => setPasswordResetData({ ...passwordResetData, confirmPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Postavljanje...' : 'Postavi lozinku'}
+                </Button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <Button
+                  variant="link"
+                  className="text-sm text-muted-foreground"
+                  onClick={() => {
+                    setIsRecoveryMode(false);
+                    navigate('/auth', { replace: true });
+                  }}
+                >
+                  Nazad na prijavu
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Prikaži formu za zaboravljenu lozinku
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Ketering Portal</h1>
+            <p className="text-muted-foreground">Resetujte lozinku</p>
+          </div>
+
+          <Card className="shadow-elegant border-primary/20">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-bold text-center">Zaboravljena lozinka?</CardTitle>
+              <CardDescription className="text-center">
+                Unesite email adresu i poslaćemo vam link za resetovanje lozinke
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="vas@email.com"
+                      className="pl-10"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Slanje...' : 'Pošalji link za reset'}
+                </Button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <Button
+                  variant="link"
+                  className="text-sm text-muted-foreground"
+                  onClick={() => setShowForgotPassword(false)}
+                >
+                  Nazad na prijavu
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -300,6 +544,17 @@ export default function Auth() {
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Prijavljivanje...' : 'Prijavite se'}
                   </Button>
+
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-muted-foreground p-0 h-auto"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Zaboravili ste lozinku?
+                    </Button>
+                  </div>
                 </form>
 
                 <div className="relative">
