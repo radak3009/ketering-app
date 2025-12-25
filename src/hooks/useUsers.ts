@@ -49,23 +49,71 @@ export function useUsers() {
 
   const updateUser = async (id: string, updates: Partial<Omit<Profile, 'role'>>) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      // Find current user to get user_id and check for email change
+      const currentUser = users.find(u => u.id === id);
+      if (!currentUser) {
+        throw new Error('Korisnik nije pronađen');
+      }
 
-      if (error) throw error;
+      // If email is being changed, use Edge Function to update both auth.users and profiles
+      if (updates.email && updates.email !== currentUser.email) {
+        const { data: emailResponse, error: emailError } = await supabase.functions.invoke('update-user-email', {
+          body: { userId: currentUser.user_id, newEmail: updates.email }
+        });
+
+        if (emailError) {
+          console.error('Email update error:', emailError);
+          throw new Error(emailError.message || 'Nije moguće ažurirati email adresu');
+        }
+
+        if (emailResponse?.error) {
+          throw new Error(emailResponse.error);
+        }
+      }
+
+      // Update other fields in profiles table (excluding email if it was already updated)
+      const profileUpdates = updates.email && updates.email !== currentUser.email
+        ? { ...updates, email: undefined } // Don't update email again, it was handled by Edge Function
+        : updates;
+
+      // Remove undefined values
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
+      );
+
+      let updatedData = currentUser;
+
+      // Only call profiles update if there are other fields to update
+      if (Object.keys(cleanUpdates).length > 0) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update(cleanUpdates)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        updatedData = data;
+      } else if (updates.email) {
+        // If only email was updated, fetch the updated profile
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) throw error;
+        updatedData = data;
+      }
 
       // Fetch the updated user with role from user_roles
       const { data: roleData } = await supabase
         .from('user_roles' as any)
         .select('role')
-        .eq('user_id', data.user_id)
+        .eq('user_id', updatedData.user_id)
         .maybeSingle();
 
-      const updatedUser = { ...data, role: (roleData as any)?.role || null } as any;
+      const updatedUser = { ...updatedData, role: (roleData as any)?.role || 'employee' } as any;
       setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
       
       toast({
@@ -73,11 +121,11 @@ export function useUsers() {
         description: 'Korisnik je uspešno ažuriran'
       });
       return updatedUser;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user:', error);
       toast({
         title: 'Greška',
-        description: 'Nije moguće ažurirati korisnika',
+        description: error.message || 'Nije moguće ažurirati korisnika',
         variant: 'destructive'
       });
       throw error;
