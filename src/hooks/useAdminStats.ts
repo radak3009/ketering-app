@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,8 +18,9 @@ export function useAdminStats(startDate?: string, endDate?: string) {
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
       let query = supabase
@@ -76,30 +77,43 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate, toast]);
+
+  // Debounced verzija za realtime eventi
+  const debouncedFetchStats = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      fetchStats();
+    }, 500); // 500ms debounce
+  }, [fetchStats]);
 
   useEffect(() => {
     fetchStats();
 
-    // Realtime subscription za automatsko osvežavanje metrika
+    // Realtime subscription sa debounce-om
     const channel = supabase
       .channel('admin-stats-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        () => fetchStats()
+        () => debouncedFetchStats()
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
-        () => fetchStats()
+        () => debouncedFetchStats()
       )
       .subscribe();
 
     return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [startDate, endDate]);
+  }, [fetchStats, debouncedFetchStats]);
 
   return {
     stats,
