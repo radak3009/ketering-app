@@ -80,6 +80,25 @@ export function useAdminStats(startDate?: string, endDate?: string) {
 
   useEffect(() => {
     fetchStats();
+
+    // Realtime subscription za automatsko osvežavanje metrika
+    const channel = supabase
+      .channel('admin-stats-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => fetchStats()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items' },
+        () => fetchStats()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [startDate, endDate]);
 
   return {
