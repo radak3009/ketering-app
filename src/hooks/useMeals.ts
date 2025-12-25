@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Meal = Tables<'meals'>;
@@ -11,17 +12,35 @@ export function useMeals() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { profile } = useAuth();
+
+  const isAdmin = profile?.role === 'admin';
 
   const fetchMeals = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('meals')
-        .select('*')
-        .order('created_at', { ascending: false });
+      
+      // Use meals_secure view for non-admin users to hide purchase_price
+      // Admins query the table directly for full access including mutations
+      if (isAdmin) {
+        const { data, error } = await supabase
+          .from('meals')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setMeals(data || []);
+        if (error) throw error;
+        setMeals(data || []);
+      } else {
+        // Use the secure view that hides purchase_price from non-admins
+        // Cast to any to bypass TypeScript's strict table checking for views
+        const { data, error } = await (supabase as any)
+          .from('meals_secure')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setMeals((data || []) as Meal[]);
+      }
     } catch (error) {
       console.error('Error fetching meals:', error);
       toast({
@@ -116,7 +135,7 @@ export function useMeals() {
 
   useEffect(() => {
     fetchMeals();
-  }, []);
+  }, [isAdmin]);
 
   return {
     meals,
