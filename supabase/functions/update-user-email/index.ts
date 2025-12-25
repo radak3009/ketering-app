@@ -88,44 +88,50 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1. Update email in auth.users
+    // Get current user email to use as redirect context
+    const { data: currentUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    
+    if (getUserError || !currentUser?.user) {
+      console.error('Get user error:', getUserError);
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const oldEmail = currentUser.user.email;
+    console.log(`Initiating email change from ${oldEmail} to ${newEmail} for user ${userId}`);
+
+    // Update email in auth.users with email_confirm: false
+    // This will trigger Supabase to send a confirmation email to the NEW address
     const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       { 
         email: newEmail,
-        email_confirm: true // Automatically confirm the new email
+        email_confirm: false // Require email confirmation - sends verification email
       }
     );
 
     if (authUpdateError) {
       console.error('Auth update error:', authUpdateError);
       return new Response(
-        JSON.stringify({ error: `Failed to update auth email: ${authUpdateError.message}` }),
+        JSON.stringify({ error: `Failed to initiate email change: ${authUpdateError.message}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Auth email updated successfully');
+    console.log('Email verification sent to new address');
 
-    // 2. Update email in profiles table
-    const { error: profileUpdateError } = await supabaseAdmin
-      .from('profiles')
-      .update({ email: newEmail })
-      .eq('user_id', userId);
-
-    if (profileUpdateError) {
-      console.error('Profile update error:', profileUpdateError);
-      // Try to rollback auth email change
-      return new Response(
-        JSON.stringify({ error: `Failed to update profile email: ${profileUpdateError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Profile email updated successfully');
-
+    // Note: We do NOT update profiles table yet - this will be done after user confirms
+    // The profiles.email will be synced when user confirms via the email link
+    // For now, store pending email in user metadata for reference
+    
     return new Response(
-      JSON.stringify({ success: true, message: 'Email updated successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        requiresConfirmation: true,
+        message: 'Email za potvrdu je poslat na novu adresu. Korisnik mora da potvrdi promenu klikom na link u emailu.' 
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

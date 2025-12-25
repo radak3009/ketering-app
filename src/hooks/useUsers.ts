@@ -55,7 +55,8 @@ export function useUsers() {
         throw new Error('Korisnik nije pronađen');
       }
 
-      // If email is being changed, use Edge Function to update both auth.users and profiles
+      // If email is being changed, use Edge Function to update auth.users and send verification
+      let emailRequiresConfirmation = false;
       if (updates.email && updates.email !== currentUser.email) {
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke('update-user-email', {
           body: { userId: currentUser.user_id, newEmail: updates.email }
@@ -69,6 +70,8 @@ export function useUsers() {
         if (emailResponse?.error) {
           throw new Error(emailResponse.error);
         }
+
+        emailRequiresConfirmation = emailResponse?.requiresConfirmation === true;
       }
 
       // Update other fields in profiles table (excluding email if it was already updated)
@@ -116,10 +119,18 @@ export function useUsers() {
       const updatedUser = { ...updatedData, role: (roleData as any)?.role || 'employee' } as any;
       setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
       
-      toast({
-        title: 'Uspeh',
-        description: 'Korisnik je uspešno ažuriran'
-      });
+      // Show appropriate toast message based on whether email confirmation is required
+      if (emailRequiresConfirmation) {
+        toast({
+          title: 'Email potvrda poslata',
+          description: `Email za potvrdu je poslat na ${updates.email}. Korisnik mora da potvrdi promenu klikom na link u emailu.`
+        });
+      } else {
+        toast({
+          title: 'Uspeh',
+          description: 'Korisnik je uspešno ažuriran'
+        });
+      }
       return updatedUser;
     } catch (error: any) {
       console.error('Error updating user:', error);
