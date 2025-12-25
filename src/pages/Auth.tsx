@@ -35,7 +35,7 @@ const passwordResetSchema = z.object({
 });
 
 export default function Auth() {
-  const { signUp, signIn, signInWithGoogle, signInWithMagicLink, signOut, resetPassword, updatePassword, user, profile, loading: authLoading } = useAuth();
+  const { signUp, signIn, signInWithGoogle, signInWithMagicLink, signOut, resetPassword, updatePassword, user, profile, loading: authLoading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -65,12 +65,17 @@ export default function Auth() {
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
   useEffect(() => {
-    // Proveri da li je recovery mode iz URL parametra
-    const recoveryParam = searchParams.get('recovery');
-    if (recoveryParam === 'true') {
+    // Robustna detekcija recovery mode-a iz više izvora
+    const recoveryParam = searchParams.get('recovery') === 'true';
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const recoveryFromHash = hashParams.get('type') === 'recovery';
+    
+    // Kombinuj sve izvore
+    if (recoveryParam || recoveryFromHash || isPasswordRecovery) {
+      console.log('[Auth] Recovery mode detected:', { recoveryParam, recoveryFromHash, isPasswordRecovery });
       setIsRecoveryMode(true);
     }
-  }, [searchParams]);
+  }, [searchParams, isPasswordRecovery]);
 
   useEffect(() => {
     // Ako je recovery mode, ne redirektuj na dashboard
@@ -288,6 +293,7 @@ export default function Auth() {
           description: 'Sada se možete prijaviti sa vašom novom lozinkom.',
         });
         setIsRecoveryMode(false);
+        clearPasswordRecovery(); // Očisti flag iz AuthContext i sessionStorage
         setPasswordResetData({ password: '', confirmPassword: '' });
         // Očisti URL parametar
         navigate('/auth', { replace: true });
@@ -389,6 +395,7 @@ export default function Auth() {
                   className="text-sm text-muted-foreground"
                   onClick={() => {
                     setIsRecoveryMode(false);
+                    clearPasswordRecovery();
                     navigate('/auth', { replace: true });
                   }}
                 >

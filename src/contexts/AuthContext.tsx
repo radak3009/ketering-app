@@ -19,6 +19,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  isPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -36,6 +38,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingAuth, setProcessingAuth] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    // Proveri sessionStorage pri inicijalizaciji
+    return sessionStorage.getItem('isPasswordRecovery') === 'true';
+  });
+
+  const clearPasswordRecovery = () => {
+    setIsPasswordRecovery(false);
+    sessionStorage.removeItem('isPasswordRecovery');
+  };
 
   useEffect(() => {
     // Check if we have hash parameters (from email verification or magic link)
@@ -103,6 +114,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
+        
+        // Detektuj PASSWORD_RECOVERY event - najpouzdaniji način
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('[AuthContext] PASSWORD_RECOVERY event detected');
+          setIsPasswordRecovery(true);
+          sessionStorage.setItem('isPasswordRecovery', 'true');
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -214,7 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`
+      redirectTo: `${window.location.origin}/auth?recovery=true`
     });
     return { error };
   };
@@ -231,6 +250,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     profile,
     loading: loading || processingAuth,
+    isPasswordRecovery,
+    clearPasswordRecovery,
     signUp,
     signIn,
     signOut,
