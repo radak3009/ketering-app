@@ -153,6 +153,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "menu_meals_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals_secure"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "menu_meals_menu_id_fkey"
             columns: ["menu_id"]
             isOneToOne: false
@@ -234,6 +241,13 @@ export type Database = {
             columns: ["meal_id"]
             isOneToOne: false
             referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals_secure"
             referencedColumns: ["id"]
           },
           {
@@ -395,7 +409,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      meals_secure: {
+        Row: {
+          allergens: string[] | null
+          category: string | null
+          code: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          is_available: boolean | null
+          name: string | null
+          nutritional_info: Json | null
+          price: number | null
+          purchase_price: number | null
+          shifts: string[] | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allergens?: string[] | null
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_available?: boolean | null
+          name?: string | null
+          nutritional_info?: Json | null
+          price?: number | null
+          purchase_price?: never
+          shifts?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allergens?: string[] | null
+          category?: string | null
+          code?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_available?: boolean | null
+          name?: string | null
+          nutritional_info?: Json | null
+          price?: number | null
+          purchase_price?: never
+          shifts?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_view_company: { Args: { company_uuid: string }; Returns: boolean }
