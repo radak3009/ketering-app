@@ -2138,7 +2138,7 @@ const [mealForm, setMealForm] = useState({
                                 </TableCell>
                                 <TableCell>
                                   <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
-                                    {user.role}
+                                    {user.role === 'admin' ? 'Admin' : 'Zaposleni'}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
