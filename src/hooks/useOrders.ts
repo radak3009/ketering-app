@@ -28,11 +28,14 @@ interface MealOrderSummary {
 export function useOrders() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentDateRange, setCurrentDateRange] = useState<{ start?: string; end?: string }>({});
   const { toast } = useToast();
 
   const fetchOrders = async (startDate?: string, endDate?: string) => {
     try {
       setLoading(true);
+      // Store current date range for realtime refetch
+      setCurrentDateRange({ start: startDate, end: endDate });
       
       // First fetch orders with order items
       let query = supabase
@@ -207,7 +210,24 @@ export function useOrders() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+    
+    // Realtime subscription for order_items changes
+    const channel = supabase
+      .channel('order-items-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items' },
+        () => {
+          // Re-fetch orders when any order_item changes
+          fetchOrders(currentDateRange.start, currentDateRange.end);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentDateRange.start, currentDateRange.end]);
 
   return {
     orders,
