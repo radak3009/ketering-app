@@ -30,7 +30,7 @@ export function useUsers() {
         const userRole = (rolesData as any)?.find((r: any) => r.user_id === profile.user_id);
         return {
           ...profile,
-          role: userRole?.role || null
+          role: userRole?.role || 'employee'
         } as any;
       });
 
