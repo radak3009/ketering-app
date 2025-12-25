@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.send-admin-menu-alert]
 verify_jwt = false
+
+[functions.create-user]
+verify_jwt = true

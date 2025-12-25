@@ -178,22 +178,41 @@ export function useUsers() {
     role: 'admin' | 'employee';
   }) => {
     try {
-      // Instead of creating a profile directly, we just send a magic link
-      // The profile will be created automatically by the trigger when the user signs up
-      // Note: company_card_id will need to be set by admin after user's first login
-      await sendMagicLink(userData.email);
+      // Call create-user Edge Function with all user data
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: userData.email,
+          full_name: userData.full_name,
+          phone: userData.phone || null,
+          company_card_id: userData.company_card_id || null,
+          date_of_birth: userData.date_of_birth?.toISOString().split('T')[0] || null,
+          role: userData.role
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Greška pri kreiranju korisnika');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      // Refresh users list
+      await fetchUsers();
       
       toast({
         title: 'Uspeh',
-        description: `Pozivnica je poslata na ${userData.email}. Korisnik će biti kreiran kada se prvi put prijavi.`
+        description: `Korisnik ${userData.full_name} je kreiran i pozivnica je poslata na ${userData.email}.`
       });
       
-      return null;
-    } catch (error) {
-      console.error('Error sending invitation:', error);
+      return data?.profile || null;
+    } catch (error: any) {
+      console.error('Error creating user:', error);
       toast({
         title: 'Greška',
-        description: 'Nije moguće poslati pozivnicu',
+        description: error.message || 'Nije moguće kreirati korisnika',
         variant: 'destructive'
       });
       throw error;
