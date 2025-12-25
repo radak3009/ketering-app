@@ -123,14 +123,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Insert or update role in user_roles table
+    // Delete existing role if any, then insert new role
+    await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .upsert({
+      .insert({
         user_id: userId,
         role: role || 'employee',
-      }, {
-        onConflict: 'user_id',
       });
 
     if (roleError) {
