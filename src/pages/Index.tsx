@@ -6,18 +6,19 @@ import { EmployeeDashboard } from '@/components/EmployeeDashboard';
 import { AdminDashboard } from '@/components/AdminDashboard';
 
 const Index = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isPasswordRecovery } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check if we're processing hash parameters (email verification or magic link)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
-    const isRecoveryMode = hashParams.get('type') === 'recovery';
+    const isRecoveryFromHash = hashParams.get('type') === 'recovery';
     
-    // Ako je recovery mode, redirektuj na /auth sa recovery parametrom
-    if (isRecoveryMode) {
-      navigate('/auth?recovery=true');
+    // Ako je recovery mode (bilo iz URL hash-a ili iz AuthContext), redirektuj na /auth
+    if (isRecoveryFromHash || isPasswordRecovery) {
+      console.log('[Index] Recovery mode detected, redirecting to /auth?recovery=true');
+      navigate('/auth?recovery=true', { replace: true });
       return;
     }
     
@@ -36,7 +37,7 @@ const Index = () => {
     if (user && !profile && !loading) {
       navigate('/auth');
     }
-  }, [user, profile, loading, navigate]);
+  }, [user, profile, loading, navigate, isPasswordRecovery]);
 
   if (loading) {
     return (
