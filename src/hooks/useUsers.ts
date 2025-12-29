@@ -251,6 +251,38 @@ export function useUsers() {
     }
   };
 
+  const resetUserPassword = async (userId: string, newPassword: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { userId, newPassword }
+      });
+
+      if (error) {
+        console.error('Reset password error:', error);
+        throw new Error(error.message || 'Nije moguće resetovati lozinku');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: 'Uspeh',
+        description: 'Lozinka je uspešno resetovana'
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: 'Greška',
+        description: error.message || 'Nije moguće resetovati lozinku',
+        variant: 'destructive'
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -262,6 +294,7 @@ export function useUsers() {
     updateUser,
     deleteUser,
     sendMagicLink,
+    resetUserPassword,
     refetch: fetchUsers
   };
 }
