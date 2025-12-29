@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell } from 'lucide-react';
+import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell, Bot } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekOrders } from '@/hooks/useWeekOrders';
@@ -19,6 +19,7 @@ export function EmployeeDashboard() {
   const { signOut, user } = useAuth();
   const [currentView, setCurrentView] = useState<View>('next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [totalMenuDays, setTotalMenuDays] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -86,6 +87,15 @@ export function EmployeeDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAiChatOpen(true)}
+                className="hidden md:flex"
+                title="AI Pomoćnik"
+              >
+                <Bot className="h-5 w-5" />
+              </Button>
               <ThemeToggle />
               <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
                 <LogOut className="h-4 w-4" />
@@ -166,7 +176,7 @@ export function EmployeeDashboard() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
-        <div className="grid grid-cols-4 gap-1 p-2">
+        <div className="grid grid-cols-5 gap-1 p-2">
           <Button
             variant={currentView === 'next' ? 'default' : 'ghost'}
             onClick={() => setCurrentView('next')}
@@ -199,6 +209,14 @@ export function EmployeeDashboard() {
             <User className="h-5 w-5" />
             <span className="text-xs">Profil</span>
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setAiChatOpen(true)}
+            className="flex flex-col h-auto py-2 gap-1"
+          >
+            <Bot className="h-5 w-5" />
+            <span className="text-xs">AI</span>
+          </Button>
         </div>
       </div>
 
@@ -213,7 +231,7 @@ export function EmployeeDashboard() {
       />
 
       {/* AI Help Chat */}
-      <AIHelpChat />
+      <AIHelpChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
     </div>
   );
 }
