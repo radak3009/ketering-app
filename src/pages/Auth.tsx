@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { LanguageToggle } from '@/components/ui/language-toggle';
 
 export default function Auth() {
   const { t } = useTranslation();
@@ -310,7 +311,10 @@ export default function Auth() {
   // Loading spinner while profile loads
   if (!isRecoveryMode && user && !profile && (authLoading || processingAuth)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center relative">
+        <div className="absolute top-4 right-4">
+          <LanguageToggle />
+        </div>
         <LoadingSpinner size="xl" text={t('auth.loadingProfile')} />
       </div>
     );
@@ -319,7 +323,10 @@ export default function Auth() {
   // Password reset form in recovery mode
   if (isRecoveryMode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 right-4">
+          <LanguageToggle />
+        </div>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">{t('auth.portalTitle')}</h1>
@@ -405,7 +412,10 @@ export default function Auth() {
   // Forgot password form
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 right-4">
+          <LanguageToggle />
+        </div>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">{t('auth.portalTitle')}</h1>
@@ -459,7 +469,10 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <LanguageToggle />
+      </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">{t('auth.portalTitle')}</h1>
