@@ -1,8 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, UtensilsCrossed } from 'lucide-react';
 import { WeekOrder } from '@/hooks/useWeekOrders';
 import { format, startOfWeek, addDays } from 'date-fns';
-import { sr } from 'date-fns/locale';
+import { sr, enUS } from 'date-fns/locale';
 import { MealCard } from './MealCard';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -13,6 +14,9 @@ interface CurrentWeekViewProps {
 }
 
 export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'sr' ? sr : enUS;
+  
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -29,22 +33,22 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
     <div className="space-y-4 pb-20 md:pb-4">
       <div className="flex items-center gap-2 mb-4">
         <Calendar className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">Tekuća nedelja</h2>
+        <h2 className="text-xl font-semibold">{t('navigation.currentWeek')}</h2>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Vaše porudžbine</CardTitle>
+          <CardTitle>{t('orders.yourOrders')}</CardTitle>
           <CardDescription>
-            Pregled obroka za tekuću nedelju (samo čitanje)
+            {t('orders.reviewCurrentWeek')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {weekDays.map((date) => {
               const order = getOrderForDate(date);
-              const dayName = format(date, 'EEEE', { locale: sr });
-              const dateStr = format(date, 'd. MMM', { locale: sr });
+              const dayName = format(date, 'EEEE', { locale });
+              const dateStr = format(date, 'd. MMM', { locale });
 
               return (
                 <div
@@ -61,7 +65,7 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
                   {!order || order.items.length === 0 ? (
                     <EmptyState 
                       icon={UtensilsCrossed}
-                      title="Nema poručenih obroka"
+                      title={t('orders.noOrders')}
                       className="py-4"
                     />
                   ) : (

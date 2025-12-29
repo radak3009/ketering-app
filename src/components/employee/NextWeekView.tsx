@@ -1,9 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Plus, AlertCircle, UtensilsCrossed } from 'lucide-react';
 import { WeekOrder } from '@/hooks/useWeekOrders';
 import { format, startOfWeek, addDays, addWeeks } from 'date-fns';
-import { sr } from 'date-fns/locale';
+import { sr, enUS } from 'date-fns/locale';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +22,10 @@ interface NextWeekViewProps {
 }
 
 export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOrderDeleted, totalMenuDays }: NextWeekViewProps) {
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const locale = i18n.language === 'sr' ? sr : enUS;
+  
   const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(nextWeekStart, i));
   
@@ -37,8 +41,8 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
   const handleDeleteOrder = async (orderItemId: string) => {
     if (!canEdit) {
       toast({
-        title: 'Nije moguće',
-        description: 'Rok za izmene je istekao',
+        title: t('orders.notPossible'),
+        description: t('orders.deadlinePassed'),
         variant: 'destructive',
       });
       return;
@@ -51,16 +55,16 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
 
     if (error) {
       toast({
-        title: 'Greška',
-        description: 'Nije moguće obrisati porudžbinu',
+        title: t('toast.error'),
+        description: t('orders.cannotDelete'),
         variant: 'destructive',
       });
       return;
     }
 
     toast({
-      title: 'Uspešno',
-      description: 'Porudžbina je obrisana',
+      title: t('toast.success'),
+      description: t('orders.orderDeleted'),
     });
 
     onOrderDeleted();
@@ -75,7 +79,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">Iduća nedelja</h2>
+          <h2 className="text-xl font-semibold">{t('navigation.nextWeek')}</h2>
         </div>
         {canEdit && (
           <Button 
@@ -86,7 +90,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">
-              {isAllOrdered ? 'Sve poručeno' : 'Poruči obrok'}
+              {isAllOrdered ? t('orders.allOrderedButton') : t('orders.orderMeal')}
             </span>
           </Button>
         )}
@@ -98,11 +102,11 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           <AlertDescription>
             {isAllOrdered ? (
               <span className="text-green-700 dark:text-green-400 font-medium">
-                ✓ Poručili ste obroke za sve dostupne dane ({orderedDaysCount}/{totalMenuDays})
+                ✓ {t('orders.allOrdered', { ordered: orderedDaysCount, total: totalMenuDays })}
               </span>
             ) : (
               <span>
-                Poručeno {orderedDaysCount} od {totalMenuDays} dostupnih dana
+                {t('orders.orderedDays', { ordered: orderedDaysCount, total: totalMenuDays })}
               </span>
             )}
           </AlertDescription>
@@ -113,24 +117,24 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Rok za poručivanje i izmene za iduću nedelju je istekao (Petak 17:00)
+            {t('orders.orderDeadlinePassed')}
           </AlertDescription>
         </Alert>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Vaše porudžbine za iduću nedelju</CardTitle>
+          <CardTitle>{t('orders.yourOrdersForNextWeek')}</CardTitle>
           <CardDescription>
-            {canEdit ? 'Možete dodavati i menjati porudžbine do Petka u 17h' : 'Rok za izmene je istekao (Petak 17:00)'}
+            {canEdit ? t('orders.canEditUntil') : t('orders.editDeadlinePassed')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {weekDays.map((date) => {
               const order = getOrderForDate(date);
-              const dayName = format(date, 'EEEE', { locale: sr });
-              const dateStr = format(date, 'd. MMM', { locale: sr });
+              const dayName = format(date, 'EEEE', { locale });
+              const dateStr = format(date, 'd. MMM', { locale });
 
               return (
                 <div
@@ -147,7 +151,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
                   {!order || order.items.length === 0 ? (
                     <EmptyState 
                       icon={UtensilsCrossed}
-                      title="Nema poručenih obroka"
+                      title={t('orders.noOrders')}
                       className="py-4"
                     />
                   ) : (
