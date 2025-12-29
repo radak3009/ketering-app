@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // Lazy load admin components
 const FeedbackManagement = lazy(() => import("./admin/FeedbackManagement").then(m => ({ default: m.FeedbackManagement })));
@@ -87,6 +88,7 @@ export function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="outline" size="sm" onClick={signOut} className="text-xs md:text-sm">
               <LogOut className="h-4 w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">Odjava</span>
