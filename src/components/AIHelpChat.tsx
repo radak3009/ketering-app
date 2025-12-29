@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,8 +12,12 @@ type Message = {
   content: string;
 };
 
-export const AIHelpChat = () => {
-  const [open, setOpen] = useState(false);
+interface AIHelpChatProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -172,15 +176,7 @@ export const AIHelpChat = () => {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          size="icon"
-          className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg hover:scale-110 transition-transform z-50 md:bottom-6"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-      </SheetTrigger>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-[440px] p-0 flex flex-col">
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-2">
@@ -261,3 +257,6 @@ export const AIHelpChat = () => {
     </Sheet>
   );
 };
+
+// Re-export MessageCircle for use in navigation
+export { MessageCircle };
