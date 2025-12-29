@@ -19,7 +19,10 @@ interface OrdersOverviewProps {
 
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
-  const { orders, loading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders();
+  const { orders, loading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders(
+    orderDateRange.startDate,
+    orderDateRange.endDate
+  );
   
   const [orderSearch, setOrderSearch] = useState("");
   const [userCardFilter, setUserCardFilter] = useState("");
