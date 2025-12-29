@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,13 +10,22 @@ import { useUsers } from "@/hooks/useUsers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
-import { FeedbackManagement } from "./admin/FeedbackManagement";
-import { SuggestionsManagement } from "./admin/SuggestionsManagement";
-import { MealsManagement } from "./admin/MealsManagement";
-import { MenusManagement } from "./admin/MenusManagement";
-import { UsersManagement } from "./admin/UsersManagement";
-import { OrdersOverview } from "./admin/OrdersOverview";
-import { ReportsTab } from "./admin/ReportsTab";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
+// Lazy load admin components
+const FeedbackManagement = lazy(() => import("./admin/FeedbackManagement").then(m => ({ default: m.FeedbackManagement })));
+const SuggestionsManagement = lazy(() => import("./admin/SuggestionsManagement").then(m => ({ default: m.SuggestionsManagement })));
+const MealsManagement = lazy(() => import("./admin/MealsManagement").then(m => ({ default: m.MealsManagement })));
+const MenusManagement = lazy(() => import("./admin/MenusManagement").then(m => ({ default: m.MenusManagement })));
+const UsersManagement = lazy(() => import("./admin/UsersManagement").then(m => ({ default: m.UsersManagement })));
+const OrdersOverview = lazy(() => import("./admin/OrdersOverview").then(m => ({ default: m.OrdersOverview })));
+const ReportsTab = lazy(() => import("./admin/ReportsTab").then(m => ({ default: m.ReportsTab })));
+
+const TabLoader = () => (
+  <div className="flex items-center justify-center py-12">
+    <LoadingSpinner size="lg" text="Učitavanje..." />
+  </div>
+);
 
 
 export function AdminDashboard() {
@@ -191,32 +200,44 @@ export function AdminDashboard() {
 
           {/* Orders Tab */}
           <TabsContent value="orders">
-            <OrdersOverview 
-              orderDateRange={orderDateRange}
-              setOrderDateRange={setOrderDateRange}
-            />
+            <Suspense fallback={<TabLoader />}>
+              <OrdersOverview 
+                orderDateRange={orderDateRange}
+                setOrderDateRange={setOrderDateRange}
+              />
+            </Suspense>
           </TabsContent>
 
           {/* Meals Tab */}
           <TabsContent value="meals">
-            <MealsManagement />
+            <Suspense fallback={<TabLoader />}>
+              <MealsManagement />
+            </Suspense>
           </TabsContent>
 
           {/* Menus Tab */}
           <TabsContent value="menus">
-            <MenusManagement />
+            <Suspense fallback={<TabLoader />}>
+              <MenusManagement />
+            </Suspense>
           </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users">
-            <UsersManagement />
+            <Suspense fallback={<TabLoader />}>
+              <UsersManagement />
+            </Suspense>
           </TabsContent>
 
           {/* Feedback Tab */}
           <TabsContent value="feedback">
             <div className="grid gap-6">
-              <FeedbackManagement />
-              <SuggestionsManagement />
+              <Suspense fallback={<TabLoader />}>
+                <FeedbackManagement />
+              </Suspense>
+              <Suspense fallback={<TabLoader />}>
+                <SuggestionsManagement />
+              </Suspense>
             </div>
           </TabsContent>
 
@@ -274,7 +295,9 @@ export function AdminDashboard() {
 
           {/* Reports Tab */}
           <TabsContent value="reports">
-            <ReportsTab />
+            <Suspense fallback={<TabLoader />}>
+              <ReportsTab />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </main>
