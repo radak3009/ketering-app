@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
+import { Calendar, UtensilsCrossed } from 'lucide-react';
 import { WeekOrder } from '@/hooks/useWeekOrders';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { sr } from 'date-fns/locale';
 import { MealCard } from './MealCard';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface CurrentWeekViewProps {
   orders: WeekOrder[];
@@ -20,11 +22,7 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" className="p-8" />;
   }
 
   return (
@@ -61,9 +59,11 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
                   </div>
 
                   {!order || order.items.length === 0 ? (
-                    <div className="text-sm text-muted-foreground italic">
-                      Nema poručenih obroka
-                    </div>
+                    <EmptyState 
+                      icon={UtensilsCrossed}
+                      title="Nema poručenih obroka"
+                      className="py-4"
+                    />
                   ) : (
                     <div className="space-y-3 mt-3">
                       {order.items.map((item) => (
