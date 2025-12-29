@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { handleError } from '@/services/errorService';
 
 export interface AdminStats {
   totalOrders: number;
@@ -17,7 +17,6 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     avgOrderValue: 0,
   });
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchStats = useCallback(async () => {
@@ -48,14 +47,12 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         return;
       }
 
-      // Računanje metrika
       const totalOrders = orders.length;
       const totalRevenue = orders.reduce(
         (sum, order) => sum + parseFloat(order.total_amount.toString()),
         0
       );
       
-      // Jedinstveni korisnici koji su poručili
       const uniqueUsers = new Set(orders.map(order => order.user_id));
       const employeesOrdered = uniqueUsers.size;
 
@@ -67,32 +64,30 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         employeesOrdered,
         avgOrderValue: Math.round(avgOrderValue),
       });
-    } catch (error: any) {
-      console.error('Error fetching stats:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće učitati statistiku',
-        variant: 'destructive',
+    } catch (error) {
+      handleError({ 
+        category: 'fetch', 
+        entity: 'podaci', 
+        error,
+        customMessage: 'Nije moguće učitati statistiku'
       });
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, toast]);
+  }, [startDate, endDate]);
 
-  // Debounced verzija za realtime eventi
   const debouncedFetchStats = useCallback(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     debounceTimerRef.current = setTimeout(() => {
       fetchStats();
-    }, 500); // 500ms debounce
+    }, 500);
   }, [fetchStats]);
 
   useEffect(() => {
     fetchStats();
 
-    // Realtime subscription sa debounce-om
     const channel = supabase
       .channel('admin-stats-changes')
       .on(

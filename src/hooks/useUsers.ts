@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type { Tables } from '@/integrations/supabase/types';
-
-type Profile = Tables<'profiles'>;
+import { handleError, handleSuccess, getErrorMessage } from '@/services/errorService';
+import type { ProfileWithRole, UserCreateData } from '@/types';
 
 export function useUsers() {
-  const [users, setUsers] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<ProfileWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -20,42 +19,33 @@ export function useUsers() {
 
       if (error) throw error;
 
-      // Fetch roles for all users from user_roles table
       const { data: rolesData } = await supabase
         .from('user_roles' as any)
         .select('user_id, role');
 
-      // Merge profiles with roles
       const usersWithRoles = (profilesData || []).map(profile => {
         const userRole = (rolesData as any)?.find((r: any) => r.user_id === profile.user_id);
         return {
           ...profile,
           role: userRole?.role || 'employee'
-        } as any;
+        } as ProfileWithRole;
       });
 
       setUsers(usersWithRoles);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće učitati korisnike',
-        variant: 'destructive'
-      });
+      handleError({ category: 'fetch', entity: 'korisnik', error });
     } finally {
       setLoading(false);
     }
   };
 
-  const updateUser = async (id: string, updates: Partial<Omit<Profile, 'role'>>) => {
+  const updateUser = async (id: string, updates: Partial<Omit<ProfileWithRole, 'role'>>) => {
     try {
-      // Find current user to get user_id and check for email change
       const currentUser = users.find(u => u.id === id);
       if (!currentUser) {
         throw new Error('Korisnik nije pronađen');
       }
 
-      // If email is being changed, use Edge Function to update auth.users and send verification
       let emailRequiresConfirmation = false;
       if (updates.email && updates.email !== currentUser.email) {
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke('update-user-email', {
@@ -63,7 +53,6 @@ export function useUsers() {
         });
 
         if (emailError) {
-          console.error('Email update error:', emailError);
           throw new Error(emailError.message || 'Nije moguće ažurirati email adresu');
         }
 
@@ -74,19 +63,16 @@ export function useUsers() {
         emailRequiresConfirmation = emailResponse?.requiresConfirmation === true;
       }
 
-      // Update other fields in profiles table (excluding email if it was already updated)
       const profileUpdates = updates.email && updates.email !== currentUser.email
-        ? { ...updates, email: undefined } // Don't update email again, it was handled by Edge Function
+        ? { ...updates, email: undefined }
         : updates;
 
-      // Remove undefined values
       const cleanUpdates = Object.fromEntries(
         Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
       );
 
       let updatedData = currentUser;
 
-      // Only call profiles update if there are other fields to update
       if (Object.keys(cleanUpdates).length > 0) {
         const { data, error } = await supabase
           .from('profiles')
@@ -98,7 +84,6 @@ export function useUsers() {
         if (error) throw error;
         updatedData = data;
       } else if (updates.email) {
-        // If only email was updated, fetch the updated profile
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -109,35 +94,30 @@ export function useUsers() {
         updatedData = data;
       }
 
-      // Fetch the updated user with role from user_roles
       const { data: roleData } = await supabase
         .from('user_roles' as any)
         .select('role')
         .eq('user_id', updatedData.user_id)
         .maybeSingle();
 
-      const updatedUser = { ...updatedData, role: (roleData as any)?.role || 'employee' } as any;
+      const updatedUser = { ...updatedData, role: (roleData as any)?.role || 'employee' } as ProfileWithRole;
       setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
       
-      // Show appropriate toast message based on whether email confirmation is required
       if (emailRequiresConfirmation) {
         toast({
           title: 'Email potvrda poslata',
           description: `Email za potvrdu je poslat na ${updates.email}. Korisnik mora da potvrdi promenu klikom na link u emailu.`
         });
       } else {
-        toast({
-          title: 'Uspeh',
-          description: 'Korisnik je uspešno ažuriran'
-        });
+        handleSuccess({ category: 'update', entity: 'korisnik' });
       }
       return updatedUser;
-    } catch (error: any) {
-      console.error('Error updating user:', error);
-      toast({
-        title: 'Greška',
-        description: error.message || 'Nije moguće ažurirati korisnika',
-        variant: 'destructive'
+    } catch (error) {
+      handleError({ 
+        category: 'update', 
+        entity: 'korisnik', 
+        error,
+        customMessage: getErrorMessage(error)
       });
       throw error;
     }
@@ -145,8 +125,6 @@ export function useUsers() {
 
   const deleteUser = async (id: string) => {
     try {
-      // Call the edge function to delete the user completely (from auth.users)
-      // Pass the profile id, the edge function will fetch the auth user_id
       const { error } = await supabase.functions.invoke('delete-user', {
         body: { profileId: id }
       });
@@ -154,32 +132,15 @@ export function useUsers() {
       if (error) throw error;
 
       setUsers(prev => prev.filter(user => user.id !== id));
-      toast({
-        title: 'Uspeh',
-        description: 'Korisnik je uspešno obrisan'
-      });
+      handleSuccess({ category: 'delete', entity: 'korisnik' });
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće obrisati korisnika',
-        variant: 'destructive'
-      });
+      handleError({ category: 'delete', entity: 'korisnik', error });
       throw error;
     }
   };
 
-  const createUser = async (userData: {
-    full_name: string;
-    email: string;
-    phone?: string;
-    company_card_id?: string;
-    date_of_birth?: Date;
-    role: 'admin' | 'employee';
-    password?: string; // Optional: if provided, creates user with password instead of invite
-  }) => {
+  const createUser = async (userData: UserCreateData) => {
     try {
-      // Call create-user Edge Function with all user data
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           email: userData.email,
@@ -193,7 +154,6 @@ export function useUsers() {
       });
 
       if (error) {
-        console.error('Edge function error:', error);
         throw new Error(error.message || 'Greška pri kreiranju korisnika');
       }
 
@@ -201,7 +161,6 @@ export function useUsers() {
         throw new Error(data.error);
       }
 
-      // Refresh users list
       await fetchUsers();
       
       const message = userData.password 
@@ -214,12 +173,12 @@ export function useUsers() {
       });
       
       return data?.profile || null;
-    } catch (error: any) {
-      console.error('Error creating user:', error);
-      toast({
-        title: 'Greška',
-        description: error.message || 'Nije moguće kreirati korisnika',
-        variant: 'destructive'
+    } catch (error) {
+      handleError({ 
+        category: 'create', 
+        entity: 'korisnik', 
+        error,
+        customMessage: getErrorMessage(error)
       });
       throw error;
     }
@@ -241,11 +200,11 @@ export function useUsers() {
         description: 'Magic link je poslat na email adresu'
       });
     } catch (error) {
-      console.error('Error sending magic link:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće poslati magic link',
-        variant: 'destructive'
+      handleError({ 
+        category: 'auth', 
+        entity: 'korisnik', 
+        error,
+        customMessage: 'Nije moguće poslati magic link'
       });
       throw error;
     }
@@ -258,7 +217,6 @@ export function useUsers() {
       });
 
       if (error) {
-        console.error('Reset password error:', error);
         throw new Error(error.message || 'Nije moguće resetovati lozinku');
       }
 
@@ -272,12 +230,12 @@ export function useUsers() {
       });
 
       return true;
-    } catch (error: any) {
-      console.error('Error resetting password:', error);
-      toast({
-        title: 'Greška',
-        description: error.message || 'Nije moguće resetovati lozinku',
-        variant: 'destructive'
+    } catch (error) {
+      handleError({ 
+        category: 'update', 
+        entity: 'korisnik', 
+        error,
+        customMessage: getErrorMessage(error)
       });
       throw error;
     }

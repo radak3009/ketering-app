@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-export interface Feedback {
+import { handleError, handleSuccess } from '@/services/errorService';
+// Extended feedback type with profile info for display
+export interface FeedbackWithProfile {
   id: string;
   user_id: string;
   content: string;
@@ -11,13 +11,12 @@ export interface Feedback {
   profiles?: {
     full_name: string;
     email: string;
-  };
+  } | null;
 }
 
 export function useFeedback() {
-  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [feedback, setFeedback] = useState<FeedbackWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const fetchFeedback = async () => {
     setLoading(true);
@@ -47,12 +46,8 @@ export function useFeedback() {
       );
 
       setFeedback(feedbackWithProfiles);
-    } catch (error: any) {
-      toast({
-        title: 'Greška',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      handleError({ category: 'fetch', entity: 'povratna informacija', error });
     } finally {
       setLoading(false);
     }
@@ -66,18 +61,15 @@ export function useFeedback() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Uspešno',
-        description: 'Utisak je poslat',
+      handleSuccess({ 
+        category: 'create', 
+        entity: 'povratna informacija',
+        customMessage: 'Utisak je poslat'
       });
 
       await fetchFeedback();
-    } catch (error: any) {
-      toast({
-        title: 'Greška',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      handleError({ category: 'create', entity: 'povratna informacija', error });
     }
   };
 
@@ -91,12 +83,8 @@ export function useFeedback() {
       if (error) throw error;
 
       await fetchFeedback();
-    } catch (error: any) {
-      toast({
-        title: 'Greška',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      handleError({ category: 'update', entity: 'povratna informacija', error });
     }
   };
 
@@ -112,3 +100,6 @@ export function useFeedback() {
     refetch: fetchFeedback,
   };
 }
+
+// Re-export for backward compatibility
+export type { Feedback } from '@/types';
