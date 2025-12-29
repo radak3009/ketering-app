@@ -3,16 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Search, Filter, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
-import { useUsers } from "@/hooks/useUsers";
-import { useMenus } from "@/hooks/useMenus";
 import { OrderPivotTable } from "./OrderPivotTable";
 import { UserOrderPivotTable } from "./UserOrderPivotTable";
-import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
+import { format } from "date-fns";
 
 interface OrdersOverviewProps {
   orderDateRange: { startDate: string; endDate: string };
@@ -22,8 +20,6 @@ interface OrdersOverviewProps {
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
   const { orders, loading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders();
-  const { users } = useUsers();
-  const { menus } = useMenus();
   
   const [orderSearch, setOrderSearch] = useState("");
   const [userCardFilter, setUserCardFilter] = useState("");
@@ -190,8 +186,6 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
           ) : (
             <UserOrderPivotTable 
               orders={orders} 
-              users={users} 
-              menus={menus}
               userCardFilter={userCardFilter}
             />
           )}
