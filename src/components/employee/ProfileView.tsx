@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ user }: ProfileViewProps) {
+  const { t } = useTranslation();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [companyCardId, setCompanyCardId] = useState('');
@@ -82,24 +84,24 @@ export function ProfileView({ user }: ProfileViewProps) {
 
     if (error) {
       toast({
-        title: 'Greška',
-        description: 'Nije moguće sačuvati promene',
+        title: t('toast.error'),
+        description: t('toast.profileUpdateError'),
         variant: 'destructive',
       });
       return;
     }
 
     toast({
-      title: 'Uspešno',
-      description: 'Profil je ažuriran',
+      title: t('toast.success'),
+      description: t('toast.profileUpdated'),
     });
   };
 
   const handlePasswordChange = async () => {
     if (!newPassword) {
       toast({
-        title: 'Greška',
-        description: 'Unesite novu lozinku',
+        title: t('toast.error'),
+        description: t('profile.enterNewPassword'),
         variant: 'destructive',
       });
       return;
@@ -107,8 +109,8 @@ export function ProfileView({ user }: ProfileViewProps) {
 
     if (newPassword.length < 6) {
       toast({
-        title: 'Greška',
-        description: 'Lozinka mora imati najmanje 6 karaktera',
+        title: t('toast.error'),
+        description: t('profile.passwordMinLength'),
         variant: 'destructive',
       });
       return;
@@ -116,8 +118,8 @@ export function ProfileView({ user }: ProfileViewProps) {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: 'Greška',
-        description: 'Lozinke se ne podudaraju',
+        title: t('toast.error'),
+        description: t('profile.passwordMismatch'),
         variant: 'destructive',
       });
       return;
@@ -131,7 +133,7 @@ export function ProfileView({ user }: ProfileViewProps) {
 
     if (error) {
       toast({
-        title: 'Greška',
+        title: t('toast.error'),
         description: error.message,
         variant: 'destructive',
       });
@@ -139,8 +141,8 @@ export function ProfileView({ user }: ProfileViewProps) {
     }
 
     toast({
-      title: 'Uspešno',
-      description: 'Lozinka je uspešno promenjena',
+      title: t('toast.success'),
+      description: t('toast.passwordChanged'),
     });
     
     setNewPassword('');
@@ -165,15 +167,15 @@ export function ProfileView({ user }: ProfileViewProps) {
             <UserIcon className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <CardTitle>Moj profil</CardTitle>
-            <CardDescription>Upravljajte svojim profilom i informacijama</CardDescription>
+            <CardTitle>{t('profile.title')}</CardTitle>
+            <CardDescription>{t('profile.description')}</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('profile.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -182,58 +184,58 @@ export function ProfileView({ user }: ProfileViewProps) {
               className="bg-muted"
             />
             <p className="text-xs text-muted-foreground">
-              Email adresa se ne može promeniti
+              {t('profile.emailCannotChange')}
             </p>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="fullName">Ime i prezime</Label>
+            <Label htmlFor="fullName">{t('profile.fullName')}</Label>
             <Input
               id="fullName"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Unesite ime i prezime"
+              placeholder={t('profile.fullNamePlaceholder')}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="phone">Broj telefona</Label>
+            <Label htmlFor="phone">{t('profile.phone')}</Label>
             <Input
               id="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Unesite broj telefona"
+              placeholder={t('profile.phonePlaceholder')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>ID</Label>
+            <Label>{t('profile.companyCardId')}</Label>
             <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
               {companyCardId || (
-                <span className="text-muted-foreground">Nema dodeljenog ID-a</span>
+                <span className="text-muted-foreground">{t('profile.noCardId')}</span>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Vaš identifikacioni broj. Kontaktirajte administratora za izmenu.
+              {t('profile.cardIdHelp')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>Datum rođenja</Label>
+            <Label>{t('profile.dateOfBirth')}</Label>
             <EnhancedDatePicker
               date={dateOfBirth}
               onDateChange={setDateOfBirth}
               disabled={(date) =>
                 date > new Date() || date < new Date("1900-01-01")
               }
-              placeholder="Izaberite datum"
+              placeholder={t('profile.dateOfBirthPlaceholder')}
             />
           </div>
 
           <div className="flex justify-end pt-4">
             <Button onClick={handleSave} disabled={loading} className="gap-2">
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? 'Čuvanje...' : 'Sačuvaj promene'}
+              {loading ? t('common.saving') : t('common.saveChanges')}
             </Button>
           </div>
 
@@ -246,20 +248,20 @@ export function ProfileView({ user }: ProfileViewProps) {
                 <Lock className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold">Promena lozinke</h3>
-                <p className="text-sm text-muted-foreground">Ažurirajte lozinku za pristup aplikaciji</p>
+                <h3 className="font-semibold">{t('profile.changePassword')}</h3>
+                <p className="text-sm text-muted-foreground">{t('profile.changePasswordDescription')}</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nova lozinka</Label>
+              <Label htmlFor="newPassword">{t('profile.newPassword')}</Label>
               <div className="relative">
                 <Input
                   id="newPassword"
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Unesite novu lozinku"
+                  placeholder={t('profile.newPasswordPlaceholder')}
                   className="pr-10"
                 />
                 <button
@@ -273,14 +275,14 @@ export function ProfileView({ user }: ProfileViewProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Potvrdi lozinku</Label>
+              <Label htmlFor="confirmPassword">{t('profile.confirmPassword')}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Ponovite novu lozinku"
+                  placeholder={t('profile.confirmPasswordPlaceholder')}
                   className="pr-10"
                 />
                 <button
@@ -292,7 +294,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Lozinka mora imati najmanje 6 karaktera
+                {t('profile.passwordMinLength')}
               </p>
             </div>
 
@@ -304,7 +306,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                 className="gap-2"
               >
                 {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {passwordLoading ? 'Menjanje...' : 'Promeni lozinku'}
+                {passwordLoading ? t('common.changing') : t('profile.changePasswordButton')}
               </Button>
             </div>
           </div>

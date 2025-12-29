@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -12,33 +13,34 @@ import { useSuggestions } from '@/hooks/useSuggestions';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 
-const feedbackSchema = z.object({
-  content: z.string()
-    .trim()
-    .min(10, 'Utisak mora imati najmanje 10 karaktera')
-    .max(2000, 'Utisak može imati najviše 2000 karaktera'),
-});
-
-const suggestionSchema = z.object({
-  mealName: z.string()
-    .trim()
-    .min(2, 'Naziv obroka mora imati najmanje 2 karaktera')
-    .max(100, 'Naziv obroka može imati najviše 100 karaktera'),
-  description: z.string()
-    .trim()
-    .min(10, 'Opis mora imati najmanje 10 karaktera')
-    .max(500, 'Opis može imati najviše 500 karaktera'),
-  additionalNotes: z.string()
-    .trim()
-    .max(1000, 'Dodatne napomene mogu imati najviše 1000 karaktera')
-    .optional(),
-});
-
 export function FeedbackView() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { createFeedback } = useFeedback();
   const { createSuggestion } = useSuggestions();
   const { toast } = useToast();
+
+  const feedbackSchema = z.object({
+    content: z.string()
+      .trim()
+      .min(10, t('feedback.validationError'))
+      .max(2000, t('feedback.validationError')),
+  });
+
+  const suggestionSchema = z.object({
+    mealName: z.string()
+      .trim()
+      .min(2, t('feedback.validationError'))
+      .max(100, t('feedback.validationError')),
+    description: z.string()
+      .trim()
+      .min(10, t('feedback.validationError'))
+      .max(500, t('feedback.validationError')),
+    additionalNotes: z.string()
+      .trim()
+      .max(1000, t('feedback.validationError'))
+      .optional(),
+  });
 
   const [feedbackContent, setFeedbackContent] = useState('');
   const [mealName, setMealName] = useState('');
@@ -59,7 +61,7 @@ export function FeedbackView() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška validacije',
+          title: t('feedback.validationError'),
           description: error.errors[0].message,
           variant: 'destructive',
         });
@@ -92,7 +94,7 @@ export function FeedbackView() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška validacije',
+          title: t('feedback.validationError'),
           description: error.errors[0].message,
           variant: 'destructive',
         });
@@ -105,9 +107,9 @@ export function FeedbackView() {
   return (
     <div className="space-y-6 pb-20 md:pb-4">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Utisci i predlozi</h2>
+        <h2 className="text-2xl font-bold text-foreground">{t('feedback.title')}</h2>
         <p className="text-muted-foreground">
-          Podelite vaše mišljenje i predloge za poboljšanje ketering usluge
+          {t('feedback.subtitle')}
         </p>
       </div>
 
@@ -115,11 +117,11 @@ export function FeedbackView() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="feedback" className="gap-2">
             <MessageSquare className="h-4 w-4" />
-            Knjiga utisaka
+            {t('feedback.feedbackTab')}
           </TabsTrigger>
           <TabsTrigger value="suggestions" className="gap-2">
             <Lightbulb className="h-4 w-4" />
-            Predlozi
+            {t('feedback.suggestionsTab')}
           </TabsTrigger>
         </TabsList>
 
@@ -128,18 +130,18 @@ export function FeedbackView() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Knjiga utisaka
+                {t('feedback.feedbackTitle')}
               </CardTitle>
               <CardDescription>
-                Podelite vaše iskustvo sa ketering uslugom, kvalitetom hrane, brzinu usluge, osoblju i svim ostalim
+                {t('feedback.feedbackDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="feedback-content">Vaš utisak</Label>
+                <Label htmlFor="feedback-content">{t('feedback.yourFeedback')}</Label>
                 <Textarea
                   id="feedback-content"
-                  placeholder="Opišite vaše iskustvo sa ketering uslugom, kvalitet hrane, brzinu usluge, osoblje..."
+                  placeholder={t('feedback.feedbackPlaceholder')}
                   value={feedbackContent}
                   onChange={(e) => setFeedbackContent(e.target.value)}
                   rows={6}
@@ -152,7 +154,7 @@ export function FeedbackView() {
                 className="w-full gap-2"
               >
                 <Send className="h-4 w-4" />
-                Pošaljite utisak
+                {t('feedback.sendFeedback')}
               </Button>
             </CardContent>
           </Card>
@@ -163,28 +165,28 @@ export function FeedbackView() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                Predlog novog obroka
+                {t('feedback.suggestionTitle')}
               </CardTitle>
               <CardDescription>
-                Predložite novi obrok koji biste voleli da vidite u jelovniku
+                {t('feedback.suggestionDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="meal-name">Naziv obroka</Label>
+                  <Label htmlFor="meal-name">{t('feedback.mealName')}</Label>
                   <Input
                     id="meal-name"
-                    placeholder="npr. Pileći file sa povrćem"
+                    placeholder={t('feedback.mealNamePlaceholder')}
                     value={mealName}
                     onChange={(e) => setMealName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Kratak opis</Label>
+                  <Label htmlFor="description">{t('feedback.mealDescription')}</Label>
                   <Input
                     id="description"
-                    placeholder="npr. Sočan pileći file sa svežim povrćem"
+                    placeholder={t('feedback.mealDescriptionPlaceholder')}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
@@ -192,10 +194,10 @@ export function FeedbackView() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="additional-notes">Dodatne napomene (opciono)</Label>
+                <Label htmlFor="additional-notes">{t('feedback.additionalNotes')}</Label>
                 <Textarea
                   id="additional-notes"
-                  placeholder="Dodatne informacije o predlogu, zašto mislite da bi ovaj obrok bio dobar izbor..."
+                  placeholder={t('feedback.additionalNotesPlaceholder')}
                   value={additionalNotes}
                   onChange={(e) => setAdditionalNotes(e.target.value)}
                   rows={4}
@@ -209,7 +211,7 @@ export function FeedbackView() {
                 className="w-full gap-2"
               >
                 <Send className="h-4 w-4" />
-                Pošaljite predlog
+                {t('feedback.sendSuggestion')}
               </Button>
             </CardContent>
           </Card>
