@@ -17,7 +17,7 @@ import { MenusManagement } from "./admin/MenusManagement";
 import { UsersManagement } from "./admin/UsersManagement";
 import { OrdersOverview } from "./admin/OrdersOverview";
 import { ReportsTab } from "./admin/ReportsTab";
-import { AIHelpChat } from "./AIHelpChat";
+
 
 export function AdminDashboard() {
   const { signOut } = useAuth();
@@ -78,7 +78,6 @@ export function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <AIHelpChat />
             <Button variant="outline" size="sm" onClick={signOut} className="text-xs md:text-sm">
               <LogOut className="h-4 w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">Odjava</span>
