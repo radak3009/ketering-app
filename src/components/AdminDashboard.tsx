@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
-import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon, Bell, Copy } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, Download, Plus, Search, Filter, LogOut, Edit, Trash2, Mail, ImageIcon, Clock, Upload, Save, FileText, ChevronDown, MessageSquare, CalendarIcon, Bell, Copy, Key } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
@@ -68,7 +68,8 @@ export function AdminDashboard() {
     createUser,
     updateUser,
     deleteUser,
-    sendMagicLink
+    sendMagicLink,
+    resetUserPassword
   } = useUsers();
   const {
     orders,
@@ -157,6 +158,13 @@ const [mealForm, setMealForm] = useState({
     phone: '',
     dateOfBirth: '',
     role: 'all'
+  });
+
+  // Reset password state
+  const [resetPasswordForm, setResetPasswordForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
+    isOpen: false
   });
 
   // Clone dialog state
@@ -2227,7 +2235,12 @@ const [mealForm, setMealForm] = useState({
             </Card>
 
             {/* Edit User Sheet */}
-            <Sheet open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
+            <Sheet open={!!selectedUser} onOpenChange={(open) => {
+              if (!open) {
+                setSelectedUser(null);
+                setResetPasswordForm({ newPassword: "", confirmPassword: "", isOpen: false });
+              }
+            }}>
               <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Izmeni korisnika</SheetTitle>
@@ -2311,6 +2324,63 @@ const [mealForm, setMealForm] = useState({
                       </p>
                     </div>
                     
+                    <div className="space-y-2 pt-4 border-t">
+                      <p className="text-sm font-medium">Resetuj lozinku</p>
+                      <div className="space-y-2">
+                        <Input 
+                          type="password" 
+                          placeholder="Nova lozinka (min 6 karaktera)"
+                          value={resetPasswordForm.newPassword}
+                          onChange={(e) => setResetPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                        />
+                        <Input 
+                          type="password" 
+                          placeholder="Potvrdi novu lozinku"
+                          value={resetPasswordForm.confirmPassword}
+                          onChange={(e) => setResetPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              className="w-full"
+                              disabled={!resetPasswordForm.newPassword || resetPasswordForm.newPassword.length < 6 || resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword}
+                            >
+                              <Key className="h-4 w-4 mr-2" />
+                              Resetuj lozinku
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Potvrdi reset lozinke</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Da li ste sigurni da želite da resetujete lozinku za korisnika {selectedUser.full_name || selectedUser.email}?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                              <AlertDialogAction onClick={async () => {
+                                try {
+                                  await resetUserPassword(selectedUser.user_id, resetPasswordForm.newPassword);
+                                  setResetPasswordForm({ newPassword: "", confirmPassword: "", isOpen: false });
+                                } catch (error) {
+                                  console.error('Error resetting password:', error);
+                                }
+                              }}>
+                                Resetuj
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        {resetPasswordForm.newPassword && resetPasswordForm.newPassword.length < 6 && (
+                          <p className="text-xs text-destructive">Lozinka mora imati najmanje 6 karaktera</p>
+                        )}
+                        {resetPasswordForm.newPassword && resetPasswordForm.confirmPassword && resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword && (
+                          <p className="text-xs text-destructive">Lozinke se ne poklapaju</p>
+                        )}
+                      </div>
+                    </div>
+                    
                     <div className="space-y-2 pt-4">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -2329,8 +2399,8 @@ const [mealForm, setMealForm] = useState({
                           <AlertDialogFooter>
                             <AlertDialogCancel>Otkaži</AlertDialogCancel>
                             <AlertDialogAction onClick={() => {
-                          handleUpdateUser();
-                        }}>Sačuvaj</AlertDialogAction>
+                              handleUpdateUser();
+                            }}>Sačuvaj</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -2352,9 +2422,9 @@ const [mealForm, setMealForm] = useState({
                           <AlertDialogFooter>
                             <AlertDialogCancel>Otkaži</AlertDialogCancel>
                             <AlertDialogAction onClick={async () => {
-                          await deleteUser(selectedUser.id);
-                          setSelectedUser(null);
-                        }}>
+                              await deleteUser(selectedUser.id);
+                              setSelectedUser(null);
+                            }}>
                               Obriši
                             </AlertDialogAction>
                           </AlertDialogFooter>
