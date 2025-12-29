@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell, Bot } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekOrders } from '@/hooks/useWeekOrders';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -16,6 +18,7 @@ import { AIHelpChat } from './AIHelpChat';
 type View = 'current' | 'next' | 'feedback' | 'profile';
 
 export function EmployeeDashboard() {
+  const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const [currentView, setCurrentView] = useState<View>('next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
@@ -80,9 +83,9 @@ export function EmployeeDashboard() {
                 <ChefHat className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Ketering Portal</h1>
+                <h1 className="text-xl font-bold text-foreground">{t('header.title')}</h1>
                 <p className="text-xs text-muted-foreground hidden sm:block">
-                  Poručite obroke za narednu sedmicu
+                  {t('header.subtitle')}
                 </p>
               </div>
             </div>
@@ -92,14 +95,15 @@ export function EmployeeDashboard() {
                 size="icon"
                 onClick={() => setAiChatOpen(true)}
                 className="hidden md:flex"
-                title="AI Pomoćnik"
+                title={t('navigation.aiAssistant')}
               >
                 <Bot className="h-5 w-5" />
               </Button>
+              <LanguageToggle />
               <ThemeToggle />
               <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
                 <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Odjavi se</span>
+                <span className="hidden sm:inline">{t('common.signOut')}</span>
               </Button>
             </div>
           </div>
@@ -126,7 +130,7 @@ export function EmployeeDashboard() {
             className="gap-2"
           >
             <CalendarPlus className="h-4 w-4" />
-            Iduća nedelja
+            {t('navigation.nextWeek')}
           </Button>
           <Button
             variant={currentView === 'current' ? 'default' : 'outline'}
@@ -134,7 +138,7 @@ export function EmployeeDashboard() {
             className="gap-2"
           >
             <Calendar className="h-4 w-4" />
-            Tekuća nedelja
+            {t('navigation.currentWeek')}
           </Button>
           <Button
             variant={currentView === 'feedback' ? 'default' : 'outline'}
@@ -142,7 +146,7 @@ export function EmployeeDashboard() {
             className="gap-2"
           >
             <MessageSquare className="h-4 w-4" />
-            Utisci i predlozi
+            {t('navigation.feedback')}
           </Button>
           <Button
             variant={currentView === 'profile' ? 'default' : 'outline'}
@@ -150,7 +154,7 @@ export function EmployeeDashboard() {
             className="gap-2"
           >
             <User className="h-4 w-4" />
-            Profil
+            {t('navigation.profile')}
           </Button>
         </div>
 
@@ -183,7 +187,7 @@ export function EmployeeDashboard() {
             className="flex flex-col h-auto py-2 gap-1"
           >
             <CalendarPlus className="h-5 w-5" />
-            <span className="text-xs">Iduća</span>
+            <span className="text-xs">{t('navigation.next')}</span>
           </Button>
           <Button
             variant={currentView === 'current' ? 'default' : 'ghost'}
@@ -191,7 +195,7 @@ export function EmployeeDashboard() {
             className="flex flex-col h-auto py-2 gap-1"
           >
             <Calendar className="h-5 w-5" />
-            <span className="text-xs">Tekuća</span>
+            <span className="text-xs">{t('navigation.current')}</span>
           </Button>
           <Button
             variant={currentView === 'feedback' ? 'default' : 'ghost'}
@@ -199,7 +203,7 @@ export function EmployeeDashboard() {
             className="flex flex-col h-auto py-2 gap-1"
           >
             <MessageSquare className="h-5 w-5" />
-            <span className="text-xs">Utisci</span>
+            <span className="text-xs">{t('navigation.impressions')}</span>
           </Button>
           <Button
             variant={currentView === 'profile' ? 'default' : 'ghost'}
@@ -207,7 +211,7 @@ export function EmployeeDashboard() {
             className="flex flex-col h-auto py-2 gap-1"
           >
             <User className="h-5 w-5" />
-            <span className="text-xs">Profil</span>
+            <span className="text-xs">{t('navigation.profile')}</span>
           </Button>
           <Button
             variant="ghost"
