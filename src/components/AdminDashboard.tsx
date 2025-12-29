@@ -144,7 +144,9 @@ const [mealForm, setMealForm] = useState({
     phone: "",
     company_card_id: "",
     date_of_birth: undefined as Date | undefined,
-    role: "employee" as "admin" | "employee"
+    role: "employee" as "admin" | "employee",
+    password: "",
+    usePassword: false
   });
 
   // Filter states for user table
@@ -180,7 +182,9 @@ const [mealForm, setMealForm] = useState({
       phone: "",
       company_card_id: "",
       date_of_birth: undefined,
-      role: "employee"
+      role: "employee",
+      password: "",
+      usePassword: false
     });
   };
   const handleCreateUser = async () => {
@@ -232,8 +236,23 @@ const [mealForm, setMealForm] = useState({
       return;
     }
 
+    // Validacija lozinke ako je opcija uključena
+    if (userForm.usePassword) {
+      if (!userForm.password || userForm.password.length < 6) {
+        toast({
+          title: 'Greška',
+          description: 'Lozinka mora imati najmanje 6 karaktera',
+          variant: 'destructive'
+        });
+        return;
+      }
+    }
+
     try {
-      await createUser(userForm);
+      await createUser({
+        ...userForm,
+        password: userForm.usePassword ? userForm.password : undefined
+      });
       resetUserForm();
       setIsAddUserOpen(false);
     } catch (error) {
@@ -1990,6 +2009,49 @@ const [mealForm, setMealForm] = useState({
                                 <SelectItem value="admin">Administrator</SelectItem>
                               </SelectContent>
                             </Select>
+                          </div>
+                          
+                          <div className="space-y-3 pt-2 border-t">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="use-password" 
+                                checked={userForm.usePassword}
+                                onCheckedChange={(checked) => setUserForm({
+                                  ...userForm,
+                                  usePassword: checked === true,
+                                  password: checked ? userForm.password : ""
+                                })}
+                              />
+                              <Label htmlFor="use-password" className="text-sm font-normal cursor-pointer">
+                                Postavi početnu lozinku (korisnik može odmah da se prijavi)
+                              </Label>
+                            </div>
+                            
+                            {userForm.usePassword && (
+                              <div>
+                                <Label htmlFor="user-password">Početna lozinka *</Label>
+                                <Input 
+                                  id="user-password" 
+                                  type="password" 
+                                  value={userForm.password} 
+                                  onChange={e => setUserForm({
+                                    ...userForm,
+                                    password: e.target.value
+                                  })} 
+                                  placeholder="Minimalno 6 karaktera"
+                                  minLength={6}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Korisnik će moći da se prijavi sa email/lozinka kombinacijom
+                                </p>
+                              </div>
+                            )}
+                            
+                            {!userForm.usePassword && (
+                              <p className="text-xs text-muted-foreground">
+                                Ako ne postavite lozinku, korisniku će biti poslat email sa linkom za aktivaciju naloga
+                              </p>
+                            )}
                           </div>
                           
                           <Button onClick={handleCreateUser} className="w-full" disabled={usersLoading}>

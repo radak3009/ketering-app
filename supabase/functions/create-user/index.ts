@@ -12,6 +12,7 @@ interface CreateUserRequest {
   company_card_id?: string;
   date_of_birth?: string;
   role: 'admin' | 'employee';
+  password?: string; // Optional: if provided, creates user with password instead of invite
 }
 
 Deno.serve(async (req) => {
@@ -58,13 +59,13 @@ Deno.serve(async (req) => {
     }
 
     const body: CreateUserRequest = await req.json();
-    const { email, full_name, phone, company_card_id, date_of_birth, role } = body;
+    const { email, full_name, phone, company_card_id, date_of_birth, role, password } = body;
 
     if (!email) {
       throw new Error('Email je obavezan');
     }
 
-    console.log('Creating user with data:', { email, full_name, phone, company_card_id, date_of_birth, role });
+    console.log('Creating user with data:', { email, full_name, phone, company_card_id, date_of_birth, role, hasPassword: !!password });
 
     // Check if email already exists
     const { data: existingProfile } = await supabaseAdmin
@@ -77,14 +78,40 @@ Deno.serve(async (req) => {
       throw new Error('Korisnik sa ovom email adresom već postoji');
     }
 
-    // Create user in auth.users with invite
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
-        full_name: full_name || '',
-        role: role || 'employee',
-      },
-      redirectTo: `${req.headers.get('origin') || supabaseUrl}/`,
-    });
+    let newUser;
+    let createError;
+
+    // If password is provided, create user with password (they can login immediately)
+    // Otherwise, send an invite email
+    if (password) {
+      // Validate password length
+      if (password.length < 6) {
+        throw new Error('Lozinka mora imati najmanje 6 karaktera');
+      }
+
+      const result = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm email so user can login immediately
+        user_metadata: {
+          full_name: full_name || '',
+          role: role || 'employee',
+        },
+      });
+      newUser = result.data;
+      createError = result.error;
+    } else {
+      // Send invite email (original behavior)
+      const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        data: {
+          full_name: full_name || '',
+          role: role || 'employee',
+        },
+        redirectTo: `${req.headers.get('origin') || supabaseUrl}/`,
+      });
+      newUser = result.data;
+      createError = result.error;
+    }
 
     if (createError) {
       console.error('Error creating user:', createError);

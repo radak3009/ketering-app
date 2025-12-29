@@ -176,6 +176,7 @@ export function useUsers() {
     company_card_id?: string;
     date_of_birth?: Date;
     role: 'admin' | 'employee';
+    password?: string; // Optional: if provided, creates user with password instead of invite
   }) => {
     try {
       // Call create-user Edge Function with all user data
@@ -186,7 +187,8 @@ export function useUsers() {
           phone: userData.phone || null,
           company_card_id: userData.company_card_id || null,
           date_of_birth: userData.date_of_birth?.toISOString().split('T')[0] || null,
-          role: userData.role
+          role: userData.role,
+          password: userData.password || null
         }
       });
 
@@ -202,9 +204,13 @@ export function useUsers() {
       // Refresh users list
       await fetchUsers();
       
+      const message = userData.password 
+        ? `Korisnik ${userData.full_name} je kreiran sa lozinkom. Može se prijaviti sa ${userData.email}.`
+        : `Korisnik ${userData.full_name} je kreiran i pozivnica je poslata na ${userData.email}.`;
+      
       toast({
         title: 'Uspeh',
-        description: `Korisnik ${userData.full_name} je kreiran i pozivnica je poslata na ${userData.email}.`
+        description: message
       });
       
       return data?.profile || null;
