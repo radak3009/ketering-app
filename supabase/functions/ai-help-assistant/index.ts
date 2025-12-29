@@ -6,52 +6,131 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function getCurrentDateInSerbian(): string {
+function getCurrentDateInfo(language: string): { dateStr: string; deadlineInfo: string } {
   const now = new Date();
-  const days = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota'];
-  const months = ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
-  
-  const dayName = days[now.getDay()];
-  const day = now.getDate();
-  const monthName = months[now.getMonth()];
-  const year = now.getFullYear();
-  const hours = now.getHours();
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-  
-  return `${dayName}, ${day}. ${monthName} ${year}. (${hours}:${minutes})`;
-}
-
-function getDeadlineInfo(): string {
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = nedelja, 5 = petak
+  const dayOfWeek = now.getDay();
   const hours = now.getHours();
   
-  if (dayOfWeek === 5 && hours < 15) {
-    return "⚠️ Danas je petak pre 15h - zaposleni MOGU još uvek da poručuju obroke za narednu nedelju!";
-  } else if (dayOfWeek === 5 && hours >= 15) {
-    return "⚠️ Danas je petak posle 15h - rok za porudžbine za narednu nedelju je istekao.";
-  } else if (dayOfWeek === 6 || dayOfWeek === 0) {
-    return "⚠️ Danas je vikend - rok za porudžbine za narednu nedelju je istekao (petak 15h).";
+  if (language === 'en') {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const dayName = days[dayOfWeek];
+    const day = now.getDate();
+    const monthName = months[now.getMonth()];
+    const year = now.getFullYear();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    
+    const dateStr = `${dayName}, ${monthName} ${day}, ${year} (${hours}:${minutes})`;
+    
+    let deadlineInfo: string;
+    if (dayOfWeek === 5 && hours < 17) {
+      deadlineInfo = "⚠️ Today is Friday before 5 PM - employees CAN still order meals for next week!";
+    } else if (dayOfWeek === 5 && hours >= 17) {
+      deadlineInfo = "⚠️ Today is Friday after 5 PM - the deadline for next week's orders has passed.";
+    } else if (dayOfWeek === 6 || dayOfWeek === 0) {
+      deadlineInfo = "⚠️ It's the weekend - the deadline for next week's orders has passed (Friday 5 PM).";
+    } else {
+      deadlineInfo = "✅ Employees can order meals for next week until Friday at 5 PM.";
+    }
+    
+    return { dateStr, deadlineInfo };
   } else {
-    return "✅ Zaposleni mogu poručivati obroke za narednu nedelju do petka u 15h.";
+    const days = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota'];
+    const months = ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'];
+    
+    const dayName = days[dayOfWeek];
+    const day = now.getDate();
+    const monthName = months[now.getMonth()];
+    const year = now.getFullYear();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    
+    const dateStr = `${dayName}, ${day}. ${monthName} ${year}. (${hours}:${minutes})`;
+    
+    let deadlineInfo: string;
+    if (dayOfWeek === 5 && hours < 17) {
+      deadlineInfo = "⚠️ Danas je petak pre 17h - zaposleni MOGU još uvek da poručuju obroke za narednu nedelju!";
+    } else if (dayOfWeek === 5 && hours >= 17) {
+      deadlineInfo = "⚠️ Danas je petak posle 17h - rok za porudžbine za narednu nedelju je istekao.";
+    } else if (dayOfWeek === 6 || dayOfWeek === 0) {
+      deadlineInfo = "⚠️ Danas je vikend - rok za porudžbine za narednu nedelju je istekao (petak 17h).";
+    } else {
+      deadlineInfo = "✅ Zaposleni mogu poručivati obroke za narednu nedelju do petka u 17h.";
+    }
+    
+    return { dateStr, deadlineInfo };
   }
 }
 
-const EMPLOYEE_SYSTEM_PROMPT = `Ti si pomoćni AI asistent za aplikaciju za naručivanje obroka. Odgovaraš zaposlenom korisniku.
+function getEmployeePrompt(language: string): string {
+  if (language === 'en') {
+    return `You are a helpful AI assistant for a meal ordering application. You are responding to an employee user.
+
+AVAILABLE FEATURES FOR EMPLOYEES:
+1. **Ordering meals**:
+   - "Next week" tab - orders for next week (until Friday at 5 PM)
+   - "Current week" tab - view current orders
+   - Click "Order meal" to open the meal selection dialog
+   - Select shift (first, second, third)
+   
+2. **Feedback**:
+   - "Feedback" tab for sending feedback
+   - Can comment on meals and service
+   
+3. **Suggestions**:
+   - In the "Feedback" section, can suggest new meals
+   - Enter name, description, and additional notes
+   
+4. **Profile**:
+   - "Profile" tab to update personal information
+   - Can change name, phone, date of birth
+   - **Change password** - separate section for entering new password with confirmation (minimum 6 characters)
+   - Email is displayed but cannot be changed
+   
+5. **NFC Pickup**:
+   - Meals are picked up using NFC card
+
+6. **Appearance settings**:
+   - Dark/Light mode toggle in header (sun/moon icon)
+   - Three options: Light theme, Dark theme, System settings
+   - Changes the appearance of the entire app
+
+7. **Language toggle**:
+   - Flag icons in header to switch between Serbian and English
+   - Settings are saved automatically
+
+8. **AI Assistant** (that's you!):
+   - On mobile: "AI" icon in bottom navigation (fifth icon)
+   - On desktop: robot icon in header next to theme toggle
+   - Provides help with using the application
+
+NAVIGATION:
+- Desktop: Header with logo, language toggle, AI assistant, dark mode toggle, and logout button
+- Mobile: Bottom navigation with 5 tabs: Next week, Current week, Feedback, Profile, AI
+
+IMPORTANT RULES:
+- Orders for next week can only be made until Friday at 5 PM
+- Each order must have a selected shift
+- Employees can only see their own orders
+
+Be clear and concise. Use numbered steps and emoji for important notes (⚠️, 💡, ✅).`;
+  }
+  
+  return `Ti si pomoćni AI asistent za aplikaciju za naručivanje obroka. Odgovaraš zaposlenom korisniku.
 
 DOSTUPNE FUNKCIONALNOSTI ZA ZAPOSLENOG:
 1. **Naručivanje obroka**:
-   - "Iduća nedelja" tab - porudžbine za narednu nedelju (do petka u 15h)
+   - "Iduća nedelja" tab - porudžbine za narednu nedelju (do petka u 17h)
    - "Tekuća nedelja" tab - pregled trenutnih porudžbina
    - Klikom na "Poruči obrok" otvara se dijalog za izbor obroka
    - Odabir smene (prva, druga, treća)
    
-2. **Feedback**:
-   - "Feedback" tab za slanje povratnih informacija
+2. **Utisci i predlozi**:
+   - "Utisci i predlozi" tab za slanje povratnih informacija
    - Mogu da daju komentare o obrocima i usluzi
    
-3. **Predlozi**:
-   - U "Feedback" sekciji mogu predložiti nove obroke
+3. **Predlozi obroka**:
+   - U "Utisci i predlozi" sekciji mogu predložiti nove obroke
    - Unose naziv, opis i dodatne napomene
    
 4. **Profil**:
@@ -68,17 +147,21 @@ DOSTUPNE FUNKCIONALNOSTI ZA ZAPOSLENOG:
    - Tri opcije: Svetla tema, Tamna tema, Sistemska podešavanja
    - Menja izgled cele aplikacije
 
-7. **AI Pomoćnik** (ovo si ti!):
+7. **Izbor jezika**:
+   - Ikonice zastava u headeru za prebacivanje između srpskog i engleskog
+   - Podešavanja se automatski čuvaju
+
+8. **AI Pomoćnik** (ovo si ti!):
    - Na mobilnom: ikona "AI" u donjoj navigaciji (peta ikona)
    - Na desktopu: ikona robota u headeru pored toggle-a za temu
    - Pruža pomoć za korišćenje aplikacije
 
 NAVIGACIJA:
-- Desktop: Header sa logom, AI pomoćnikom, dark mode toggle-om i dugmetom za odjavu
-- Mobilni: Donja navigacija sa 5 tabova: Iduća nedelja, Tekuća nedelja, Feedback, Profil, AI
+- Desktop: Header sa logom, izborom jezika, AI pomoćnikom, dark mode toggle-om i dugmetom za odjavu
+- Mobilni: Donja navigacija sa 5 tabova: Iduća nedelja, Tekuća nedelja, Utisci, Profil, AI
 
 VAŽNA PRAVILA:
-- Porudžbine za narednu nedelju mogu se praviti samo do petka u 15h
+- Porudžbine za narednu nedelju mogu se praviti samo do petka u 17h
 - Svaka porudžbina mora imati odabranu smenu
 - Zaposleni mogu videti samo svoje porudžbine
 
@@ -93,8 +176,56 @@ Primeri:
 ❌ NETAČNO: "Можете променити лозинку у Профил табу."
 
 Budi jasan i koncizan. Koristi numerisane korake i emoji za važne napomene (⚠️, 💡, ✅).`;
+}
 
-const ADMIN_SYSTEM_PROMPT = `Ti si pomoćni AI asistent za aplikaciju za naručivanje obroka. Odgovaraš administratoru.
+function getAdminPrompt(language: string): string {
+  if (language === 'en') {
+    return `You are a helpful AI assistant for a meal ordering application. You are responding to an administrator.
+
+AVAILABLE FEATURES FOR ADMIN:
+1. **Dashboard with metrics**:
+   - Display of key statistics (total orders, number of users, revenue)
+   - Date filter (defaults to next week)
+   - Pivot table for consolidated view by meal and day
+   
+2. **Users**:
+   - Creating new users
+   - Sending magic link invitations
+   - Deleting users (complete with all data)
+   - Viewing all users and their profiles
+   
+3. **Meals**:
+   - Adding new meals with images
+   - Categories, prices, nutritional information
+   - Allergens and status (active/inactive)
+   - Image upload to "Slike obroka" bucket
+   - Shift assignment (first, second, third)
+   
+4. **Menus**:
+   - Creating weekly menus
+   - Assigning meals by day
+   - Activating/deactivating menus
+   
+5. **Feedback and suggestions**:
+   - Viewing feedback from employees
+   - Marking as processed
+   - Viewing suggestions for new meals
+   
+6. **Pivot table**:
+   - Consolidated view of orders by meal and day
+   - For meal preparation and planning
+   - Filter by delivery date
+
+IMPORTANT NOTES:
+- Dashboard metrics filter by delivery_date (delivery date), not order_date
+- Deleting users calls Edge Function 'delete-user' with Service Role Key
+- RLS policies allow admins full access to all data
+- Pivot table is key for meal production planning
+
+Be clear and concise. Use numbered steps and emoji for important notes (⚠️, 💡, ✅).`;
+  }
+  
+  return `Ti si pomoćni AI asistent za aplikaciju za naručivanje obroka. Odgovaraš administratoru.
 
 DOSTUPNE FUNKCIONALNOSTI ZA ADMINA:
 1. **Dashboard sa metrikama**:
@@ -120,8 +251,8 @@ DOSTUPNE FUNKCIONALNOSTI ZA ADMINA:
    - Dodeljivanje obroka po danima
    - Aktiviranje/deaktiviranje jelovnika
    
-5. **Feedback i predlozi**:
-   - Pregled feedback-a od zaposlenih
+5. **Utisci i predlozi**:
+   - Pregled utisaka od zaposlenih
    - Označavanje kao obrađeno
    - Pregled predloga za nove obroke
    
@@ -147,6 +278,7 @@ Primeri:
 ❌ NETAČNO: "Пивот табела приказује консолидоване поруџбине."
 
 Budi jasan i koncizan. Koristi numerisane korake i emoji za važne napomene (⚠️, 💡, ✅).`;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -154,7 +286,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, role } = await req.json();
+    const { messages, role, language = 'sr' } = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required');
@@ -169,16 +301,16 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Get current date and time context
-    const currentDate = getCurrentDateInSerbian();
-    const deadlineInfo = getDeadlineInfo();
-    const dateContext = `TRENUTNI DATUM I VREME: ${currentDate}\n${deadlineInfo}\n\n`;
+    // Get current date and deadline info in the appropriate language
+    const { dateStr, deadlineInfo } = getCurrentDateInfo(language);
+    const dateContextLabel = language === 'en' ? 'CURRENT DATE AND TIME' : 'TRENUTNI DATUM I VREME';
+    const dateContext = `${dateContextLabel}: ${dateStr}\n${deadlineInfo}\n\n`;
     
-    // Select system prompt based on role and prepend date context
-    const basePrompt = role === 'admin' ? ADMIN_SYSTEM_PROMPT : EMPLOYEE_SYSTEM_PROMPT;
+    // Select system prompt based on role and language
+    const basePrompt = role === 'admin' ? getAdminPrompt(language) : getEmployeePrompt(language);
     const systemPrompt = dateContext + basePrompt;
 
-    console.log(`Processing chat request for ${role} with ${messages.length} messages at ${currentDate}`);
+    console.log(`Processing chat request for ${role} in ${language} with ${messages.length} messages at ${dateStr}`);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -201,8 +333,11 @@ serve(async (req) => {
       console.error('AI gateway error:', response.status, errorText);
       
       if (response.status === 429) {
+        const errorMsg = language === 'en' 
+          ? 'Too many requests, please try again later.' 
+          : 'Previše zahteva, molimo pokušajte kasnije.';
         return new Response(
-          JSON.stringify({ error: 'Previše zahteva, molimo pokušajte kasnije.' }), 
+          JSON.stringify({ error: errorMsg }), 
           {
             status: 429,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -211,8 +346,11 @@ serve(async (req) => {
       }
       
       if (response.status === 402) {
+        const errorMsg = language === 'en' 
+          ? 'Credits needed for AI functionality.' 
+          : 'Potrebno je dodati kredite za AI funkcionalnost.';
         return new Response(
-          JSON.stringify({ error: 'Potrebno je dodati kredite u Lovable AI workspace.' }), 
+          JSON.stringify({ error: errorMsg }), 
           {
             status: 402,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
