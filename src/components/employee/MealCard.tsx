@@ -1,7 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { OrderItemWithMeal } from '@/hooks/useWeekOrders';
-import { getShiftLabel, renderAllergens } from '@/lib/meal-utils.tsx';
+import { renderAllergens } from '@/lib/meal-utils.tsx';
 
 interface MealCardProps {
   item: OrderItemWithMeal;
@@ -10,6 +11,12 @@ interface MealCardProps {
 }
 
 export function MealCard({ item, canDelete = false, onDelete }: MealCardProps) {
+  const { t } = useTranslation();
+
+  const getShiftLabel = (shift: string): string => {
+    return t(`orders.shifts.${shift}`, shift);
+  };
+
   return (
     <div className="relative border rounded-lg overflow-hidden bg-card hover:shadow-md transition-shadow">
       {item.meal.image_url && (
@@ -46,22 +53,22 @@ export function MealCard({ item, canDelete = false, onDelete }: MealCardProps) {
         {renderAllergens(item.meal.allergens)}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium">Smena:</span>
+            <span className="font-medium">{t('orders.shift')}:</span>
             <span className="text-muted-foreground">
               {getShiftLabel(item.shift)}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium">Status:</span>
+            <span className="font-medium">{t('orders.status')}:</span>
             {item.pickup_status === 'preuzeto' ? (
               <span className="text-green-600 flex items-center gap-1">
                 <CheckCircle2 className="h-4 w-4" />
-                Preuzeto
+                {t('orders.pickedUp')}
               </span>
             ) : (
               <span className="text-muted-foreground flex items-center gap-1">
                 <XCircle className="h-4 w-4" />
-                Nije preuzeto
+                {t('orders.notPickedUp')}
               </span>
             )}
           </div>
