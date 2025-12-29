@@ -199,7 +199,31 @@
     "notPossible": "Nije moguće",
     "deadlinePassed": "Rok za izmene je istekao",
     "cannotDelete": "Nije moguće obrisati porudžbinu",
-    "orderDeleted": "Porudžbina je obrisana"
+    "orderDeleted": "Porudžbina je obrisana",
+    "remainingDays": "Preostalo dana za poručivanje: {{count}}",
+    "day": "Dan",
+    "selectDay": "Odaberite dan",
+    "selectShift": "Odaberite smenu",
+    "meal": "Obrok",
+    "selectDayFirst": "Prvo odaberite dan",
+    "noMealsForDay": "Nema dostupnih obroka za odabrani dan",
+    "fillAllFields": "Molimo popunite sva polja",
+    "cannotCreateOrder": "Nije moguće kreirati porudžbinu",
+    "cannotOrderMeal": "Nije moguće poručiti obrok",
+    "complete": "Kompletno!",
+    "orderedAllDays": "Poručili ste obroke za sve dostupne dane",
+    "success": "Uspešno!",
+    "movingToNextDay": "Prelazim na sledeći dan... (još {{count}} dan)",
+    "movingToNextDays": "Prelazim na sledeći dan... (još {{count}} dana)",
+    "ordering": "Poručivanje...",
+    "order": "Poruči",
+    "pickedUp": "Preuzeto",
+    "notPickedUp": "Nije preuzeto",
+    "shifts": {
+      "prva": "Prva smena",
+      "druga": "Druga smena",
+      "treća": "Treća smena"
+    }
   },
   "meals": {
     "title": "Obroci",

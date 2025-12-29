@@ -199,7 +199,31 @@
     "notPossible": "Not possible",
     "deadlinePassed": "Edit deadline has passed",
     "cannotDelete": "Cannot delete order",
-    "orderDeleted": "Order deleted"
+    "orderDeleted": "Order deleted",
+    "remainingDays": "Remaining days to order: {{count}}",
+    "day": "Day",
+    "selectDay": "Select day",
+    "selectShift": "Select shift",
+    "meal": "Meal",
+    "selectDayFirst": "First select a day",
+    "noMealsForDay": "No meals available for selected day",
+    "fillAllFields": "Please fill all fields",
+    "cannotCreateOrder": "Cannot create order",
+    "cannotOrderMeal": "Cannot order meal",
+    "complete": "Complete!",
+    "orderedAllDays": "You ordered meals for all available days",
+    "success": "Success!",
+    "movingToNextDay": "Moving to next day... ({{count}} day remaining)",
+    "movingToNextDays": "Moving to next day... ({{count}} days remaining)",
+    "ordering": "Ordering...",
+    "order": "Order",
+    "pickedUp": "Picked up",
+    "notPickedUp": "Not picked up",
+    "shifts": {
+      "prva": "First shift",
+      "druga": "Second shift",
+      "treća": "Third shift"
+    }
   },
   "meals": {
     "title": "Meals",

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
-import { sr } from 'date-fns/locale';
+import { sr, enUS } from 'date-fns/locale';
 
 interface Meal {
   id: string;
@@ -34,13 +35,8 @@ interface OrderMealDialogProps {
   refreshTrigger: number;
 }
 
-const SHIFTS = [
-  { value: 'prva', label: 'Prva smena' },
-  { value: 'druga', label: 'Druga smena' },
-  { value: 'treća', label: 'Treća smena' },
-];
-
 export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, totalMenuDays, refreshTrigger }: OrderMealDialogProps) {
+  const { t, i18n } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<string>('');
   const [selectedMeal, setSelectedMeal] = useState<string>('');
@@ -51,6 +47,14 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
   const [existingOrderDates, setExistingOrderDates] = useState<string[]>([]);
   const { toast } = useToast();
 
+  const dateLocale = i18n.language === 'sr' ? sr : enUS;
+
+  const SHIFTS = [
+    { value: 'prva', label: t('orders.shifts.prva') },
+    { value: 'druga', label: t('orders.shifts.druga') },
+    { value: 'treća', label: t('orders.shifts.treća') },
+  ];
+
   useEffect(() => {
     if (open && userId) {
       fetchMenus();
@@ -58,7 +62,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     }
   }, [open, userId]);
 
-  // Refetch data when external changes occur (e.g., order deletion)
   useEffect(() => {
     if (open && refreshTrigger > 0) {
       fetchMenus();
@@ -78,7 +81,7 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     if (menus.length > 0) {
       generateAvailableDatesFromMenus(menus);
     }
-  }, [existingOrderDates, menus]);
+  }, [existingOrderDates, menus, i18n.language]);
 
   const fetchExistingOrders = async () => {
     if (!userId) return;
@@ -101,17 +104,15 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
   };
 
   const generateAvailableDatesFromMenus = (fetchedMenus: Menu[]) => {
-    // Extract dates from menus and format them, filtering out dates with existing orders
     const dates = fetchedMenus
       .filter(menu => !existingOrderDates.includes(menu.menu_date))
       .map(menu => ({
         value: menu.menu_date,
-        label: format(new Date(menu.menu_date), 'EEEE, d. MMMM', { locale: sr })
+        label: format(new Date(menu.menu_date), 'EEEE, d. MMMM', { locale: dateLocale })
       }));
     
     setAvailableDates(dates);
     
-    // Auto-select first date if available
     if (dates.length > 0) {
       setSelectedDate(dates[0].value);
     }
@@ -168,8 +169,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
   const handleOrder = async () => {
     if (!userId || !selectedDate || !selectedShift || !selectedMeal) {
       toast({
-        title: 'Greška',
-        description: 'Molimo popunite sva polja',
+        title: t('common.error'),
+        description: t('orders.fillAllFields'),
         variant: 'destructive',
       });
       return;
@@ -177,7 +178,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
 
     setLoading(true);
 
-    // Check if order already exists for this date
     const { data: existingOrder } = await supabase
       .from('orders')
       .select('id')
@@ -187,7 +187,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
 
     let orderId = existingOrder?.id;
 
-    // Create order if it doesn't exist
     if (!orderId) {
       const { data: newOrder, error: orderError } = await supabase
         .from('orders')
@@ -204,8 +203,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
       if (orderError) {
         console.error('Error creating order:', orderError);
         toast({
-          title: 'Greška',
-          description: 'Nije moguće kreirati porudžbinu',
+          title: t('common.error'),
+          description: t('orders.cannotCreateOrder'),
           variant: 'destructive',
         });
         setLoading(false);
@@ -215,7 +214,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
       orderId = newOrder.id;
     }
 
-    // Get meal price
     const { data: mealData } = await supabase
       .from('meals')
       .select('price')
@@ -224,7 +222,6 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
 
     const price = mealData?.price || 0;
 
-    // Create order item
     const { error: itemError } = await supabase
       .from('order_items')
       .insert({
@@ -242,18 +239,16 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     if (itemError) {
       console.error('Error creating order item:', itemError);
       toast({
-        title: 'Greška',
-        description: 'Nije moguće poručiti obrok',
+        title: t('common.error'),
+        description: t('orders.cannotOrderMeal'),
         variant: 'destructive',
       });
       return;
     }
 
-    // Refetch orders and menus to get updated available dates
     await fetchExistingOrders();
     await fetchMenus();
     
-    // Check remaining available dates
     const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
     const nextWeekEnd = addDays(nextWeekStart, 6);
 
@@ -277,26 +272,22 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
 
     if (remainingDates.length === 0) {
       toast({
-        title: 'Kompletno!',
-        description: 'Poručili ste obroke za sve dostupne dane',
+        title: t('orders.complete'),
+        description: t('orders.orderedAllDays'),
       });
       onOrderCreated();
       onOpenChange(false);
     } else {
-      // Show success toast and prepare for next day
+      const messageKey = remainingDates.length === 1 ? 'orders.movingToNextDay' : 'orders.movingToNextDays';
       toast({
-        title: 'Uspešno!',
-        description: `Prelazim na sledeći dan... (još ${remainingDates.length} ${remainingDates.length === 1 ? 'dan' : remainingDates.length < 5 ? 'dana' : 'dana'})`,
+        title: t('orders.success'),
+        description: t(messageKey, { count: remainingDates.length }),
       });
       
-      // Smooth transition - wait a bit before auto-selecting next date
       setTimeout(() => {
-        // Auto-select the first remaining date
         if (remainingDates.length > 0) {
           const nextDate = remainingDates[0];
           setSelectedDate(nextDate);
-          // Keep selectedShift as is
-          // Reset only selectedMeal
           setSelectedMeal('');
         }
       }, 300);
@@ -309,20 +300,20 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Poruči obrok</DialogTitle>
+          <DialogTitle>{t('orders.orderMeal')}</DialogTitle>
           {availableDates.length > 0 && (
             <p className="text-sm text-muted-foreground mt-2">
-              Preostalo dana za poručivanje: {availableDates.length}
+              {t('orders.remainingDays', { count: availableDates.length })}
             </p>
           )}
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Dan</Label>
+            <Label>{t('orders.day')}</Label>
             <Select value={selectedDate} onValueChange={setSelectedDate}>
               <SelectTrigger>
-                <SelectValue placeholder="Odaberite dan" />
+                <SelectValue placeholder={t('orders.selectDay')} />
               </SelectTrigger>
               <SelectContent>
                 {availableDates.map(date => (
@@ -335,10 +326,10 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
           </div>
 
           <div className="space-y-2">
-            <Label>Smena</Label>
+            <Label>{t('orders.shift')}</Label>
             <Select value={selectedShift} onValueChange={setSelectedShift}>
               <SelectTrigger>
-                <SelectValue placeholder="Odaberite smenu" />
+                <SelectValue placeholder={t('orders.selectShift')} />
               </SelectTrigger>
               <SelectContent>
                 {SHIFTS.map(shift => (
@@ -351,12 +342,12 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
           </div>
 
           <div className="space-y-2">
-            <Label>Obrok</Label>
+            <Label>{t('orders.meal')}</Label>
             {!selectedDate && (
-              <p className="text-sm text-muted-foreground">Prvo odaberite dan</p>
+              <p className="text-sm text-muted-foreground">{t('orders.selectDayFirst')}</p>
             )}
             {selectedDate && meals.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nema dostupnih obroka za odabrani dan</p>
+              <p className="text-sm text-muted-foreground">{t('orders.noMealsForDay')}</p>
             )}
             {selectedDate && meals.length > 0 && (
               <div className="grid gap-3">
@@ -402,13 +393,13 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Otkaži
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleOrder} 
             disabled={loading || !selectedDate || !selectedShift || !selectedMeal}
           >
-            {loading ? 'Poručivanje...' : 'Poruči'}
+            {loading ? t('orders.ordering') : t('orders.order')}
           </Button>
         </div>
       </DialogContent>
