@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -18,6 +19,7 @@ interface AIHelpChatProps {
 }
 
 export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
+  const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,22 +58,27 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
           body: JSON.stringify({
             messages: [...messages, userMessage],
             role: profile.role,
+            language: i18n.language,
           }),
         }
       );
 
       if (!response.ok) {
         if (response.status === 429) {
-          throw new Error('Previše zahteva. Molimo pokušajte kasnije.');
+          throw new Error(i18n.language === 'en' 
+            ? 'Too many requests. Please try again later.' 
+            : 'Previše zahteva. Molimo pokušajte kasnije.');
         }
         if (response.status === 402) {
-          throw new Error('Potrebno je dodati kredite za AI funkcionalnost.');
+          throw new Error(i18n.language === 'en' 
+            ? 'Credits needed for AI functionality.' 
+            : 'Potrebno je dodati kredite za AI funkcionalnost.');
         }
-        throw new Error(`HTTP greška: ${response.status}`);
+        throw new Error(`HTTP ${i18n.language === 'en' ? 'error' : 'greška'}: ${response.status}`);
       }
 
       if (!response.body) {
-        throw new Error('Nema odgovora od servera');
+        throw new Error(i18n.language === 'en' ? 'No response from server' : 'Nema odgovora od servera');
       }
 
       const reader = response.body.getReader();
@@ -158,7 +165,9 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
 
     } catch (error) {
       console.error('Error calling AI assistant:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Došlo je do greške. Molimo pokušajte ponovo.';
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : (i18n.language === 'en' ? 'An error occurred. Please try again.' : 'Došlo je do greške. Molimo pokušajte ponovo.');
       setMessages(prev => {
         const filtered = prev.filter(m => !(m.role === 'assistant' && m.content === ''));
         return [...filtered, { role: 'assistant', content: errorMessage }];
@@ -175,13 +184,27 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
     }
   };
 
+  const exampleQuestions = i18n.language === 'en' ? {
+    intro: 'Example questions:',
+    orderMeal: 'How do I order a meal?',
+    giveFeedback: 'How do I give feedback?',
+    createMenu: 'How do I create a menu?',
+    addMeal: 'How do I add a new meal?',
+  } : {
+    intro: 'Primeri pitanja:',
+    orderMeal: 'Kako da poručim obrok?',
+    giveFeedback: 'Kako da dam feedback?',
+    createMenu: 'Kako da kreiram jelovnik?',
+    addMeal: 'Kako da dodam novi obrok?',
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:w-[440px] p-0 flex flex-col">
         <SheetHeader className="p-4 border-b">
           <SheetTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
-            AI Pomoćnik
+            {t('navigation.aiAssistant')}
           </SheetTitle>
         </SheetHeader>
 
@@ -191,16 +214,18 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
               <div className="text-center text-muted-foreground py-8">
                 <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">
-                  Pitajte me bilo šta o upotrebi aplikacije!
+                  {i18n.language === 'en' 
+                    ? 'Ask me anything about using the app!' 
+                    : 'Pitajte me bilo šta o upotrebi aplikacije!'}
                 </p>
                 <div className="mt-4 space-y-2 text-xs">
-                  <p className="font-medium">Primeri pitanja:</p>
-                  <p>• Kako da poručim obrok?</p>
-                  <p>• Kako da dam feedback?</p>
+                  <p className="font-medium">{exampleQuestions.intro}</p>
+                  <p>• {exampleQuestions.orderMeal}</p>
+                  <p>• {exampleQuestions.giveFeedback}</p>
                   {profile?.role === 'admin' && (
                     <>
-                      <p>• Kako da kreiram jelovnik?</p>
-                      <p>• Kako da dodam novi obrok?</p>
+                      <p>• {exampleQuestions.createMenu}</p>
+                      <p>• {exampleQuestions.addMeal}</p>
                     </>
                   )}
                 </div>
@@ -237,7 +262,7 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
         <div className="p-4 border-t">
           <div className="flex gap-2">
             <Input
-              placeholder="Unesite vaše pitanje..."
+              placeholder={i18n.language === 'en' ? 'Enter your question...' : 'Unesite vaše pitanje...'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
