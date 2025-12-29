@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/services/errorService';
 import type { Meal, OrderWithItems, ProfileBasic, MealOrderSummary } from '@/types';
 
-export function useOrders() {
+export function useOrders(initialStartDate?: string, initialEndDate?: string) {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDateRange, setCurrentDateRange] = useState<{ start?: string; end?: string }>({});
+  const currentDateRangeRef = useRef<{ start?: string; end?: string }>({
+    start: initialStartDate,
+    end: initialEndDate
+  });
 
-  const fetchOrders = async (startDate?: string, endDate?: string) => {
+  const fetchOrders = useCallback(async (startDate?: string, endDate?: string) => {
     try {
       setLoading(true);
-      setCurrentDateRange({ start: startDate, end: endDate });
+      currentDateRangeRef.current = { start: startDate, end: endDate };
       
       let query = supabase
         .from('orders')
@@ -68,7 +71,7 @@ export function useOrders() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const getMealOrdersByDate = async (date: string): Promise<MealOrderSummary[]> => {
     try {
@@ -170,16 +173,20 @@ export function useOrders() {
     }
   };
 
+  // Fetch orders when initial date range changes
   useEffect(() => {
-    fetchOrders();
-    
+    fetchOrders(initialStartDate, initialEndDate);
+  }, [initialStartDate, initialEndDate, fetchOrders]);
+
+  // Realtime subscription
+  useEffect(() => {
     const channel = supabase
       .channel('order-items-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
         () => {
-          fetchOrders(currentDateRange.start, currentDateRange.end);
+          fetchOrders(currentDateRangeRef.current.start, currentDateRangeRef.current.end);
         }
       )
       .subscribe();
@@ -187,7 +194,7 @@ export function useOrders() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentDateRange.start, currentDateRange.end]);
+  }, [fetchOrders]);
 
   return {
     orders,
