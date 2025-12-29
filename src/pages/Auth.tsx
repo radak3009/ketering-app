@@ -1,41 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Building2, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
-const signUpSchema = z.object({
-  email: z.string().email('Neispravna email adresa').max(255),
-  password: z.string().min(6, 'Lozinka mora imati najmanje 6 karaktera').max(100),
-  fullName: z.string().trim().min(2, 'Ime mora imati najmanje 2 karaktera').max(100)
-});
-
-const signInSchema = z.object({
-  email: z.string().email('Neispravna email adresa').max(255),
-  password: z.string().min(1, 'Unesite lozinku').max(100)
-});
-
-const magicLinkSchema = z.object({
-  email: z.string().email('Neispravna email adresa').max(255)
-});
-
-const passwordResetSchema = z.object({
-  password: z.string().min(6, 'Lozinka mora imati najmanje 6 karaktera').max(100),
-  confirmPassword: z.string().min(6, 'Potvrdite lozinku').max(100)
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Lozinke se ne poklapaju",
-  path: ["confirmPassword"]
-});
-
 export default function Auth() {
+  const { t } = useTranslation();
   const { signUp, signIn, signInWithGoogle, signInWithMagicLink, signOut, resetPassword, updatePassword, user, profile, loading: authLoading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -65,13 +43,35 @@ export default function Auth() {
 
   const [magicLinkEmail, setMagicLinkEmail] = useState('');
 
+  // Dynamic validation schemas with translations
+  const signUpSchema = z.object({
+    email: z.string().email(t('auth.validation.invalidEmail')).max(255),
+    password: z.string().min(6, t('auth.validation.passwordMin')).max(100),
+    fullName: z.string().trim().min(2, t('auth.validation.nameMin')).max(100)
+  });
+
+  const signInSchema = z.object({
+    email: z.string().email(t('auth.validation.invalidEmail')).max(255),
+    password: z.string().min(1, t('auth.validation.enterPassword')).max(100)
+  });
+
+  const magicLinkSchema = z.object({
+    email: z.string().email(t('auth.validation.invalidEmail')).max(255)
+  });
+
+  const passwordResetSchema = z.object({
+    password: z.string().min(6, t('auth.validation.passwordMin')).max(100),
+    confirmPassword: z.string().min(6, t('auth.validation.confirmPasswordMin')).max(100)
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('auth.validation.passwordsNotMatch'),
+    path: ["confirmPassword"]
+  });
+
   useEffect(() => {
-    // Robustna detekcija recovery mode-a iz više izvora
     const recoveryParam = searchParams.get('recovery') === 'true';
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const recoveryFromHash = hashParams.get('type') === 'recovery';
     
-    // Kombinuj sve izvore
     if (recoveryParam || recoveryFromHash || isPasswordRecovery) {
       console.log('[Auth] Recovery mode detected:', { recoveryParam, recoveryFromHash, isPasswordRecovery });
       setIsRecoveryMode(true);
@@ -79,23 +79,19 @@ export default function Auth() {
   }, [searchParams, isPasswordRecovery]);
 
   useEffect(() => {
-    // Ako je recovery mode, ne redirektuj na dashboard
     if (isRecoveryMode) {
       return;
     }
     
-    // Postavi processingAuth na true dok čekamo profil
     if (user && !profile && !authLoading) {
       setProcessingAuth(true);
     }
     
-    // Kada dobijemo profil, rediriguj i resetuj processingAuth
     if (user && profile) {
       setProcessingAuth(false);
       navigate('/');
     }
     
-    // Resetuj processingAuth ako nema user-a
     if (!user) {
       setProcessingAuth(false);
     }
@@ -118,27 +114,27 @@ export default function Auth() {
       if (error) {
         if (error.message.includes('User already registered')) {
           toast({
-            title: 'Greška',
-            description: 'Korisnik sa ovom email adresom već postoji.',
+            title: t('auth.errors.error'),
+            description: t('auth.errors.userExists'),
             variant: 'destructive'
           });
         } else {
           toast({
-            title: 'Greška pri registraciji',
+            title: t('auth.errors.registrationError'),
             description: error.message,
             variant: 'destructive'
           });
         }
       } else {
         toast({
-          title: 'Uspešna registracija',
-          description: 'Proverite email za potvrdu naloga.',
+          title: t('auth.success.registrationSuccess'),
+          description: t('auth.success.checkEmailConfirm'),
         });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška u podacima',
+          title: t('auth.errors.dataError'),
           description: error.errors[0].message,
           variant: 'destructive'
         });
@@ -160,19 +156,19 @@ export default function Auth() {
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           toast({
-            title: 'Prijava neuspešna',
-            description: 'Neispravni podaci za prijavljivanje. Ako nemate nalog, molimo vas kontaktirajte administratora za registraciju.',
+            title: t('auth.errors.loginFailed'),
+            description: t('auth.errors.invalidCredentials'),
             variant: 'destructive'
           });
         } else if (error.message.includes('Email not confirmed')) {
           toast({
-            title: 'Email nije potvrđen',
-            description: 'Molimo vas proverite email i potvrdite nalog.',
+            title: t('auth.errors.emailNotConfirmed'),
+            description: t('auth.errors.confirmEmail'),
             variant: 'destructive'
           });
         } else {
           toast({
-            title: 'Greška pri prijavljivanju',
+            title: t('auth.errors.loginError'),
             description: error.message,
             variant: 'destructive'
           });
@@ -181,7 +177,7 @@ export default function Auth() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška u podacima',
+          title: t('auth.errors.dataError'),
           description: error.errors[0].message,
           variant: 'destructive'
         });
@@ -195,8 +191,8 @@ export default function Auth() {
     const { error } = await signInWithGoogle();
     if (error) {
       toast({
-        title: 'Greška',
-        description: 'Prijavljivanje sa Google nalogom nije uspelo.',
+        title: t('auth.errors.error'),
+        description: t('auth.errors.googleLoginFailed'),
         variant: 'destructive'
       });
     }
@@ -213,21 +209,21 @@ export default function Auth() {
       
       if (error) {
         toast({
-          title: 'Greška',
+          title: t('auth.errors.error'),
           description: error.message,
           variant: 'destructive'
         });
       } else {
         toast({
-          title: 'Magični link poslat!',
-          description: 'Proverite vaš email za link za prijavljivanje. Link ističe za 60 minuta.',
+          title: t('auth.success.magicLinkSent'),
+          description: t('auth.success.magicLinkDesc'),
         });
         setMagicLinkEmail('');
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška u podacima',
+          title: t('auth.errors.dataError'),
           description: error.errors[0].message,
           variant: 'destructive'
         });
@@ -248,14 +244,14 @@ export default function Auth() {
       
       if (error) {
         toast({
-          title: 'Greška',
+          title: t('auth.errors.error'),
           description: error.message,
           variant: 'destructive'
         });
       } else {
         toast({
-          title: 'Email poslat!',
-          description: 'Proverite vaš email za link za resetovanje lozinke.',
+          title: t('auth.success.emailSent'),
+          description: t('auth.success.checkEmailReset'),
         });
         setForgotPasswordEmail('');
         setShowForgotPassword(false);
@@ -263,7 +259,7 @@ export default function Auth() {
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška u podacima',
+          title: t('auth.errors.dataError'),
           description: error.errors[0].message,
           variant: 'destructive'
         });
@@ -284,25 +280,24 @@ export default function Auth() {
       
       if (error) {
         toast({
-          title: 'Greška',
+          title: t('auth.errors.error'),
           description: error.message,
           variant: 'destructive'
         });
       } else {
         toast({
-          title: 'Lozinka uspešno postavljena!',
-          description: 'Sada se možete prijaviti sa vašom novom lozinkom.',
+          title: t('auth.success.passwordSet'),
+          description: t('auth.success.canLoginNow'),
         });
         setIsRecoveryMode(false);
-        clearPasswordRecovery(); // Očisti flag iz AuthContext i sessionStorage
+        clearPasswordRecovery();
         setPasswordResetData({ password: '', confirmPassword: '' });
-        // Očisti URL parametar
         navigate('/auth', { replace: true });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Greška u podacima',
+          title: t('auth.errors.dataError'),
           description: error.errors[0].message,
           variant: 'destructive'
         });
@@ -312,45 +307,45 @@ export default function Auth() {
     }
   };
 
-  // Prikaži loading spinner dok se učitava profil (ali ne u recovery mode)
+  // Loading spinner while profile loads
   if (!isRecoveryMode && user && !profile && (authLoading || processingAuth)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
-        <LoadingSpinner size="xl" text="Učitavanje profila..." />
+        <LoadingSpinner size="xl" text={t('auth.loadingProfile')} />
       </div>
     );
   }
 
-  // Prikaži formu za postavljanje nove lozinke u recovery mode
+  // Password reset form in recovery mode
   if (isRecoveryMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Ketering Portal</h1>
-            <p className="text-muted-foreground">Postavite novu lozinku</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t('auth.portalTitle')}</h1>
+            <p className="text-muted-foreground">{t('auth.setNewPassword')}</p>
           </div>
 
           <Card className="shadow-elegant border-primary/20">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
                 <KeyRound className="h-6 w-6" />
-                Nova lozinka
+                {t('auth.newPasswordTitle')}
               </CardTitle>
               <CardDescription className="text-center">
-                Unesite novu lozinku za vaš nalog
+                {t('auth.enterNewPasswordDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handlePasswordReset} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">Nova lozinka</Label>
+                  <Label htmlFor="new-password">{t('auth.newPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="new-password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Najmanje 6 karaktera"
+                      placeholder={t('auth.minCharsPlaceholder')}
                       className="pl-10 pr-10"
                       value={passwordResetData.password}
                       onChange={(e) => setPasswordResetData({ ...passwordResetData, password: e.target.value })}
@@ -367,13 +362,13 @@ export default function Auth() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Potvrdite lozinku</Label>
+                  <Label htmlFor="confirm-password">{t('auth.confirmPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="confirm-password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Ponovite lozinku"
+                      placeholder={t('auth.repeatPassword')}
                       className="pl-10 pr-10"
                       value={passwordResetData.confirmPassword}
                       onChange={(e) => setPasswordResetData({ ...passwordResetData, confirmPassword: e.target.value })}
@@ -383,7 +378,7 @@ export default function Auth() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Postavljanje...' : 'Postavi lozinku'}
+                  {loading ? t('auth.settingPassword') : t('auth.setPassword')}
                 </Button>
               </form>
 
@@ -397,7 +392,7 @@ export default function Auth() {
                     navigate('/auth', { replace: true });
                   }}
                 >
-                  Nazad na prijavu
+                  {t('auth.backToLogin')}
                 </Button>
               </div>
             </CardContent>
@@ -407,27 +402,27 @@ export default function Auth() {
     );
   }
 
-  // Prikaži formu za zaboravljenu lozinku
+  // Forgot password form
   if (showForgotPassword) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Ketering Portal</h1>
-            <p className="text-muted-foreground">Resetujte lozinku</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t('auth.portalTitle')}</h1>
+            <p className="text-muted-foreground">{t('auth.resetPassword')}</p>
           </div>
 
           <Card className="shadow-elegant border-primary/20">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Zaboravljena lozinka?</CardTitle>
+              <CardTitle className="text-2xl font-bold text-center">{t('auth.forgotPasswordTitle')}</CardTitle>
               <CardDescription className="text-center">
-                Unesite email adresu i poslaćemo vam link za resetovanje lozinke
+                {t('auth.forgotPasswordDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="forgot-email">Email</Label>
+                  <Label htmlFor="forgot-email">{t('auth.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -443,7 +438,7 @@ export default function Auth() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Slanje...' : 'Pošalji link za reset'}
+                  {loading ? t('auth.sending') : t('auth.sendResetLink')}
                 </Button>
               </form>
 
@@ -453,7 +448,7 @@ export default function Auth() {
                   className="text-sm text-muted-foreground"
                   onClick={() => setShowForgotPassword(false)}
                 >
-                  Nazad na prijavu
+                  {t('auth.backToLogin')}
                 </Button>
               </div>
             </CardContent>
@@ -467,16 +462,16 @@ export default function Auth() {
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Ketering Portal</h1>
-          <p className="text-muted-foreground">Prijavite se na vaš nalog</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{t('auth.portalTitle')}</h1>
+          <p className="text-muted-foreground">{t('auth.loginToAccount')}</p>
         </div>
 
         {user && !authLoading && !profile && !processingAuth ? (
           <Card className="shadow-elegant border-destructive/20">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center text-destructive">Profil nije kreiran</CardTitle>
+              <CardTitle className="text-2xl font-bold text-center text-destructive">{t('auth.profileNotCreated')}</CardTitle>
               <CardDescription className="text-center">
-                Vaš profil još uvek nije kreiran. Molimo vas kontaktirajte administratora ili se odjavite i registrujte ponovo.
+                {t('auth.profileNotCreatedDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -485,30 +480,30 @@ export default function Auth() {
                 className="w-full"
                 variant="outline"
               >
-                Odjavi se
+                {t('common.signOut')}
               </Button>
             </CardContent>
           </Card>
         ) : (
           <Card className="shadow-elegant border-primary/20">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Dobrodošli</CardTitle>
+              <CardTitle className="text-2xl font-bold text-center">{t('auth.welcome')}</CardTitle>
               <CardDescription className="text-center">
-                Izaberite kako želite da pristupite
+                {t('auth.chooseAccess')}
               </CardDescription>
             </CardHeader>
             <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="signin">Prijavi se</TabsTrigger>
-                <TabsTrigger value="magiclink">Magični link</TabsTrigger>
-                <TabsTrigger value="signup">Registracija</TabsTrigger>
+                <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+                <TabsTrigger value="magiclink">{t('auth.magicLink')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('auth.register')}</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin" className="space-y-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t('auth.email')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -524,13 +519,13 @@ export default function Auth() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Lozinka</Label>
+                    <Label htmlFor="signin-password">{t('auth.password')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signin-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Unesite lozinku"
+                        placeholder={t('auth.enterPassword')}
                         className="pl-10 pr-10"
                         value={signInData.password}
                         onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
@@ -547,7 +542,7 @@ export default function Auth() {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Prijavljivanje...' : 'Prijavite se'}
+                    {loading ? t('auth.loggingIn') : t('auth.signIn')}
                   </Button>
 
                   <div className="text-center">
@@ -557,7 +552,7 @@ export default function Auth() {
                       className="text-sm text-muted-foreground p-0 h-auto"
                       onClick={() => setShowForgotPassword(true)}
                     >
-                      Zaboravili ste lozinku?
+                      {t('auth.forgotPassword')}
                     </Button>
                   </div>
                 </form>
@@ -567,7 +562,7 @@ export default function Auth() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">ili</span>
+                    <span className="bg-background px-2 text-muted-foreground">{t('auth.or')}</span>
                   </div>
                 </div>
 
@@ -577,20 +572,20 @@ export default function Auth() {
                   className="w-full"
                   onClick={handleGoogleSignIn}
                 >
-                  Prijavite se sa Google
+                  {t('auth.signInWithGoogle')}
                 </Button>
               </TabsContent>
 
               <TabsContent value="magiclink" className="space-y-4">
                 <div className="space-y-2 mb-4">
                   <p className="text-sm text-muted-foreground text-center">
-                    Unesite email i dobićete link za prijavljivanje bez lozinke.
+                    {t('auth.magicLinkDesc')}
                   </p>
                 </div>
                 
                 <form onSubmit={handleMagicLink} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="magiclink-email">Email</Label>
+                    <Label htmlFor="magiclink-email">{t('auth.email')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -606,19 +601,19 @@ export default function Auth() {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Slanje...' : 'Pošalji magični link'}
+                    {loading ? t('auth.sending') : t('auth.sendMagicLink')}
                   </Button>
                 </form>
 
                 <div className="text-center text-sm text-muted-foreground mt-4">
-                  <p>Link ističe za 60 minuta</p>
+                  <p>{t('auth.linkExpires')}</p>
                 </div>
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Puno ime</Label>
+                    <Label htmlFor="signup-name">{t('auth.fullName')}</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -634,7 +629,7 @@ export default function Auth() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t('auth.email')}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -650,13 +645,13 @@ export default function Auth() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Lozinka</Label>
+                    <Label htmlFor="signup-password">{t('auth.password')}</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signup-password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Najmanje 6 karaktera"
+                        placeholder={t('auth.minCharsPlaceholder')}
                         className="pl-10 pr-10"
                         value={signUpData.password}
                         onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
@@ -673,7 +668,7 @@ export default function Auth() {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Registracija...' : 'Registrujte se'}
+                    {loading ? t('auth.registering') : t('auth.signUp')}
                   </Button>
                 </form>
 
@@ -682,7 +677,7 @@ export default function Auth() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">ili</span>
+                    <span className="bg-background px-2 text-muted-foreground">{t('auth.or')}</span>
                   </div>
                 </div>
 
@@ -711,7 +706,7 @@ export default function Auth() {
                       fill="#EA4335"
                     />
                   </svg>
-                  {authLoading ? 'Povezivanje...' : 'Registrujte se pomoću Google-a'}
+                  {authLoading ? t('auth.connecting') : t('auth.registerWithGoogle')}
                 </Button>
               </TabsContent>
             </Tabs>
