@@ -435,10 +435,10 @@ export default function Auth() {
                   <Label htmlFor="forgot-email">{t('auth.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
+                      <Input
                       id="forgot-email"
                       type="email"
-                      placeholder="vas@email.com"
+                      placeholder={t('auth.emailPlaceholder')}
                       className="pl-10"
                       value={forgotPasswordEmail}
                       onChange={(e) => setForgotPasswordEmail(e.target.value)}
@@ -522,7 +522,7 @@ export default function Auth() {
                       <Input
                         id="signin-email"
                         type="email"
-                        placeholder="vas@email.com"
+                        placeholder={t('auth.emailPlaceholder')}
                         className="pl-10"
                         value={signInData.email}
                         onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
@@ -604,7 +604,7 @@ export default function Auth() {
                       <Input
                         id="magiclink-email"
                         type="email"
-                        placeholder="vas@email.com"
+                        placeholder={t('auth.emailPlaceholder')}
                         className="pl-10"
                         value={magicLinkEmail}
                         onChange={(e) => setMagicLinkEmail(e.target.value)}
@@ -632,7 +632,7 @@ export default function Auth() {
                       <Input
                         id="signup-name"
                         type="text"
-                        placeholder="Marko Marković"
+                        placeholder={t('auth.namePlaceholder')}
                         className="pl-10"
                         value={signUpData.fullName}
                         onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
@@ -648,7 +648,7 @@ export default function Auth() {
                       <Input
                         id="signup-email"
                         type="email"
-                        placeholder="vas@email.com"
+                        placeholder={t('auth.emailPlaceholder')}
                         className="pl-10"
                         value={signUpData.email}
                         onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}

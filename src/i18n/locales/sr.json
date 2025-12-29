@@ -118,6 +118,8 @@
     "registerWithGoogle": "Registrujte se pomoću Google-a",
     "connecting": "Povezivanje...",
     "loadingProfile": "Učitavanje profila...",
+    "emailPlaceholder": "vas@email.com",
+    "namePlaceholder": "Marko Marković",
     "validation": {
       "invalidEmail": "Neispravna email adresa",
       "passwordMin": "Lozinka mora imati najmanje 6 karaktera",
