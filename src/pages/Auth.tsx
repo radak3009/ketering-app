@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Building2, KeyRound } from 'lucide-react';
 import { z } from 'zod';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const signUpSchema = z.object({
   email: z.string().email('Neispravna email adresa').max(255),
@@ -315,10 +316,7 @@ export default function Auth() {
   if (!isRecoveryMode && user && !profile && (authLoading || processingAuth)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Učitavanje profila...</p>
-        </div>
+        <LoadingSpinner size="xl" text="Učitavanje profila..." />
       </div>
     );
   }

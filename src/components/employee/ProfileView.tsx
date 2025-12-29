@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Loader2, User as UserIcon, Lock, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ProfileViewProps {
   user: User | null;
@@ -149,8 +150,8 @@ export function ProfileView({ user }: ProfileViewProps) {
   if (fetching) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <CardContent className="py-12">
+          <LoadingSpinner size="lg" />
         </CardContent>
       </Card>
     );

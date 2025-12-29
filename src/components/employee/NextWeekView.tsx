@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, AlertCircle } from 'lucide-react';
+import { Calendar, Plus, AlertCircle, UtensilsCrossed } from 'lucide-react';
 import { WeekOrder } from '@/hooks/useWeekOrders';
 import { format, startOfWeek, addDays, addWeeks } from 'date-fns';
 import { sr } from 'date-fns/locale';
@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MealCard } from './MealCard';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface NextWeekViewProps {
   orders: WeekOrder[];
@@ -65,11 +67,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" className="p-8" />;
   }
 
   return (
@@ -147,9 +145,11 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
                   </div>
 
                   {!order || order.items.length === 0 ? (
-                    <div className="text-sm text-muted-foreground italic">
-                      Nema poručenih obroka
-                    </div>
+                    <EmptyState 
+                      icon={UtensilsCrossed}
+                      title="Nema poručenih obroka"
+                      className="py-4"
+                    />
                   ) : (
                     <div className="space-y-3 mt-3">
                       {order.items.map((item) => (

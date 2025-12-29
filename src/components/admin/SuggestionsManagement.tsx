@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lightbulb, Search } from 'lucide-react';
+import { Lightbulb, Search, SearchX } from 'lucide-react';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { format } from 'date-fns';
 import { sr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export function SuggestionsManagement() {
   const { suggestions, loading, updateSuggestion } = useSuggestions();
@@ -71,9 +72,11 @@ export function SuggestionsManagement() {
         </div>
 
         {filteredSuggestions.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {searchTerm ? 'Nema rezultata za pretragu' : 'Nema predloga'}
-          </div>
+          <EmptyState 
+            icon={searchTerm ? SearchX : Lightbulb}
+            title={searchTerm ? 'Nema rezultata za pretragu' : 'Nema predloga'}
+            description={searchTerm ? 'Pokušajte sa drugim terminom pretrage' : 'Korisnici još nisu predložili nova jela'}
+          />
         ) : (
           <div className="border rounded-lg">
             <Table>

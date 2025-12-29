@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MessageSquare, Search, Filter } from 'lucide-react';
+import { MessageSquare, Search, SearchX } from 'lucide-react';
 import { useFeedback } from '@/hooks/useFeedback';
 import { format } from 'date-fns';
 import { sr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export function FeedbackManagement() {
   const { feedback, loading, updateFeedback } = useFeedback();
@@ -70,9 +71,11 @@ export function FeedbackManagement() {
         </div>
 
         {filteredFeedback.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {searchTerm ? 'Nema rezultata za pretragu' : 'Nema utisaka'}
-          </div>
+          <EmptyState 
+            icon={searchTerm ? SearchX : MessageSquare}
+            title={searchTerm ? 'Nema rezultata za pretragu' : 'Nema utisaka'}
+            description={searchTerm ? 'Pokušajte sa drugim terminom pretrage' : 'Korisnici još nisu ostavili utiske'}
+          />
         ) : (
           <div className="border rounded-lg">
             <Table>
