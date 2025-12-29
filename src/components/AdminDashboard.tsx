@@ -92,60 +92,60 @@ export function AdminDashboard() {
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardHeader className="pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Users className="h-3 w-3 md:h-4 md:w-4" />
                 Korisnici
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <div className="text-xl md:text-3xl font-bold text-foreground">
+            <CardContent className="p-2 md:p-4 pt-0">
+              <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : users.length}
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
-            <CardHeader className="pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <ChefHat className="h-3 w-3 md:h-4 md:w-4" />
                 Obroci
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <div className="text-xl md:text-3xl font-bold text-foreground">
+            <CardContent className="p-2 md:p-4 pt-0">
+              <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : meals.length}
               </div>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-accent/10 to-accent/5">
-            <CardHeader className="pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
                 Porudžbine
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <div className="text-xl md:text-3xl font-bold text-foreground">
+            <CardContent className="p-2 md:p-4 pt-0">
+              <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : stats.totalOrders}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Za izabrani period</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Za izabrani period</p>
             </CardContent>
           </Card>
           
           <Card className="bg-gradient-to-br from-primary/10 to-accent/5">
-            <CardHeader className="pb-2 p-3 md:p-6">
-              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Calendar className="h-3 w-3 md:h-4 md:w-4" />
                 Prihod
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
-              <div className="text-xl md:text-3xl font-bold text-foreground">
+            <CardContent className="p-2 md:p-4 pt-0">
+              <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : `${stats.totalRevenue.toFixed(0)} RSD`}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Za izabrani period</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Za izabrani period</p>
             </CardContent>
           </Card>
         </div>
