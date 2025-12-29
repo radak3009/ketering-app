@@ -19,9 +19,14 @@ interface OrdersOverviewProps {
 
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
+  
+  // Memoize date range values to prevent unnecessary re-renders
+  const startDate = orderDateRange?.startDate || '';
+  const endDate = orderDateRange?.endDate || '';
+  
   const { orders, loading, fetchOrders, getMealOrdersByDate, searchMealOrders } = useOrders(
-    orderDateRange.startDate,
-    orderDateRange.endDate
+    startDate || undefined,
+    endDate || undefined
   );
   
   const [orderSearch, setOrderSearch] = useState("");
