@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-
-export interface Suggestion {
+import { handleError, handleSuccess } from '@/services/errorService';
+// Extended suggestion type with profile info for display
+export interface SuggestionWithProfile {
   id: string;
   user_id: string;
   meal_name: string;
@@ -13,13 +13,12 @@ export interface Suggestion {
   profiles?: {
     full_name: string;
     email: string;
-  };
+  } | null;
 }
 
 export function useSuggestions() {
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestionWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const fetchSuggestions = async () => {
     setLoading(true);
@@ -49,12 +48,8 @@ export function useSuggestions() {
       );
 
       setSuggestions(suggestionsWithProfiles);
-    } catch (error: any) {
-      toast({
-        title: 'Greška',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      handleError({ category: 'fetch', entity: 'predlog', error });
     } finally {
       setLoading(false);
     }
@@ -76,18 +71,15 @@ export function useSuggestions() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Uspešno',
-        description: 'Predlog je poslat',
+      handleSuccess({ 
+        category: 'create', 
+        entity: 'predlog',
+        customMessage: 'Predlog je poslat'
       });
 
       await fetchSuggestions();
-    } catch (error: any) {
-      toast({
-        title: 'Greška',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      handleError({ category: 'create', entity: 'predlog', error });
     }
   };
 
@@ -101,12 +93,8 @@ export function useSuggestions() {
       if (error) throw error;
 
       await fetchSuggestions();
-    } catch (error: any) {
-      toast({
-        title: 'Greška',
-        description: error.message,
-        variant: 'destructive',
-      });
+    } catch (error) {
+      handleError({ category: 'update', entity: 'predlog', error });
     }
   };
 
@@ -122,3 +110,6 @@ export function useSuggestions() {
     refetch: fetchSuggestions,
   };
 }
+
+// Re-export for backward compatibility
+export type { Suggestion } from '@/types';

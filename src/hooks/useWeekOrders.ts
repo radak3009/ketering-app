@@ -1,47 +1,22 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { startOfWeek, endOfWeek, addWeeks, format, isFriday, getHours } from 'date-fns';
-
-export interface OrderItemWithMeal {
-  id: string;
-  order_id: string;
-  meal_id: string;
-  shift: string;
-  pickup_status: string;
-  pickup_time: string | null;
-  delivery_date: string;
-  meal: {
-    id: string;
-    name: string;
-    description: string;
-    image_url: string | null;
-    category: string;
-    allergens: string[] | null;
-  };
-}
-
-export interface WeekOrder {
-  date: string;
-  items: OrderItemWithMeal[];
-}
+import { startOfWeek, endOfWeek, addWeeks, format, getHours } from 'date-fns';
+import { handleError } from '@/services/errorService';
+import type { WeekOrder, OrderItemForWeekView } from '@/types';
 
 export const useWeekOrders = (userId: string | undefined) => {
   const [currentWeekOrders, setCurrentWeekOrders] = useState<WeekOrder[]>([]);
   const [nextWeekOrders, setNextWeekOrders] = useState<WeekOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const canEditNextWeek = () => {
     const now = new Date();
-    const day = now.getDay(); // 0 = Sunday, 5 = Friday
+    const day = now.getDay();
     const hours = getHours(now);
     
-    // Can edit until Friday 17:00 (5 PM)
     if (day === 5 && hours >= 17) {
       return false;
     }
-    // Cannot edit on Saturday (6) or Sunday (0)
     if (day === 6 || day === 0) {
       return false;
     }
@@ -81,17 +56,11 @@ export const useWeekOrders = (userId: string | undefined) => {
       .lte('orders.delivery_date', endDate);
 
     if (error) {
-      console.error('Error fetching orders:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće učitati porudžbine',
-        variant: 'destructive',
-      });
+      handleError({ category: 'fetch', entity: 'porudžbina', error });
       return [];
     }
 
-    // Group by date
-    const groupedByDate: { [key: string]: OrderItemWithMeal[] } = {};
+    const groupedByDate: { [key: string]: OrderItemForWeekView[] } = {};
     
     data?.forEach((item: any) => {
       const deliveryDate = item.orders.delivery_date;
@@ -150,3 +119,6 @@ export const useWeekOrders = (userId: string | undefined) => {
     refetch: fetchOrders
   };
 };
+
+// Re-export types for backward compatibility
+export type { WeekOrder, OrderItemForWeekView as OrderItemWithMeal } from '@/types';

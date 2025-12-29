@@ -1,43 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import type { Tables } from '@/integrations/supabase/types';
-
-type Order = Tables<'orders'>;
-type OrderItem = Tables<'order_items'>;
-type Meal = Tables<'meals'>;
-
-interface Profile {
-  id: string;
-  full_name: string | null;
-  company_card_id: string | null;
-}
-
-interface OrderWithItems extends Order {
-  order_items?: (OrderItem & { meal: Meal })[];
-  profile?: Profile;
-}
-
-interface MealOrderSummary {
-  meal_id: string;
-  meal_name: string;
-  meal_image_url: string | null;
-  total_orders: number;
-}
+import { handleError } from '@/services/errorService';
+import type { Meal, OrderWithItems, ProfileBasic, MealOrderSummary } from '@/types';
 
 export function useOrders() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDateRange, setCurrentDateRange] = useState<{ start?: string; end?: string }>({});
-  const { toast } = useToast();
 
   const fetchOrders = async (startDate?: string, endDate?: string) => {
     try {
       setLoading(true);
-      // Store current date range for realtime refetch
       setCurrentDateRange({ start: startDate, end: endDate });
       
-      // First fetch orders with order items
       let query = supabase
         .from('orders')
         .select(`
@@ -49,7 +24,6 @@ export function useOrders() {
         `)
         .order('delivery_date', { ascending: true });
 
-      // Apply date filters independently
       if (startDate) {
         query = query.gte('delivery_date', startDate);
       }
@@ -61,11 +35,9 @@ export function useOrders() {
 
       if (ordersError) throw ordersError;
       
-      // Get unique user IDs from orders
       const userIds = [...new Set(ordersData?.map(o => o.user_id) || [])];
       
-      // Fetch profiles for those users
-      let profilesMap: Record<string, Profile> = {};
+      let profilesMap: Record<string, ProfileBasic> = {};
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -92,12 +64,7 @@ export function useOrders() {
       
       setOrders(formattedOrders);
     } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće učitati porudžbine',
-        variant: 'destructive'
-      });
+      handleError({ category: 'fetch', entity: 'porudžbina', error });
     } finally {
       setLoading(false);
     }
@@ -122,7 +89,6 @@ export function useOrders() {
 
       if (error) throw error;
 
-      // Group by meal and sum quantities
       const mealGroups: Record<string, MealOrderSummary> = {};
       
       data?.forEach(item => {
@@ -140,7 +106,6 @@ export function useOrders() {
         }
       });
 
-      // Convert to array and sort by total orders descending
       return Object.values(mealGroups).sort((a, b) => b.total_orders - a.total_orders);
     } catch (error) {
       console.error('Error fetching meal orders by date:', error);
@@ -152,7 +117,6 @@ export function useOrders() {
     try {
       setLoading(true);
       
-      // First, get all orders with their items and meals
       let ordersQuery = supabase
         .from('orders')
         .select(`
@@ -164,7 +128,6 @@ export function useOrders() {
         `)
         .order('delivery_date', { ascending: true });
 
-      // Apply date filters independently
       if (startDate) {
         ordersQuery = ordersQuery.gte('delivery_date', startDate);
       }
@@ -176,7 +139,6 @@ export function useOrders() {
 
       if (error) throw error;
       
-      // Filter orders that have at least one meal matching the search term (case-insensitive)
       const searchLower = mealName.toLowerCase();
       
       const filteredOrders = data?.filter(order => {
@@ -196,11 +158,11 @@ export function useOrders() {
       setOrders(filteredOrders);
       return filteredOrders;
     } catch (error) {
-      console.error('Error searching meal orders:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće pretražiti porudžbine',
-        variant: 'destructive'
+      handleError({ 
+        category: 'fetch', 
+        entity: 'porudžbina', 
+        error,
+        customMessage: 'Nije moguće pretražiti porudžbine'
       });
       return [];
     } finally {
@@ -211,14 +173,12 @@ export function useOrders() {
   useEffect(() => {
     fetchOrders();
     
-    // Realtime subscription for order_items changes
     const channel = supabase
       .channel('order-items-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_items' },
         () => {
-          // Re-fetch orders when any order_item changes
           fetchOrders(currentDateRange.start, currentDateRange.end);
         }
       )

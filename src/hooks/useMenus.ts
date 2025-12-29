@@ -1,20 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import type { Tables } from '@/integrations/supabase/types';
-
-type Menu = Tables<'menus'>;
-type MenuMeal = Tables<'menu_meals'>;
-type Meal = Tables<'meals'>;
-
-export interface MenuWithMeals extends Menu {
-  meals?: (MenuMeal & { meal: Meal })[];
-}
+import { handleError, handleSuccess } from '@/services/errorService';
+import type { MenuWithMeals, MenuCreateData, MenuUpdateData } from '@/types';
 
 export function useMenus() {
   const [menus, setMenus] = useState<MenuWithMeals[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   const fetchMenus = async () => {
     try {
@@ -42,25 +33,14 @@ export function useMenus() {
       
       setMenus(formattedMenus);
     } catch (error) {
-      console.error('Error fetching menus:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće učitati jelovnike',
-        variant: 'destructive'
-      });
+      handleError({ category: 'fetch', entity: 'jelovnik', error });
     } finally {
       setLoading(false);
     }
   };
 
-  const createMenu = async (menuData: {
-    name: string;
-    description?: string;
-    menu_date: string;
-    meal_ids: string[];
-  }) => {
+  const createMenu = async (menuData: MenuCreateData) => {
     try {
-      // First create the menu
       const { data: menu, error: menuError } = await supabase
         .from('menus')
         .insert([{
@@ -73,7 +53,6 @@ export function useMenus() {
 
       if (menuError) throw menuError;
 
-      // Then add meals to the menu
       if (menuData.meal_ids.length > 0) {
         const menuMeals = menuData.meal_ids.map(meal_id => ({
           menu_id: menu.id,
@@ -88,32 +67,17 @@ export function useMenus() {
         if (menuMealsError) throw menuMealsError;
       }
 
-      await fetchMenus(); // Refresh the list
-      
-      toast({
-        title: 'Uspeh',
-        description: 'Jelovnik je uspešno kreiran'
-      });
-      
+      await fetchMenus();
+      handleSuccess({ category: 'create', entity: 'jelovnik' });
       return menu;
     } catch (error) {
-      console.error('Error creating menu:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće kreirati jelovnik',
-        variant: 'destructive'
-      });
+      handleError({ category: 'create', entity: 'jelovnik', error });
       throw error;
     }
   };
 
-  const updateMenu = async (id: string, menuData: {
-    description?: string;
-    menu_date?: string;
-    meal_ids?: string[];
-  }) => {
+  const updateMenu = async (id: string, menuData: MenuUpdateData) => {
     try {
-      // Update menu basic info
       const { error: menuError } = await supabase
         .from('menus')
         .update({
@@ -124,9 +88,7 @@ export function useMenus() {
 
       if (menuError) throw menuError;
 
-      // Update meal associations if provided
       if (menuData.meal_ids) {
-        // First delete existing associations
         const { error: deleteError } = await supabase
           .from('menu_meals')
           .delete()
@@ -134,7 +96,6 @@ export function useMenus() {
 
         if (deleteError) throw deleteError;
 
-        // Then add new associations
         if (menuData.meal_ids.length > 0) {
           const menuMeals = menuData.meal_ids.map(meal_id => ({
             menu_id: id,
@@ -150,19 +111,10 @@ export function useMenus() {
         }
       }
 
-      await fetchMenus(); // Refresh the list
-      
-      toast({
-        title: 'Uspeh',
-        description: 'Jelovnik je uspešno ažuriran'
-      });
+      await fetchMenus();
+      handleSuccess({ category: 'update', entity: 'jelovnik' });
     } catch (error) {
-      console.error('Error updating menu:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće ažurirati jelovnik',
-        variant: 'destructive'
-      });
+      handleError({ category: 'update', entity: 'jelovnik', error });
       throw error;
     }
   };
@@ -177,24 +129,15 @@ export function useMenus() {
       if (error) throw error;
 
       setMenus(prev => prev.filter(menu => menu.id !== id));
-      toast({
-        title: 'Uspeh',
-        description: 'Jelovnik je uspešno obrisan'
-      });
+      handleSuccess({ category: 'delete', entity: 'jelovnik' });
     } catch (error) {
-      console.error('Error deleting menu:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće obrisati jelovnik',
-        variant: 'destructive'
-      });
+      handleError({ category: 'delete', entity: 'jelovnik', error });
       throw error;
     }
   };
 
   const cloneWeekMenus = async (sourceMenus: MenuWithMeals[], targetWeekStart: Date) => {
     try {
-      // Izračunaj razliku u danima između source i target nedelje
       const sourceDates = sourceMenus.map(m => new Date(m.menu_date));
       const sourceWeekStart = new Date(Math.min(...sourceDates.map(d => d.getTime())));
       const daysDiff = Math.floor((targetWeekStart.getTime() - sourceWeekStart.getTime()) / (1000 * 60 * 60 * 24));
@@ -203,7 +146,6 @@ export function useMenus() {
         const sourceDate = new Date(sourceMenu.menu_date);
         const targetDate = new Date(sourceDate.getTime() + (daysDiff * 24 * 60 * 60 * 1000));
         
-        // Kreiraj novi jelovnik
         const { data: newMenu, error: menuError } = await supabase
           .from('menus')
           .insert([{
@@ -217,7 +159,6 @@ export function useMenus() {
 
         if (menuError) throw menuError;
 
-        // Kopiraj meal asocijacije
         if (sourceMenu.meals && sourceMenu.meals.length > 0) {
           const menuMeals = sourceMenu.meals.map(mm => ({
             menu_id: newMenu.id,
@@ -234,17 +175,17 @@ export function useMenus() {
       }
 
       await fetchMenus();
-      
-      toast({
-        title: 'Uspeh',
-        description: `Klonirano ${sourceMenus.length} jelovnika`
+      handleSuccess({ 
+        category: 'create', 
+        entity: 'jelovnik', 
+        customMessage: `Klonirano ${sourceMenus.length} jelovnika` 
       });
     } catch (error) {
-      console.error('Error cloning menus:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće klonirati jelovnike',
-        variant: 'destructive'
+      handleError({ 
+        category: 'create', 
+        entity: 'jelovnik', 
+        error,
+        customMessage: 'Nije moguće klonirati jelovnike'
       });
       throw error;
     }
@@ -264,3 +205,6 @@ export function useMenus() {
     refetch: fetchMenus
   };
 }
+
+// Re-export type for backward compatibility
+export type { MenuWithMeals } from '@/types';

@@ -1,17 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Tables } from '@/integrations/supabase/types';
-
-type Meal = Tables<'meals'>;
-type MealInsert = Omit<Meal, 'id' | 'created_at' | 'updated_at'>;
-type MealUpdate = Partial<MealInsert>;
+import { handleError, handleSuccess } from '@/services/errorService';
+import type { Meal, MealInsert, MealUpdate } from '@/types';
 
 export function useMeals() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
   const { profile } = useAuth();
 
   const isAdmin = profile?.role === 'admin';
@@ -20,8 +15,6 @@ export function useMeals() {
     try {
       setLoading(true);
       
-      // Use meals_secure view for non-admin users to hide purchase_price
-      // Admins query the table directly for full access including mutations
       if (isAdmin) {
         const { data, error } = await supabase
           .from('meals')
@@ -31,8 +24,6 @@ export function useMeals() {
         if (error) throw error;
         setMeals(data || []);
       } else {
-        // Use the secure view that hides purchase_price from non-admins
-        // Cast to any to bypass TypeScript's strict table checking for views
         const { data, error } = await (supabase as any)
           .from('meals_secure')
           .select('*')
@@ -42,12 +33,7 @@ export function useMeals() {
         setMeals((data || []) as Meal[]);
       }
     } catch (error) {
-      console.error('Error fetching meals:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće učitati obroke',
-        variant: 'destructive'
-      });
+      handleError({ category: 'fetch', entity: 'obrok', error });
     } finally {
       setLoading(false);
     }
@@ -64,18 +50,10 @@ export function useMeals() {
       if (error) throw error;
 
       setMeals(prev => [data, ...prev]);
-      toast({
-        title: 'Uspeh',
-        description: 'Obrok je uspešno dodat'
-      });
+      handleSuccess({ category: 'create', entity: 'obrok' });
       return data;
     } catch (error) {
-      console.error('Error creating meal:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće dodati obrok',
-        variant: 'destructive'
-      });
+      handleError({ category: 'create', entity: 'obrok', error });
       throw error;
     }
   };
@@ -92,18 +70,10 @@ export function useMeals() {
       if (error) throw error;
 
       setMeals(prev => prev.map(meal => meal.id === id ? data : meal));
-      toast({
-        title: 'Uspeh',
-        description: 'Obrok je uspešno ažuriran'
-      });
+      handleSuccess({ category: 'update', entity: 'obrok' });
       return data;
     } catch (error) {
-      console.error('Error updating meal:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće ažurirati obrok',
-        variant: 'destructive'
-      });
+      handleError({ category: 'update', entity: 'obrok', error });
       throw error;
     }
   };
@@ -118,17 +88,9 @@ export function useMeals() {
       if (error) throw error;
 
       setMeals(prev => prev.filter(meal => meal.id !== id));
-      toast({
-        title: 'Uspeh',
-        description: 'Obrok je uspešno obrisan'
-      });
+      handleSuccess({ category: 'delete', entity: 'obrok' });
     } catch (error) {
-      console.error('Error deleting meal:', error);
-      toast({
-        title: 'Greška',
-        description: 'Nije moguće obrisati obrok',
-        variant: 'destructive'
-      });
+      handleError({ category: 'delete', entity: 'obrok', error });
       throw error;
     }
   };
