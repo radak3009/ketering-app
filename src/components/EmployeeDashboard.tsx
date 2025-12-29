@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekOrders } from '@/hooks/useWeekOrders';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -84,10 +85,13 @@ export function EmployeeDashboard() {
                 </p>
               </div>
             </div>
-            <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Odjavi se</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Odjavi se</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
