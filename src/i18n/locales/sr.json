@@ -1,0 +1,159 @@
+{
+  "common": {
+    "signOut": "Odjavi se",
+    "logout": "Odjava",
+    "save": "Sačuvaj",
+    "cancel": "Otkaži",
+    "loading": "Učitavanje...",
+    "success": "Uspešno",
+    "error": "Greška",
+    "delete": "Obriši",
+    "edit": "Izmeni",
+    "add": "Dodaj",
+    "close": "Zatvori",
+    "confirm": "Potvrdi",
+    "yes": "Da",
+    "no": "Ne",
+    "search": "Pretraži",
+    "noData": "Nema podataka",
+    "actions": "Akcije"
+  },
+  "navigation": {
+    "nextWeek": "Iduća nedelja",
+    "currentWeek": "Tekuća nedelja",
+    "feedback": "Utisci i predlozi",
+    "profile": "Profil",
+    "aiAssistant": "AI Pomoćnik",
+    "next": "Iduća",
+    "current": "Tekuća",
+    "impressions": "Utisci"
+  },
+  "header": {
+    "title": "Ketering Portal",
+    "subtitle": "Poručite obroke za narednu sedmicu",
+    "adminTitle": "Admin Panel",
+    "adminSubtitle": "Upravljanje sistemom"
+  },
+  "stats": {
+    "users": "Korisnici",
+    "meals": "Obroci",
+    "orders": "Porudžbine",
+    "revenue": "Prihod",
+    "forSelectedPeriod": "Za izabrani period"
+  },
+  "admin": {
+    "tabs": {
+      "orders": "Porudžbine",
+      "meals": "Obroci",
+      "menus": "Meniji",
+      "users": "Korisnici",
+      "feedback": "Povratne",
+      "notifications": "Obaveštenja",
+      "reports": "Izveštaji"
+    },
+    "notifications": {
+      "title": "Obaveštenja",
+      "description": "Slanje obaveštenja korisnicima",
+      "menuAlert": {
+        "title": "Obaveštenje o meniju",
+        "description": "Pošalji email svim korisnicima o novom sedmičnom meniju",
+        "button": "Pošalji obaveštenje o meniju",
+        "sending": "Slanje..."
+      },
+      "reminder": {
+        "title": "Podsetnik za porudžbine",
+        "description": "Pošalji podsetnik zaposlenima koji nisu naručili za sledeću nedelju",
+        "button": "Pošalji podsetnik",
+        "sending": "Slanje..."
+      }
+    }
+  },
+  "auth": {
+    "login": "Prijava",
+    "register": "Registracija",
+    "email": "Email",
+    "password": "Lozinka",
+    "confirmPassword": "Potvrdi lozinku",
+    "fullName": "Ime i prezime",
+    "signIn": "Prijavi se",
+    "signUp": "Registruj se",
+    "forgotPassword": "Zaboravili ste lozinku?",
+    "resetPassword": "Resetuj lozinku",
+    "newPassword": "Nova lozinka",
+    "updatePassword": "Ažuriraj lozinku",
+    "noAccount": "Nemate nalog?",
+    "haveAccount": "Već imate nalog?",
+    "createAccount": "Kreirajte nalog"
+  },
+  "profile": {
+    "title": "Profil",
+    "personalInfo": "Lični podaci",
+    "fullName": "Ime i prezime",
+    "email": "Email",
+    "phone": "Telefon",
+    "dateOfBirth": "Datum rođenja",
+    "companyCardId": "ID firmine kartice",
+    "company": "Kompanija",
+    "changePassword": "Promena lozinke",
+    "newPassword": "Nova lozinka",
+    "confirmPassword": "Potvrdi lozinku",
+    "passwordMinLength": "Lozinka mora imati najmanje 6 karaktera",
+    "passwordMismatch": "Lozinke se ne poklapaju",
+    "passwordChanged": "Lozinka uspešno promenjena",
+    "profileUpdated": "Profil uspešno ažuriran",
+    "updateProfile": "Ažuriraj profil"
+  },
+  "orders": {
+    "title": "Porudžbine",
+    "orderMeal": "Poruči obrok",
+    "noOrders": "Nemate porudžbine",
+    "orderFor": "Porudžbina za",
+    "total": "Ukupno",
+    "status": "Status",
+    "date": "Datum",
+    "shift": "Smena",
+    "quantity": "Količina",
+    "price": "Cena",
+    "deleteOrder": "Obriši porudžbinu",
+    "confirmDelete": "Da li ste sigurni da želite da obrišete ovu porudžbinu?"
+  },
+  "meals": {
+    "title": "Obroci",
+    "category": "Kategorija",
+    "description": "Opis",
+    "allergens": "Alergeni",
+    "nutritionalInfo": "Nutritivne informacije",
+    "available": "Dostupno",
+    "unavailable": "Nedostupno"
+  },
+  "feedback": {
+    "title": "Utisci i predlozi",
+    "feedbackTab": "Utisci",
+    "suggestionsTab": "Predlozi obroka",
+    "sendFeedback": "Pošalji utisak",
+    "sendSuggestion": "Pošalji predlog",
+    "yourFeedback": "Vaš utisak",
+    "mealName": "Naziv obroka",
+    "mealDescription": "Opis obroka",
+    "additionalNotes": "Dodatne napomene",
+    "feedbackSent": "Utisak uspešno poslat",
+    "suggestionSent": "Predlog uspešno poslat"
+  },
+  "toast": {
+    "success": "Uspešno",
+    "error": "Greška",
+    "orderCreated": "Porudžbina uspešno kreirana",
+    "orderDeleted": "Porudžbina uspešno obrisana",
+    "profileUpdated": "Profil uspešno ažuriran",
+    "passwordChanged": "Lozinka uspešno promenjena",
+    "feedbackSent": "Utisak uspešno poslat",
+    "suggestionSent": "Predlog uspešno poslat",
+    "menuAlertSent": "Obaveštenje o meniju je uspešno poslato",
+    "reminderSent": "Podsetnici su uspešno poslati",
+    "errorOccurred": "Došlo je do greške"
+  },
+  "language": {
+    "serbian": "Srpski",
+    "english": "English"
+  }
+}

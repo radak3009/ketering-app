@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 
 // Lazy load admin components
 const FeedbackManagement = lazy(() => import("./admin/FeedbackManagement").then(m => ({ default: m.FeedbackManagement })));
@@ -22,14 +24,18 @@ const UsersManagement = lazy(() => import("./admin/UsersManagement").then(m => (
 const OrdersOverview = lazy(() => import("./admin/OrdersOverview").then(m => ({ default: m.OrdersOverview })));
 const ReportsTab = lazy(() => import("./admin/ReportsTab").then(m => ({ default: m.ReportsTab })));
 
-const TabLoader = () => (
-  <div className="flex items-center justify-center py-12">
-    <LoadingSpinner size="lg" text="Učitavanje..." />
-  </div>
-);
+const TabLoader = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-center py-12">
+      <LoadingSpinner size="lg" text={t('common.loading')} />
+    </div>
+  );
+};
 
 
 export function AdminDashboard() {
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const { toast } = useToast();
   const { meals } = useMeals();
@@ -50,10 +56,10 @@ export function AdminDashboard() {
       setNotificationsLoading(true);
       const { error } = await supabase.functions.invoke('send-admin-menu-alert');
       if (error) throw error;
-      toast({ title: 'Uspeh', description: 'Obaveštenje o meniju je uspešno poslato' });
+      toast({ title: t('toast.success'), description: t('toast.menuAlertSent') });
     } catch (error) {
       console.error('Error sending menu alert:', error);
-      toast({ title: 'Greška', description: 'Nije moguće poslati obaveštenje', variant: 'destructive' });
+      toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
     } finally {
       setNotificationsLoading(false);
     }
@@ -64,10 +70,10 @@ export function AdminDashboard() {
       setNotificationsLoading(true);
       const { error } = await supabase.functions.invoke('send-employee-reminder');
       if (error) throw error;
-      toast({ title: 'Uspeh', description: 'Podsetnici su uspešno poslati' });
+      toast({ title: t('toast.success'), description: t('toast.reminderSent') });
     } catch (error) {
       console.error('Error sending reminder:', error);
-      toast({ title: 'Greška', description: 'Nije moguće poslati podsetnike', variant: 'destructive' });
+      toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
     } finally {
       setNotificationsLoading(false);
     }
@@ -83,15 +89,16 @@ export function AdminDashboard() {
               <ChefHat className="h-4 w-4 md:h-6 md:w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg md:text-xl font-bold text-foreground">Admin Panel</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">Upravljanje sistemom</p>
+              <h1 className="text-lg md:text-xl font-bold text-foreground">{t('header.adminTitle')}</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">{t('header.adminSubtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
             <Button variant="outline" size="sm" onClick={signOut} className="text-xs md:text-sm">
               <LogOut className="h-4 w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Odjava</span>
+              <span className="hidden sm:inline">{t('common.logout')}</span>
             </Button>
           </div>
         </div>
@@ -105,7 +112,7 @@ export function AdminDashboard() {
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Users className="h-3 w-3 md:h-4 md:w-4" />
-                Korisnici
+                {t('stats.users')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
@@ -119,7 +126,7 @@ export function AdminDashboard() {
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <ChefHat className="h-3 w-3 md:h-4 md:w-4" />
-                Obroci
+                {t('stats.meals')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
@@ -133,14 +140,14 @@ export function AdminDashboard() {
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
-                Porudžbine
+                {t('stats.orders')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
               <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : stats.totalOrders}
               </div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Za izabrani period</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">{t('stats.forSelectedPeriod')}</p>
             </CardContent>
           </Card>
           
@@ -148,14 +155,14 @@ export function AdminDashboard() {
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                Prihod
+                {t('stats.revenue')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
               <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : `${stats.totalRevenue.toFixed(0)} RSD`}
               </div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Za izabrani period</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">{t('stats.forSelectedPeriod')}</p>
             </CardContent>
           </Card>
         </div>
@@ -165,37 +172,37 @@ export function AdminDashboard() {
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 h-auto gap-1 p-1">
             <TabsTrigger value="orders" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Porudžbine</span>
+              <span className="hidden sm:inline">{t('admin.tabs.orders')}</span>
               <span className="sm:hidden">Por.</span>
             </TabsTrigger>
             <TabsTrigger value="meals" className="text-xs md:text-sm py-2">
               <ChefHat className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Obroci</span>
+              <span className="hidden sm:inline">{t('admin.tabs.meals')}</span>
               <span className="sm:hidden">Obr.</span>
             </TabsTrigger>
             <TabsTrigger value="menus" className="text-xs md:text-sm py-2">
               <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Meniji</span>
+              <span className="hidden sm:inline">{t('admin.tabs.menus')}</span>
               <span className="sm:hidden">Men.</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs md:text-sm py-2">
               <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Korisnici</span>
+              <span className="hidden sm:inline">{t('admin.tabs.users')}</span>
               <span className="sm:hidden">Kor.</span>
             </TabsTrigger>
             <TabsTrigger value="feedback" className="text-xs md:text-sm py-2">
               <MessageSquare className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Povratne</span>
+              <span className="hidden sm:inline">{t('admin.tabs.feedback')}</span>
               <span className="sm:hidden">Pov.</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs md:text-sm py-2">
               <Bell className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Obaveštenja</span>
+              <span className="hidden sm:inline">{t('admin.tabs.notifications')}</span>
               <span className="sm:hidden">Obav.</span>
             </TabsTrigger>
             <TabsTrigger value="reports" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              <span className="hidden sm:inline">Izveštaji</span>
+              <span className="hidden sm:inline">{t('admin.tabs.reports')}</span>
               <span className="sm:hidden">Izv.</span>
             </TabsTrigger>
           </TabsList>
@@ -247,16 +254,16 @@ export function AdminDashboard() {
           <TabsContent value="notifications">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Obaveštenja</CardTitle>
-                <CardDescription className="text-xs md:text-sm">Slanje obaveštenja korisnicima</CardDescription>
+                <CardTitle className="text-lg md:text-xl">{t('admin.notifications.title')}</CardTitle>
+                <CardDescription className="text-xs md:text-sm">{t('admin.notifications.description')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Obaveštenje o meniju</CardTitle>
+                      <CardTitle className="text-base">{t('admin.notifications.menuAlert.title')}</CardTitle>
                       <CardDescription className="text-xs">
-                        Pošalji email svim korisnicima o novom sedmičnom meniju
+                        {t('admin.notifications.menuAlert.description')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -266,16 +273,16 @@ export function AdminDashboard() {
                         className="w-full"
                       >
                         <Bell className="h-4 w-4 mr-2" />
-                        {notificationsLoading ? "Slanje..." : "Pošalji obaveštenje o meniju"}
+                        {notificationsLoading ? t('admin.notifications.menuAlert.sending') : t('admin.notifications.menuAlert.button')}
                       </Button>
                     </CardContent>
                   </Card>
                   
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Podsetnik za porudžbine</CardTitle>
+                      <CardTitle className="text-base">{t('admin.notifications.reminder.title')}</CardTitle>
                       <CardDescription className="text-xs">
-                        Pošalji podsetnik zaposlenima koji nisu naručili za sledeću nedelju
+                        {t('admin.notifications.reminder.description')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -286,7 +293,7 @@ export function AdminDashboard() {
                         className="w-full"
                       >
                         <Bell className="h-4 w-4 mr-2" />
-                        {notificationsLoading ? "Slanje..." : "Pošalji podsetnik"}
+                        {notificationsLoading ? t('admin.notifications.reminder.sending') : t('admin.notifications.reminder.button')}
                       </Button>
                     </CardContent>
                   </Card>
