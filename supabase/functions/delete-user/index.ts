@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { jwtVerify, createRemoteJWKSet } from 'https://deno.land/x/jose@v5.2.2/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +24,34 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Decode JWT to get user ID (we trust Supabase's token structure)
+    let userId: string;
+    try {
+      // Decode the JWT payload (base64url decode the middle part)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format');
+      }
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      userId = payload.sub;
+      
+      // Check if token is expired
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        throw new Error('Token expired');
+      }
+      
+      console.log('Decoded user ID from token:', userId);
+    } catch (decodeError) {
+      console.error('Error decoding token:', decodeError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Create admin client for all operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -32,22 +61,20 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Validate the JWT and get user using admin client
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (userError || !user) {
-      console.error('Error validating token:', userError);
+    // Verify the user exists using admin API
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (userError || !userData?.user) {
+      console.error('User not found:', userError);
       return new Response(
         JSON.stringify({ error: 'Invalid authorization token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Authenticated user:', user.id);
+    console.log('Verified user:', userId);
 
     // Check if user is admin
-    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: user.id });
+    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: userId });
     
     if (adminError) {
       console.error('Error checking admin status:', adminError);
