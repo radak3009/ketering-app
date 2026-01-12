@@ -142,7 +142,8 @@
       "loginError": "Greška pri prijavljivanju",
       "googleLoginFailed": "Prijavljivanje sa Google nalogom nije uspelo.",
       "userNotFoundById": "Korisnik sa ovim ID-om nije pronađen",
-      "invalidPassword": "Neispravna lozinka"
+      "invalidPassword": "Neispravna lozinka",
+      "rateLimitExceeded": "Previše pokušaja prijave. Pokušajte ponovo za {{seconds}} sekundi."
     },
     "success": {
       "registrationSuccess": "Uspešna registracija",

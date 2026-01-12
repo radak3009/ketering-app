@@ -142,7 +142,8 @@
       "loginError": "Login error",
       "googleLoginFailed": "Google sign-in failed.",
       "userNotFoundById": "User with this ID not found",
-      "invalidPassword": "Invalid password"
+      "invalidPassword": "Invalid password",
+      "rateLimitExceeded": "Too many login attempts. Please try again in {{seconds}} seconds."
     },
     "success": {
       "registrationSuccess": "Registration successful",
