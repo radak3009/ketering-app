@@ -179,7 +179,14 @@ export default function Auth() {
           });
         } else if (data?.error) {
           // Handle error from edge function
-          if (data.error.includes('nije pronađen') || data.error.includes('not found')) {
+          if (data.retryAfter) {
+            // Rate limit exceeded
+            toast({
+              title: t('auth.errors.loginFailed'),
+              description: t('auth.errors.rateLimitExceeded', { seconds: data.retryAfter }),
+              variant: 'destructive'
+            });
+          } else if (data.error.includes('nije pronađen') || data.error.includes('not found')) {
             toast({
               title: t('auth.errors.loginFailed'),
               description: t('auth.errors.userNotFoundById'),
