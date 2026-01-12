@@ -22,30 +22,9 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Create a client with the user's token to validate the JWT
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Validate the JWT and get claims
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      console.error('Error validating token:', claimsError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = claimsData.claims.sub;
-    console.log('Authenticated user:', userId);
-
-    // Create admin client for privileged operations
+    // Create admin client for all operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -53,8 +32,22 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Validate the JWT and get user using admin client
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('Error validating token:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Authenticated user:', user.id);
+
     // Check if user is admin
-    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: userId });
+    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: user.id });
     
     if (adminError) {
       console.error('Error checking admin status:', adminError);
