@@ -361,7 +361,7 @@ export function UsersManagement() {
                           })}
                         />
                         <Label htmlFor="use-password" className="text-sm cursor-pointer">
-                          Koristi email pozivnicu (zahteva SMTP konfiguraciju)
+                          Koristi email pozivnicu
                         </Label>
                       </div>
                       
