@@ -76,6 +76,8 @@
     "login": "Prijava",
     "register": "Registracija",
     "email": "Email",
+    "emailOrId": "Email ili ID",
+    "emailOrIdPlaceholder": "Unesite email adresu ili ID broj",
     "password": "Lozinka",
     "confirmPassword": "Potvrdi lozinku",
     "fullName": "Ime i prezime",
@@ -138,7 +140,9 @@
       "emailNotConfirmed": "Email nije potvrđen",
       "confirmEmail": "Molimo vas proverite email i potvrdite nalog.",
       "loginError": "Greška pri prijavljivanju",
-      "googleLoginFailed": "Prijavljivanje sa Google nalogom nije uspelo."
+      "googleLoginFailed": "Prijavljivanje sa Google nalogom nije uspelo.",
+      "userNotFoundById": "Korisnik sa ovim ID-om nije pronađen",
+      "invalidPassword": "Neispravna lozinka"
     },
     "success": {
       "registrationSuccess": "Uspešna registracija",

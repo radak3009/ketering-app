@@ -76,6 +76,8 @@
     "login": "Login",
     "register": "Register",
     "email": "Email",
+    "emailOrId": "Email or ID",
+    "emailOrIdPlaceholder": "Enter email address or ID number",
     "password": "Password",
     "confirmPassword": "Confirm password",
     "fullName": "Full name",
@@ -138,7 +140,9 @@
       "emailNotConfirmed": "Email not confirmed",
       "confirmEmail": "Please check your email and confirm your account.",
       "loginError": "Login error",
-      "googleLoginFailed": "Google sign-in failed."
+      "googleLoginFailed": "Google sign-in failed.",
+      "userNotFoundById": "User with this ID not found",
+      "invalidPassword": "Invalid password"
     },
     "success": {
       "registrationSuccess": "Registration successful",

@@ -13,6 +13,11 @@ export function validateCompanyCardId(
     return { isValid: false, error: 'ID je obavezno polje' };
   }
 
+  // Check for @ symbol - not allowed in company_card_id
+  if (companyCardId.includes('@')) {
+    return { isValid: false, error: 'ID ne sme sadržati @ karakter' };
+  }
+
   if (!/^[0-9]+$/.test(companyCardId)) {
     return { isValid: false, error: 'ID mora biti numerička vrednost' };
   }

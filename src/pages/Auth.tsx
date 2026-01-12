@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard } from 'lucide-react';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LanguageToggle } from '@/components/ui/language-toggle';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const { t } = useTranslation();
@@ -38,7 +39,7 @@ export default function Auth() {
   });
   
   const [signInData, setSignInData] = useState({
-    email: '',
+    identifier: '',
     password: ''
   });
 
@@ -52,7 +53,7 @@ export default function Auth() {
   });
 
   const signInSchema = z.object({
-    email: z.string().email(t('auth.validation.invalidEmail')).max(255),
+    identifier: z.string().min(1, t('auth.validation.enterPassword')).max(255),
     password: z.string().min(1, t('auth.validation.enterPassword')).max(100)
   });
 
@@ -152,26 +153,56 @@ export default function Auth() {
       const validatedData = signInSchema.parse(signInData);
       setLoading(true);
       
-      const { error } = await signIn(validatedData.email, validatedData.password);
+      const isEmail = validatedData.identifier.includes('@');
       
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+      if (isEmail) {
+        // Direct Supabase auth for email
+        const { error } = await signIn(validatedData.identifier, validatedData.password);
+        
+        if (error) {
+          handleSignInError(error);
+        }
+      } else {
+        // Edge Function lookup for company_card_id
+        const { data, error } = await supabase.functions.invoke('login-with-id', {
+          body: { 
+            identifier: validatedData.identifier, 
+            password: validatedData.password 
+          }
+        });
+        
+        if (error) {
           toast({
             title: t('auth.errors.loginFailed'),
             description: t('auth.errors.invalidCredentials'),
             variant: 'destructive'
           });
-        } else if (error.message.includes('Email not confirmed')) {
-          toast({
-            title: t('auth.errors.emailNotConfirmed'),
-            description: t('auth.errors.confirmEmail'),
-            variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: t('auth.errors.loginError'),
-            description: error.message,
-            variant: 'destructive'
+        } else if (data?.error) {
+          // Handle error from edge function
+          if (data.error.includes('nije pronađen') || data.error.includes('not found')) {
+            toast({
+              title: t('auth.errors.loginFailed'),
+              description: t('auth.errors.userNotFoundById'),
+              variant: 'destructive'
+            });
+          } else if (data.error.includes('lozinka') || data.error.includes('password')) {
+            toast({
+              title: t('auth.errors.loginFailed'),
+              description: t('auth.errors.invalidPassword'),
+              variant: 'destructive'
+            });
+          } else {
+            toast({
+              title: t('auth.errors.loginFailed'),
+              description: data.error,
+              variant: 'destructive'
+            });
+          }
+        } else if (data?.session) {
+          // Set the session from edge function response
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token
           });
         }
       }
@@ -185,6 +216,28 @@ export default function Auth() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignInError = (error: { message: string }) => {
+    if (error.message.includes('Invalid login credentials')) {
+      toast({
+        title: t('auth.errors.loginFailed'),
+        description: t('auth.errors.invalidCredentials'),
+        variant: 'destructive'
+      });
+    } else if (error.message.includes('Email not confirmed')) {
+      toast({
+        title: t('auth.errors.emailNotConfirmed'),
+        description: t('auth.errors.confirmEmail'),
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: t('auth.errors.loginError'),
+        description: error.message,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -516,16 +569,16 @@ export default function Auth() {
               <TabsContent value="signin" className="space-y-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">{t('auth.email')}</Label>
+                    <Label htmlFor="signin-identifier">{t('auth.emailOrId')}</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder={t('auth.emailPlaceholder')}
+                        id="signin-identifier"
+                        type="text"
+                        placeholder={t('auth.emailOrIdPlaceholder')}
                         className="pl-10"
-                        value={signInData.email}
-                        onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                        value={signInData.identifier}
+                        onChange={(e) => setSignInData({ ...signInData, identifier: e.target.value })}
                         required
                       />
                     </div>
