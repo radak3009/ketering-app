@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,19 +6,23 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { User } from '@supabase/supabase-js';
-import { Loader2, User as UserIcon, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, User as UserIcon, Lock, Eye, EyeOff, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ProfileViewProps {
   user: User | null;
+  isPasswordSetupMode?: boolean;
 }
 
-export function ProfileView({ user }: ProfileViewProps) {
+export function ProfileView({ user, isPasswordSetupMode = false }: ProfileViewProps) {
   const { t } = useTranslation();
+  const { refreshProfile } = useAuth();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [companyCardId, setCompanyCardId] = useState('');
@@ -34,12 +38,22 @@ export function ProfileView({ user }: ProfileViewProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { toast } = useToast();
+  const passwordSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
   }, [user]);
+
+  // Auto-scroll to password section in setup mode
+  useEffect(() => {
+    if (isPasswordSetupMode && passwordSectionRef.current && !fetching) {
+      setTimeout(() => {
+        passwordSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [isPasswordSetupMode, fetching]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -98,6 +112,8 @@ export function ProfileView({ user }: ProfileViewProps) {
   };
 
   const handlePasswordChange = async () => {
+    if (!user) return;
+
     if (!newPassword) {
       toast({
         title: t('toast.error'),
@@ -127,23 +143,46 @@ export function ProfileView({ user }: ProfileViewProps) {
 
     setPasswordLoading(true);
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    // Update password in auth
+    const { error: authError } = await supabase.auth.updateUser({ password: newPassword });
 
-    setPasswordLoading(false);
-
-    if (error) {
+    if (authError) {
+      setPasswordLoading(false);
       toast({
         title: t('toast.error'),
-        description: error.message,
+        description: authError.message,
         variant: 'destructive',
       });
       return;
     }
 
-    toast({
-      title: t('toast.success'),
-      description: t('toast.passwordChanged'),
-    });
+    // Update password_set in profiles table
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ password_set: true })
+      .eq('user_id', user.id);
+
+    setPasswordLoading(false);
+
+    if (profileError) {
+      console.error('Error updating password_set:', profileError);
+      // Don't show error to user as password was successfully changed
+    }
+
+    // Refresh the profile in AuthContext to update requiresPasswordSetup
+    await refreshProfile();
+
+    if (isPasswordSetupMode) {
+      toast({
+        title: t('toast.success'),
+        description: t('profile.passwordSetSuccess'),
+      });
+    } else {
+      toast({
+        title: t('toast.success'),
+        description: t('toast.passwordChanged'),
+      });
+    }
     
     setNewPassword('');
     setConfirmPassword('');
@@ -174,6 +213,16 @@ export function ProfileView({ user }: ProfileViewProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {/* Password Setup Mode Alert at top of card */}
+          {isPasswordSetupMode && (
+            <Alert className="border-destructive bg-destructive/10">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-destructive font-medium">
+                {t('profile.passwordSetupRequired')}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">{t('profile.email')}</Label>
             <Input
@@ -195,6 +244,7 @@ export function ProfileView({ user }: ProfileViewProps) {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder={t('profile.fullNamePlaceholder')}
+              disabled={isPasswordSetupMode}
             />
           </div>
           
@@ -205,6 +255,7 @@ export function ProfileView({ user }: ProfileViewProps) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder={t('profile.phonePlaceholder')}
+              disabled={isPasswordSetupMode}
             />
           </div>
 
@@ -226,30 +277,43 @@ export function ProfileView({ user }: ProfileViewProps) {
               date={dateOfBirth}
               onDateChange={setDateOfBirth}
               disabled={(date) =>
-                date > new Date() || date < new Date("1900-01-01")
+                date > new Date() || date < new Date("1900-01-01") || isPasswordSetupMode
               }
               placeholder={t('profile.dateOfBirthPlaceholder')}
             />
           </div>
 
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleSave} disabled={loading} className="gap-2">
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {loading ? t('common.saving') : t('common.saveChanges')}
-            </Button>
-          </div>
+          {!isPasswordSetupMode && (
+            <div className="flex justify-end pt-4">
+              <Button onClick={handleSave} disabled={loading} className="gap-2">
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {loading ? t('common.saving') : t('common.saveChanges')}
+              </Button>
+            </div>
+          )}
 
           <Separator className="my-6" />
 
-          {/* Password Change Section */}
-          <div className="space-y-4">
+          {/* Password Change/Setup Section */}
+          <div 
+            ref={passwordSectionRef}
+            className={`space-y-4 p-4 rounded-lg transition-all ${
+              isPasswordSetupMode 
+                ? 'bg-primary/5 border-2 border-primary ring-2 ring-primary/20' 
+                : ''
+            }`}
+          >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Lock className="h-5 w-5 text-primary" />
+              <div className={`p-2 rounded-lg ${isPasswordSetupMode ? 'bg-primary' : 'bg-primary/10'}`}>
+                <Lock className={`h-5 w-5 ${isPasswordSetupMode ? 'text-primary-foreground' : 'text-primary'}`} />
               </div>
               <div>
-                <h3 className="font-semibold">{t('profile.changePassword')}</h3>
-                <p className="text-sm text-muted-foreground">{t('profile.changePasswordDescription')}</p>
+                <h3 className="font-semibold">
+                  {isPasswordSetupMode ? t('profile.setupPassword') : t('profile.changePassword')}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isPasswordSetupMode ? t('profile.setupPasswordDescription') : t('profile.changePasswordDescription')}
+                </p>
               </div>
             </div>
 
@@ -263,6 +327,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder={t('profile.newPasswordPlaceholder')}
                   className="pr-10"
+                  autoFocus={isPasswordSetupMode}
                 />
                 <button
                   type="button"
@@ -302,11 +367,21 @@ export function ProfileView({ user }: ProfileViewProps) {
               <Button 
                 onClick={handlePasswordChange} 
                 disabled={passwordLoading} 
-                variant="outline"
+                variant={isPasswordSetupMode ? 'default' : 'outline'}
                 className="gap-2"
+                size={isPasswordSetupMode ? 'lg' : 'default'}
               >
-                {passwordLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {passwordLoading ? t('common.changing') : t('profile.changePasswordButton')}
+                {passwordLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isPasswordSetupMode ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : null}
+                {passwordLoading 
+                  ? t('common.changing') 
+                  : isPasswordSetupMode 
+                    ? t('profile.setupPasswordButton') 
+                    : t('profile.changePasswordButton')
+                }
               </Button>
             </div>
           </div>

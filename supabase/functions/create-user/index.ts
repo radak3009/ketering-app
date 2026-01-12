@@ -135,6 +135,10 @@ Deno.serve(async (req) => {
     if (company_card_id) profileUpdates.company_card_id = company_card_id;
     if (date_of_birth) profileUpdates.date_of_birth = date_of_birth;
     profileUpdates.role = role || 'employee';
+    // Set password_set based on whether password was provided
+    // If password provided = user can login immediately = password_set = true
+    // If invite email = user needs to set password = password_set = false
+    profileUpdates.password_set = !!password;
 
     if (Object.keys(profileUpdates).length > 0) {
       const { error: updateError } = await supabaseAdmin

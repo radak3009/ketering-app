@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell, Bot } from 'lucide-react';
+import { ChefHat, LogOut, Calendar, CalendarPlus, User, MessageSquare, Bell, Bot, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,8 +19,10 @@ type View = 'current' | 'next' | 'feedback' | 'profile';
 
 export function EmployeeDashboard() {
   const { t } = useTranslation();
-  const { signOut, user } = useAuth();
-  const [currentView, setCurrentView] = useState<View>('next');
+  const { signOut, user, requiresPasswordSetup } = useAuth();
+  
+  // Force profile view if password not set
+  const [currentView, setCurrentView] = useState<View>(requiresPasswordSetup ? 'profile' : 'next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [totalMenuDays, setTotalMenuDays] = useState(0);
@@ -35,6 +37,13 @@ export function EmployeeDashboard() {
   } = useWeekOrders(user?.id);
 
   const { employeeNotification } = useNotifications(user?.id, false);
+
+  // Force profile view when requiresPasswordSetup changes
+  useEffect(() => {
+    if (requiresPasswordSetup) {
+      setCurrentView('profile');
+    }
+  }, [requiresPasswordSetup]);
 
   useEffect(() => {
     if (user?.id) {
@@ -72,6 +81,15 @@ export function EmployeeDashboard() {
     setTotalMenuDays(data?.length || 0);
   };
 
+  // Handler for navigation - block if password not set
+  const handleNavigate = (view: View) => {
+    if (requiresPasswordSetup && view !== 'profile') {
+      // Don't allow navigation to other views
+      return;
+    }
+    setCurrentView(view);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent to-background">
       {/* Header */}
@@ -90,21 +108,25 @@ export function EmployeeDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setAiChatOpen(true)}
-                className="hidden md:flex"
-                title={t('navigation.aiAssistant')}
-              >
-                <Bot className="h-5 w-5" />
-              </Button>
+              {!requiresPasswordSetup && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setAiChatOpen(true)}
+                  className="hidden md:flex"
+                  title={t('navigation.aiAssistant')}
+                >
+                  <Bot className="h-5 w-5" />
+                </Button>
+              )}
               <LanguageToggle />
               <ThemeToggle />
-              <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('common.signOut')}</span>
-              </Button>
+              {!requiresPasswordSetup && (
+                <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('common.signOut')}</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -112,8 +134,18 @@ export function EmployeeDashboard() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
+        {/* Password Setup Warning Alert */}
+        {requiresPasswordSetup && (
+          <Alert className="mb-4 border-destructive bg-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-destructive font-medium">
+              {t('profile.passwordSetupRequired')}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Notification Alert */}
-        {employeeNotification && (
+        {employeeNotification && !requiresPasswordSetup && (
           <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
             <Bell className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-800 dark:text-amber-200">
@@ -122,45 +154,47 @@ export function EmployeeDashboard() {
           </Alert>
         )}
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex gap-2 mb-6">
-          <Button
-            variant={currentView === 'next' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('next')}
-            className="gap-2"
-          >
-            <CalendarPlus className="h-4 w-4" />
-            {t('navigation.nextWeek')}
-          </Button>
-          <Button
-            variant={currentView === 'current' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('current')}
-            className="gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            {t('navigation.currentWeek')}
-          </Button>
-          <Button
-            variant={currentView === 'feedback' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('feedback')}
-            className="gap-2"
-          >
-            <MessageSquare className="h-4 w-4" />
-            {t('navigation.feedback')}
-          </Button>
-          <Button
-            variant={currentView === 'profile' ? 'default' : 'outline'}
-            onClick={() => setCurrentView('profile')}
-            className="gap-2"
-          >
-            <User className="h-4 w-4" />
-            {t('navigation.profile')}
-          </Button>
-        </div>
+        {/* Desktop Navigation - Hidden when password not set */}
+        {!requiresPasswordSetup && (
+          <div className="hidden md:flex gap-2 mb-6">
+            <Button
+              variant={currentView === 'next' ? 'default' : 'outline'}
+              onClick={() => handleNavigate('next')}
+              className="gap-2"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              {t('navigation.nextWeek')}
+            </Button>
+            <Button
+              variant={currentView === 'current' ? 'default' : 'outline'}
+              onClick={() => handleNavigate('current')}
+              className="gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              {t('navigation.currentWeek')}
+            </Button>
+            <Button
+              variant={currentView === 'feedback' ? 'default' : 'outline'}
+              onClick={() => handleNavigate('feedback')}
+              className="gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {t('navigation.feedback')}
+            </Button>
+            <Button
+              variant={currentView === 'profile' ? 'default' : 'outline'}
+              onClick={() => handleNavigate('profile')}
+              className="gap-2"
+            >
+              <User className="h-4 w-4" />
+              {t('navigation.profile')}
+            </Button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="max-w-4xl mx-auto">
-          {currentView === 'next' && (
+          {currentView === 'next' && !requiresPasswordSetup && (
             <NextWeekView
               orders={nextWeekOrders}
               loading={loading}
@@ -170,72 +204,83 @@ export function EmployeeDashboard() {
               totalMenuDays={totalMenuDays}
             />
           )}
-          {currentView === 'current' && (
+          {currentView === 'current' && !requiresPasswordSetup && (
             <CurrentWeekView orders={currentWeekOrders} loading={loading} />
           )}
-          {currentView === 'feedback' && <FeedbackView />}
-          {currentView === 'profile' && <ProfileView user={user} />}
+          {currentView === 'feedback' && !requiresPasswordSetup && <FeedbackView />}
+          {(currentView === 'profile' || requiresPasswordSetup) && (
+            <ProfileView 
+              user={user} 
+              isPasswordSetupMode={requiresPasswordSetup}
+            />
+          )}
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
-        <div className="grid grid-cols-5 gap-1 p-2">
-          <Button
-            variant={currentView === 'next' ? 'default' : 'ghost'}
-            onClick={() => setCurrentView('next')}
-            className="flex flex-col h-auto py-2 gap-1"
-          >
-            <CalendarPlus className="h-5 w-5" />
-            <span className="text-xs">{t('navigation.next')}</span>
-          </Button>
-          <Button
-            variant={currentView === 'current' ? 'default' : 'ghost'}
-            onClick={() => setCurrentView('current')}
-            className="flex flex-col h-auto py-2 gap-1"
-          >
-            <Calendar className="h-5 w-5" />
-            <span className="text-xs">{t('navigation.current')}</span>
-          </Button>
-          <Button
-            variant={currentView === 'feedback' ? 'default' : 'ghost'}
-            onClick={() => setCurrentView('feedback')}
-            className="flex flex-col h-auto py-2 gap-1"
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-xs">{t('navigation.impressions')}</span>
-          </Button>
-          <Button
-            variant={currentView === 'profile' ? 'default' : 'ghost'}
-            onClick={() => setCurrentView('profile')}
-            className="flex flex-col h-auto py-2 gap-1"
-          >
-            <User className="h-5 w-5" />
-            <span className="text-xs">{t('navigation.profile')}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setAiChatOpen(true)}
-            className="flex flex-col h-auto py-2 gap-1"
-          >
-            <Bot className="h-5 w-5" />
-            <span className="text-xs">AI</span>
-          </Button>
+      {/* Mobile Bottom Navigation - Hidden when password not set */}
+      {!requiresPasswordSetup && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
+          <div className="grid grid-cols-5 gap-1 p-2">
+            <Button
+              variant={currentView === 'next' ? 'default' : 'ghost'}
+              onClick={() => handleNavigate('next')}
+              className="flex flex-col h-auto py-2 gap-1"
+            >
+              <CalendarPlus className="h-5 w-5" />
+              <span className="text-xs">{t('navigation.next')}</span>
+            </Button>
+            <Button
+              variant={currentView === 'current' ? 'default' : 'ghost'}
+              onClick={() => handleNavigate('current')}
+              className="flex flex-col h-auto py-2 gap-1"
+            >
+              <Calendar className="h-5 w-5" />
+              <span className="text-xs">{t('navigation.current')}</span>
+            </Button>
+            <Button
+              variant={currentView === 'feedback' ? 'default' : 'ghost'}
+              onClick={() => handleNavigate('feedback')}
+              className="flex flex-col h-auto py-2 gap-1"
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span className="text-xs">{t('navigation.impressions')}</span>
+            </Button>
+            <Button
+              variant={currentView === 'profile' ? 'default' : 'ghost'}
+              onClick={() => handleNavigate('profile')}
+              className="flex flex-col h-auto py-2 gap-1"
+            >
+              <User className="h-5 w-5" />
+              <span className="text-xs">{t('navigation.profile')}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setAiChatOpen(true)}
+              className="flex flex-col h-auto py-2 gap-1"
+            >
+              <Bot className="h-5 w-5" />
+              <span className="text-xs">AI</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Dialogs */}
-      <OrderMealDialog
-        open={orderDialogOpen}
-        onOpenChange={setOrderDialogOpen}
-        userId={user?.id}
-        onOrderCreated={handleOrderCreated}
-        totalMenuDays={totalMenuDays}
-        refreshTrigger={refreshTrigger}
-      />
+      {/* Dialogs - Only available when password is set */}
+      {!requiresPasswordSetup && (
+        <OrderMealDialog
+          open={orderDialogOpen}
+          onOpenChange={setOrderDialogOpen}
+          userId={user?.id}
+          onOrderCreated={handleOrderCreated}
+          totalMenuDays={totalMenuDays}
+          refreshTrigger={refreshTrigger}
+        />
+      )}
 
-      {/* AI Help Chat */}
-      <AIHelpChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
+      {/* AI Help Chat - Only available when password is set */}
+      {!requiresPasswordSetup && (
+        <AIHelpChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
+      )}
     </div>
   );
 }

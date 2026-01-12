@@ -10,6 +10,7 @@ interface Profile {
   email: string | null;
   phone: string | null;
   role: 'admin' | 'employee' | null; // Fetched from user_roles table
+  password_set: boolean; // Tracks if user has set their password (false for invited users)
   created_at: string;
   updated_at: string;
 }
@@ -20,7 +21,9 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isPasswordRecovery: boolean;
+  requiresPasswordSetup: boolean; // True if user hasn't set password (invited users)
   clearPasswordRecovery: () => void;
+  refreshProfile: () => Promise<void>; // Refresh profile after password set
   signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -245,13 +248,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  // Computed property: user needs to set password if profile exists and password_set is false
+  const requiresPasswordSetup = profile !== null && profile.password_set === false;
+
+  // Function to refresh profile (after password is set)
+  const refreshProfile = async () => {
+    if (user) {
+      const [profileResult, roleResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('user_roles' as any)
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle()
+      ]);
+
+      const { data: profileData } = profileResult;
+      const { data: roleData } = roleResult;
+
+      if (profileData) {
+        let userRole: 'admin' | 'employee' = 'employee';
+        if (roleData) {
+          const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
+          userRole = typedRoleData.role;
+        } else {
+          userRole = (profileData.role as 'admin' | 'employee') || 'employee';
+        }
+        setProfile({ ...profileData, role: userRole });
+      }
+    }
+  };
+
   const value = {
     user,
     session,
     profile,
     loading: loading || processingAuth,
     isPasswordRecovery,
+    requiresPasswordSetup,
     clearPasswordRecovery,
+    refreshProfile,
     signUp,
     signIn,
     signOut,

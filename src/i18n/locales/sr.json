@@ -167,6 +167,8 @@
     "cardIdHelp": "Vaš identifikacioni broj. Kontaktirajte administratora za izmenu.",
     "changePassword": "Promena lozinke",
     "changePasswordDescription": "Ažurirajte lozinku za pristup aplikaciji",
+    "setupPassword": "Postavite lozinku",
+    "setupPasswordDescription": "Postavite lozinku za pristup aplikaciji",
     "newPassword": "Nova lozinka",
     "newPasswordPlaceholder": "Unesite novu lozinku",
     "confirmPassword": "Potvrdi lozinku",
@@ -174,7 +176,10 @@
     "passwordMinLength": "Lozinka mora imati najmanje 6 karaktera",
     "enterNewPassword": "Unesite novu lozinku",
     "passwordMismatch": "Lozinke se ne podudaraju",
-    "changePasswordButton": "Promeni lozinku"
+    "changePasswordButton": "Promeni lozinku",
+    "setupPasswordButton": "Postavi lozinku",
+    "passwordSetupRequired": "Morate postaviti lozinku kako biste nastavili sa korišćenjem aplikacije",
+    "passwordSetSuccess": "Lozinka je uspešno postavljena! Sada možete koristiti sve funkcionalnosti aplikacije."
   },
   "orders": {
     "title": "Porudžbine",
