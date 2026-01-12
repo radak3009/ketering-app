@@ -167,6 +167,8 @@
     "cardIdHelp": "Your identification number. Contact administrator for changes.",
     "changePassword": "Change password",
     "changePasswordDescription": "Update your password for app access",
+    "setupPassword": "Set password",
+    "setupPasswordDescription": "Set a password for app access",
     "newPassword": "New password",
     "newPasswordPlaceholder": "Enter new password",
     "confirmPassword": "Confirm password",
@@ -174,7 +176,10 @@
     "passwordMinLength": "Password must be at least 6 characters",
     "enterNewPassword": "Enter new password",
     "passwordMismatch": "Passwords do not match",
-    "changePasswordButton": "Change password"
+    "changePasswordButton": "Change password",
+    "setupPasswordButton": "Set password",
+    "passwordSetupRequired": "You must set a password to continue using the application",
+    "passwordSetSuccess": "Password set successfully! You can now use all app features."
   },
   "orders": {
     "title": "Orders",
