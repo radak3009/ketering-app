@@ -11,9 +11,15 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we're processing hash parameters (email verification or magic link)
+    // Check if we're processing auth parameters (email verification, magic link, or invite)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    // PKCE flow uses ?code= query param, implicit flow uses #access_token hash
+    const hasHashParams = hashParams.has('access_token') || hashParams.has('type');
+    const hasCodeParam = queryParams.has('code');
+    const hasAuthParams = hasHashParams || hasCodeParam;
+    
     const isRecoveryFromHash = hashParams.get('type') === 'recovery';
     
     // Ako je recovery mode (bilo iz URL hash-a ili iz AuthContext), redirektuj na /auth
@@ -25,6 +31,7 @@ const Index = () => {
     
     // Don't redirect if we're still loading or processing auth parameters
     if (loading || hasAuthParams) {
+      console.log('[Index] Waiting for auth processing...', { loading, hasAuthParams });
       return;
     }
 

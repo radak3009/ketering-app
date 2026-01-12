@@ -52,13 +52,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Check if we have hash parameters (from email verification or magic link)
+    // Check if we have auth parameters (from email verification, magic link, or invite)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const hasAuthParams = hashParams.has('access_token') || hashParams.has('type');
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    // PKCE flow uses ?code= query param, implicit flow uses #access_token hash
+    const hasHashParams = hashParams.has('access_token') || hashParams.has('type');
+    const hasCodeParam = queryParams.has('code');
+    const hasAuthParams = hasHashParams || hasCodeParam;
     
     if (hasAuthParams) {
-      console.log('[AuthContext] Processing auth hash parameters...');
+      console.log('[AuthContext] Processing auth parameters...', { hasHashParams, hasCodeParam });
       setProcessingAuth(true);
+    }
+
+    // Handle PKCE code exchange (for invite links and magic links)
+    const handleCodeExchange = async () => {
+      const code = queryParams.get('code');
+      if (code) {
+        console.log('[AuthContext] Exchanging code for session...');
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('[AuthContext] Code exchange error:', error);
+          } else {
+            console.log('[AuthContext] Code exchange successful:', data.user?.email);
+          }
+          // Clean up URL after exchange
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch (err) {
+          console.error('[AuthContext] Unexpected code exchange error:', err);
+        }
+      }
+    };
+
+    // Execute code exchange if needed (before setting up listener)
+    if (hasCodeParam) {
+      handleCodeExchange();
     }
 
     // Helper function to fetch user profile - OUTSIDE the callback
