@@ -114,7 +114,10 @@ export function MenusManagement() {
     if (!selectedMenu) return;
     try {
       const selectedMealIds = selectedMenu.meals?.map((m: any) => m.meal_id) || [];
+      // Regenerate menu name based on new date
+      const updatedName = generateMenuName(selectedMenu.menu_date);
       await updateMenu(selectedMenu.id, {
+        name: updatedName,
         description: selectedMenu.description,
         menu_date: selectedMenu.menu_date,
         meal_ids: selectedMealIds
@@ -388,7 +391,7 @@ export function MenusManagement() {
             <div className="space-y-4 mt-6">
               <div>
                 <Label>Naziv jelovnika</Label>
-                <Input value={selectedMenu.name} disabled />
+                <Input value={generateMenuName(selectedMenu.menu_date)} disabled />
               </div>
               
               <div>
