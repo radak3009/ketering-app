@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,34 +12,58 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
     // Get the authorization header from the request
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Verify the user is an admin
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    // Create a client with the user's token to validate the JWT
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Validate the JWT and get claims
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
     
-    if (userError || !user) {
-      throw new Error('Invalid authorization token');
+    if (claimsError || !claimsData?.claims) {
+      console.error('Error validating token:', claimsError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authorization token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const userId = claimsData.claims.sub;
+    console.log('Authenticated user:', userId);
+
+    // Create admin client for privileged operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     // Check if user is admin
-    const { data: isAdmin } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: user.id });
+    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: userId });
     
+    if (adminError) {
+      console.error('Error checking admin status:', adminError);
+      return new Response(
+        JSON.stringify({ error: 'Error verifying admin status' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized: Admin access required' }),
@@ -50,7 +74,10 @@ Deno.serve(async (req) => {
     const { profileId } = await req.json();
 
     if (!profileId) {
-      throw new Error('Missing profileId parameter');
+      return new Response(
+        JSON.stringify({ error: 'Missing profileId parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Deleting user with profile ID:', profileId);
@@ -64,7 +91,10 @@ Deno.serve(async (req) => {
 
     if (profileError || !profile) {
       console.error('Error fetching profile:', profileError);
-      throw new Error('Profile not found');
+      return new Response(
+        JSON.stringify({ error: 'Profile not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const authUserId = profile.user_id;
@@ -75,7 +105,10 @@ Deno.serve(async (req) => {
 
     if (deleteError) {
       console.error('Error deleting user:', deleteError);
-      throw deleteError;
+      return new Response(
+        JSON.stringify({ error: deleteError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('User successfully deleted:', authUserId);
