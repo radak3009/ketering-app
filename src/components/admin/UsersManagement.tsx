@@ -37,6 +37,16 @@ interface UserFilters {
   role: string;
 }
 
+// Funkcija za generisanje privremene lozinke
+const generateTemporaryPassword = (): string => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 10; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
 const initialUserForm: UserFormState = {
   full_name: "",
   email: "",
@@ -44,8 +54,8 @@ const initialUserForm: UserFormState = {
   company_card_id: "",
   date_of_birth: undefined,
   role: "employee",
-  password: "",
-  usePassword: false
+  password: generateTemporaryPassword(),
+  usePassword: true
 };
 
 export function UsersManagement() {
@@ -74,7 +84,10 @@ export function UsersManagement() {
   });
 
   const resetUserForm = () => {
-    setUserForm(initialUserForm);
+    setUserForm({
+      ...initialUserForm,
+      password: generateTemporaryPassword()
+    });
   };
 
   const handleCreateUser = async () => {
@@ -340,28 +353,42 @@ export function UsersManagement() {
                       <div className="flex items-center space-x-2">
                         <Checkbox 
                           id="use-password" 
-                          checked={userForm.usePassword}
+                          checked={!userForm.usePassword}
                           onCheckedChange={(checked) => setUserForm({
                             ...userForm,
-                            usePassword: checked === true,
-                            password: checked ? userForm.password : ""
+                            usePassword: checked !== true,
+                            password: checked !== true ? generateTemporaryPassword() : ""
                           })}
                         />
                         <Label htmlFor="use-password" className="text-sm cursor-pointer">
-                          Kreiraj sa lozinkom umesto email pozivnice
+                          Koristi email pozivnicu (zahteva SMTP konfiguraciju)
                         </Label>
                       </div>
                       
                       {userForm.usePassword && (
                         <div>
-                          <Label htmlFor="user-password">Lozinka *</Label>
-                          <Input 
-                            id="user-password" 
-                            type="password" 
-                            value={userForm.password} 
-                            onChange={e => setUserForm({ ...userForm, password: e.target.value })} 
-                            placeholder="Minimum 6 karaktera"
-                          />
+                          <Label htmlFor="user-password">Privremena lozinka</Label>
+                          <div className="flex gap-2">
+                            <Input 
+                              id="user-password" 
+                              type="text" 
+                              value={userForm.password} 
+                              onChange={e => setUserForm({ ...userForm, password: e.target.value })} 
+                              placeholder="Minimum 6 karaktera"
+                              className="font-mono"
+                            />
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setUserForm({ ...userForm, password: generateTemporaryPassword() })}
+                            >
+                              Nova
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Zabeležite ovu lozinku i prosledite je korisniku
+                          </p>
                           {userForm.password && userForm.password.length < 6 && (
                             <p className="text-xs text-destructive mt-1">Lozinka mora imati najmanje 6 karaktera</p>
                           )}
