@@ -25,6 +25,7 @@ export interface MenuCreateData {
 
 // Menu update data
 export interface MenuUpdateData {
+  name?: string;
   description?: string;
   menu_date?: string;
   meal_ids?: string[];

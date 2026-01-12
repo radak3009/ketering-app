@@ -81,6 +81,7 @@ export function useMenus() {
       const { error: menuError } = await supabase
         .from('menus')
         .update({
+          name: menuData.name,
           description: menuData.description,
           menu_date: menuData.menu_date
         })
