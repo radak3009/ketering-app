@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, addDays, differenceInDays } from 'date-fns';
+import { format, addDays, differenceInDays, parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError, handleSuccess } from '@/services/errorService';
 import { WEEK_DAYS } from '@/constants';
@@ -7,7 +7,7 @@ import type { MenuWithMeals, MenuCreateData, MenuUpdateData } from '@/types';
 
 // Helper function to generate menu name from date
 const generateMenuName = (date: Date | string): string => {
-  const menuDate = typeof date === 'string' ? new Date(date) : date;
+  const menuDate = typeof date === 'string' ? parseISO(date) : date;
   const dayName = WEEK_DAYS[menuDate.getDay()];
   const formattedDate = format(menuDate, 'dd.MM.yyyy');
   return `${dayName} ${formattedDate}`;
@@ -151,14 +151,15 @@ export function useMenus() {
     try {
       // Sort source menus by date to ensure correct week start calculation
       const sortedSourceMenus = [...sourceMenus].sort((a, b) => 
-        new Date(a.menu_date).getTime() - new Date(b.menu_date).getTime()
+        parseISO(a.menu_date).getTime() - parseISO(b.menu_date).getTime()
       );
       
-      const sourceWeekStart = new Date(sortedSourceMenus[0].menu_date);
+      // Use parseISO for consistent date parsing (avoids UTC timezone issues)
+      const sourceWeekStart = parseISO(sortedSourceMenus[0].menu_date);
       const daysDiff = differenceInDays(targetWeekStart, sourceWeekStart);
 
       for (const sourceMenu of sortedSourceMenus) {
-        const sourceDate = new Date(sourceMenu.menu_date);
+        const sourceDate = parseISO(sourceMenu.menu_date);
         const targetDate = addDays(sourceDate, daysDiff);
         
         const { data: newMenu, error: menuError } = await supabase
