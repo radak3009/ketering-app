@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError, handleSuccess } from '@/services/errorService';
+import { WEEK_DAYS } from '@/constants';
 import type { MenuWithMeals, MenuCreateData, MenuUpdateData } from '@/types';
+
+// Helper function to generate menu name from date
+const generateMenuName = (date: Date | string): string => {
+  const menuDate = typeof date === 'string' ? new Date(date) : date;
+  const dayName = WEEK_DAYS[menuDate.getDay()];
+  const formattedDate = format(menuDate, 'dd.MM.yyyy');
+  return `${dayName} ${formattedDate}`;
+};
 
 export function useMenus() {
   const [menus, setMenus] = useState<MenuWithMeals[]>([]);
@@ -147,16 +157,16 @@ export function useMenus() {
         const sourceDate = new Date(sourceMenu.menu_date);
         const targetDate = new Date(sourceDate.getTime() + (daysDiff * 24 * 60 * 60 * 1000));
         
-        const { data: newMenu, error: menuError } = await supabase
-          .from('menus')
-          .insert([{
-            name: sourceMenu.name,
-            description: sourceMenu.description,
-            menu_date: targetDate.toISOString().split('T')[0],
-            is_active: true
-          }])
-          .select()
-          .single();
+      const { data: newMenu, error: menuError } = await supabase
+        .from('menus')
+        .insert([{
+          name: generateMenuName(targetDate),
+          description: sourceMenu.description,
+          menu_date: targetDate.toISOString().split('T')[0],
+          is_active: true
+        }])
+        .select()
+        .single();
 
         if (menuError) throw menuError;
 
