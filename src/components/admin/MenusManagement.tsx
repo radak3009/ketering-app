@@ -15,7 +15,7 @@ import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIco
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
-import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval } from "date-fns";
 import { WEEK_DAYS } from "@/constants";
 
 interface MenuFormState {
@@ -43,6 +43,30 @@ export function MenusManagement() {
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [cloneSourceMenus, setCloneSourceMenus] = useState<MenuWithMeals[]>([]);
   const [cloneTargetDate, setCloneTargetDate] = useState<Date>();
+  const [existingMenusInTargetWeek, setExistingMenusInTargetWeek] = useState<MenuWithMeals[]>([]);
+
+  // Check for existing menus when target date changes
+  const checkExistingMenusInWeek = (targetMonday: Date) => {
+    const weekStart = startOfWeek(targetMonday, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(targetMonday, { weekStartsOn: 1 });
+    
+    const existingMenus = menus.filter(menu => {
+      const menuDate = new Date(menu.menu_date);
+      return isWithinInterval(menuDate, { start: weekStart, end: weekEnd });
+    });
+    
+    setExistingMenusInTargetWeek(existingMenus);
+    return existingMenus;
+  };
+
+  const handleTargetDateChange = (date: Date | undefined) => {
+    setCloneTargetDate(date);
+    if (date) {
+      checkExistingMenusInWeek(date);
+    } else {
+      setExistingMenusInTargetWeek([]);
+    }
+  };
 
   const filteredMenuMeals = meals.filter(
     meal => meal.status === "aktivan" && meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
@@ -131,6 +155,7 @@ export function MenusManagement() {
   const handleCloneWeek = (weekMenus: MenuWithMeals[]) => {
     setCloneSourceMenus(weekMenus);
     setCloneTargetDate(undefined);
+    setExistingMenusInTargetWeek([]);
     setShowCloneDialog(true);
   };
 
@@ -542,7 +567,7 @@ export function MenusManagement() {
                   <CalendarComponent
                     mode="single"
                     selected={cloneTargetDate}
-                    onSelect={setCloneTargetDate}
+                    onSelect={handleTargetDateChange}
                     disabled={(date) => {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
@@ -554,6 +579,24 @@ export function MenusManagement() {
               </Popover>
               <p className="text-xs text-muted-foreground">Možete odabrati samo ponedeljak kao početak nedelje</p>
             </div>
+            
+            {/* Warning for existing menus */}
+            {existingMenusInTargetWeek.length > 0 && (
+              <div className="rounded-md border border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 p-4">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  ⚠️ Upozorenje: Odabrana nedelja već ima {existingMenusInTargetWeek.length} {existingMenusInTargetWeek.length === 1 ? 'jelovnik' : 'jelovnika'}
+                </p>
+                <ul className="mt-2 text-xs text-yellow-700 dark:text-yellow-300 list-disc list-inside">
+                  {existingMenusInTargetWeek.map(menu => (
+                    <li key={menu.id}>{menu.name}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+                  Kloniranje će dodati nove jelovnike pored postojećih. Ako želite da zamenite postojeće, prvo ih obrišite.
+                </p>
+              </div>
+            )}
+            
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button className="w-full" disabled={!cloneTargetDate}>
@@ -565,7 +608,17 @@ export function MenusManagement() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Potvrdi kloniranje</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Da li ste sigurni da želite da klonirate {cloneSourceMenus.length} jelovnika u novu nedelju?
+                    {existingMenusInTargetWeek.length > 0 ? (
+                      <>
+                        <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                          Pažnja: Odabrana nedelja već ima {existingMenusInTargetWeek.length} jelovnika.
+                        </span>
+                        <br />
+                        Da li ste sigurni da želite da dodate {cloneSourceMenus.length} novih jelovnika?
+                      </>
+                    ) : (
+                      <>Da li ste sigurni da želite da klonirate {cloneSourceMenus.length} jelovnika u novu nedelju?</>
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
