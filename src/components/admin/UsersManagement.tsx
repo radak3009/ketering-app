@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
-import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X } from "lucide-react";
+import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
@@ -95,6 +95,23 @@ export function UsersManagement() {
     if (csvInputRef.current) {
       csvInputRef.current.value = '';
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = ['Ime i prezime', 'Email', 'ID', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
+    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
+    
+    const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'template_korisnici.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Helper za parsiranje datuma iz različitih formata
@@ -291,6 +308,10 @@ export function UsersManagement() {
                 }} 
                 className="hidden" 
               />
+              <Button variant="outline" onClick={handleDownloadTemplate} className="w-full md:w-auto">
+                <Download className="h-4 w-4 mr-2" />
+                Preuzmi template
+              </Button>
               <Button variant="outline" onClick={() => csvInputRef.current?.click()} className="w-full md:w-auto">
                 <FileText className="h-4 w-4 mr-2" />
                 Uvezi CSV/XLSX
