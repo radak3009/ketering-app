@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, addDays, differenceInDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError, handleSuccess } from '@/services/errorService';
 import { WEEK_DAYS } from '@/constants';
@@ -149,24 +149,28 @@ export function useMenus() {
 
   const cloneWeekMenus = async (sourceMenus: MenuWithMeals[], targetWeekStart: Date) => {
     try {
-      const sourceDates = sourceMenus.map(m => new Date(m.menu_date));
-      const sourceWeekStart = new Date(Math.min(...sourceDates.map(d => d.getTime())));
-      const daysDiff = Math.floor((targetWeekStart.getTime() - sourceWeekStart.getTime()) / (1000 * 60 * 60 * 24));
+      // Sort source menus by date to ensure correct week start calculation
+      const sortedSourceMenus = [...sourceMenus].sort((a, b) => 
+        new Date(a.menu_date).getTime() - new Date(b.menu_date).getTime()
+      );
+      
+      const sourceWeekStart = new Date(sortedSourceMenus[0].menu_date);
+      const daysDiff = differenceInDays(targetWeekStart, sourceWeekStart);
 
-      for (const sourceMenu of sourceMenus) {
+      for (const sourceMenu of sortedSourceMenus) {
         const sourceDate = new Date(sourceMenu.menu_date);
-        const targetDate = new Date(sourceDate.getTime() + (daysDiff * 24 * 60 * 60 * 1000));
+        const targetDate = addDays(sourceDate, daysDiff);
         
-      const { data: newMenu, error: menuError } = await supabase
-        .from('menus')
-        .insert([{
-          name: generateMenuName(targetDate),
-          description: sourceMenu.description,
-          menu_date: targetDate.toISOString().split('T')[0],
-          is_active: true
-        }])
-        .select()
-        .single();
+        const { data: newMenu, error: menuError } = await supabase
+          .from('menus')
+          .insert([{
+            name: generateMenuName(targetDate),
+            description: sourceMenu.description,
+            menu_date: format(targetDate, 'yyyy-MM-dd'),
+            is_active: true
+          }])
+          .select()
+          .single();
 
         if (menuError) throw menuError;
 
