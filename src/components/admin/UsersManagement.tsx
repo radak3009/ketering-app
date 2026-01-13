@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
-import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key } from "lucide-react";
+import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
@@ -90,6 +90,33 @@ export function UsersManagement() {
     });
   };
 
+  const handleClearFile = () => {
+    setCsvFile(null);
+    if (csvInputRef.current) {
+      csvInputRef.current.value = '';
+    }
+  };
+
+  // Helper za parsiranje datuma iz različitih formata
+  const parseImportDate = (dateStr: string): string | undefined => {
+    if (!dateStr || dateStr.trim() === '') return undefined;
+    const trimmed = dateStr.trim();
+    
+    // Format: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+    // Format: DD.MM.YYYY ili DD/MM/YYYY
+    const match = trimmed.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);
+    if (match) {
+      const day = match[1].padStart(2, '0');
+      const month = match[2].padStart(2, '0');
+      const year = match[3];
+      return `${year}-${month}-${day}`;
+    }
+    return undefined;
+  };
+
   const handleCreateUser = async () => {
     if (!userForm.full_name || !userForm.email) {
       toast({ title: "Greška", description: "Molimo unesite ime i email", variant: "destructive" });
@@ -167,17 +194,47 @@ export function UsersManagement() {
 
       const usersToImport = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
-        const userData: any = {};
+        const userData: any = { role: 'employee' };
+        
         headers.forEach((header, index) => {
-          if (header.includes('ime') || header.includes('name')) userData.full_name = values[index];
-          if (header.includes('email')) userData.email = values[index];
-          if (header.includes('phone') || header.includes('telefon')) userData.phone = values[index];
+          const value = values[index];
+          if (!value || value.trim() === '') return;
+          
+          // Ime i prezime
+          if (header.includes('ime') || header.includes('name') || header.includes('full_name')) {
+            userData.full_name = value;
+          }
+          // Email
+          if (header.includes('email') || header.includes('e-mail')) {
+            userData.email = value;
+          }
+          // Telefon
+          if (header.includes('phone') || header.includes('telefon')) {
+            userData.phone = value;
+          }
+          // ID (company_card_id) - samo cifre, max 10, bez @
+          if (header.includes('company_card_id') || header === 'id' || header.includes('kartica')) {
+            if (!value.includes('@')) {
+              userData.company_card_id = value.replace(/\D/g, '').slice(0, 10);
+            }
+          }
+          // Datum rođenja
+          if (header.includes('datum') || header.includes('date') || header.includes('dob') || header.includes('rodjenja') || header.includes('rođenja')) {
+            const parsedDate = parseImportDate(value);
+            if (parsedDate) userData.date_of_birth = new Date(parsedDate);
+          }
+          // Uloga
           if (header.includes('role') || header.includes('uloga')) {
-            userData.role = values[index].toLowerCase().includes('admin') ? 'admin' : 'employee';
-          } else {
-            userData.role = 'employee';
+            userData.role = value.toLowerCase().includes('admin') ? 'admin' : 'employee';
+          }
+          // Privremena lozinka
+          if (header.includes('password') || header.includes('lozinka')) {
+            if (value.length >= 6) {
+              userData.password = value;
+            }
           }
         });
+        
         return userData;
       }).filter(user => user.full_name && user.email);
 
@@ -239,26 +296,39 @@ export function UsersManagement() {
                 Uvezi CSV/XLSX
               </Button>
               {csvFile && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="w-full md:w-auto">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Uvezi ({csvFile.name})
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Potvrdi uvoz</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Da li ste sigurni da želite da uvezete korisnike iz fajla {csvFile.name}? CSV mora imati kolone: Ime, Email (opciono: Telefon, Uloga).
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkUserImport}>Uvezi</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex items-center gap-2">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="w-full md:w-auto">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Uvezi ({csvFile.name})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Potvrdi uvoz</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Da li ste sigurni da želite da uvezete korisnike iz fajla {csvFile.name}? 
+                          CSV mora imati kolone: Ime i prezime, Email. 
+                          Opciono: ID, Telefon, Datum rođenja, Uloga, Privremena lozinka.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkUserImport}>Uvezi</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={handleClearFile}
+                    className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                    title="Ukloni fajl"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               )}
               <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                 <SheetTrigger asChild>
