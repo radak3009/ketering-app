@@ -234,10 +234,15 @@ Deno.serve(async (req) => {
           try {
             const resend = new Resend(resendApiKey);
             const appUrl = req.headers.get('origin') || 'https://ketering-app.lovable.app';
-            await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
-            console.log('Welcome email with credentials sent successfully to:', email);
+            const emailResult = await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
+            
+            if (emailResult.success) {
+              console.log('Welcome email sent successfully to:', email, 'Email ID:', emailResult.id);
+            } else {
+              console.error('Failed to send welcome email:', emailResult.error);
+            }
           } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError);
+            console.error('Exception while sending welcome email:', emailError);
             // Don't throw - user was created successfully, email is secondary
           }
         } else {
