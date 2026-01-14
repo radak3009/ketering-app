@@ -562,6 +562,17 @@ export function UsersManagement() {
                         />
                       </div>
                     </TableHead>
+                    <TableHead className="w-[110px]">
+                      <div className="space-y-1">
+                        <span className="font-semibold text-xs">Tag</span>
+                        <Input
+                          placeholder="Pretraži..."
+                          value={userFilters.tag}
+                          onChange={(e) => setUserFilters(prev => ({...prev, tag: e.target.value}))}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    </TableHead>
                     <TableHead className="w-[120px]">
                       <div className="space-y-1">
                         <span className="font-semibold text-xs">Telefon</span>
@@ -610,7 +621,7 @@ export function UsersManagement() {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         Nema korisnika koji odgovaraju filterima
                       </TableCell>
                     </TableRow>
@@ -626,6 +637,7 @@ export function UsersManagement() {
                         </TableCell>
                         <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
+                        <TableCell className="text-sm">{user.tag || '-'}</TableCell>
                         <TableCell className="text-sm">{user.phone || '-'}</TableCell>
                         <TableCell className="text-sm">
                           {user.date_of_birth ? format(new Date(user.date_of_birth), 'dd.MM.yyyy') : '-'}
