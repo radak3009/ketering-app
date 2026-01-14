@@ -562,6 +562,17 @@ export function UsersManagement() {
                         />
                       </div>
                     </TableHead>
+                    <TableHead className="w-[110px]">
+                      <div className="space-y-1">
+                        <span className="font-semibold text-xs">Tag</span>
+                        <Input
+                          placeholder="Pretraži..."
+                          value={userFilters.tag}
+                          onChange={(e) => setUserFilters(prev => ({...prev, tag: e.target.value}))}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                    </TableHead>
                     <TableHead className="w-[120px]">
                       <div className="space-y-1">
                         <span className="font-semibold text-xs">Telefon</span>
