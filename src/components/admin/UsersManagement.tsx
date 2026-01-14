@@ -356,6 +356,14 @@ export function UsersManagement() {
   const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id));
   const isSomeSelected = selectedUserIds.size > 0;
 
+  // Get unique existing tags from all users
+  const existingTags = useMemo(() => {
+    const tags = users
+      .map(u => u.tag)
+      .filter((tag): tag is string => !!tag && tag.trim() !== '');
+    return [...new Set(tags)].sort();
+  }, [users]);
+
   return (
     <>
       <Card>
