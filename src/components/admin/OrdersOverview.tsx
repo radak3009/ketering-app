@@ -167,6 +167,42 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                 </div>
               )}
               
+              {/* Tag Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full md:w-auto">
+                    <TagIcon className="h-4 w-4 mr-2" />
+                    Tag {tagFilter.length > 0 && `(${tagFilter.length})`}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 max-h-60 overflow-y-auto p-2">
+                  {availableTags.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-2">Nema dostupnih tagova</p>
+                  ) : (
+                    availableTags.map(tag => (
+                      <div key={tag} className="flex items-center space-x-2 p-2">
+                        <Checkbox 
+                          checked={tagFilter.includes(tag)}
+                          onCheckedChange={(checked) => {
+                            setTagFilter(prev => 
+                              checked ? [...prev, tag] : prev.filter(t => t !== tag)
+                            );
+                          }}
+                        />
+                        <span className="text-sm">{tag}</span>
+                      </div>
+                    ))
+                  )}
+                  {tagFilter.length > 0 && (
+                    <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setTagFilter([])}>
+                      Resetuj
+                    </Button>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Date Filter Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full md:w-auto">
