@@ -497,12 +497,53 @@ export function UsersManagement() {
                     
                     <div>
                       <Label htmlFor="user-tag">Tag</Label>
-                      <Input 
-                        id="user-tag" 
-                        value={userForm.tag} 
-                        onChange={e => setUserForm({ ...userForm, tag: e.target.value })} 
-                        placeholder="npr. VIP, Probni, Marketing" 
-                      />
+                      {showCustomTagInput ? (
+                        <div className="flex gap-2">
+                          <Input 
+                            id="user-tag" 
+                            value={userForm.tag} 
+                            onChange={e => setUserForm({ ...userForm, tag: e.target.value })} 
+                            placeholder="Unesite novi tag" 
+                            autoFocus
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => {
+                              setShowCustomTagInput(false);
+                              setUserForm({ ...userForm, tag: "" });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select 
+                          value={userForm.tag || "__none__"} 
+                          onValueChange={(value) => {
+                            if (value === "__custom__") {
+                              setShowCustomTagInput(true);
+                              setUserForm({ ...userForm, tag: "" });
+                            } else if (value === "__none__") {
+                              setUserForm({ ...userForm, tag: "" });
+                            } else {
+                              setUserForm({ ...userForm, tag: value });
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Odaberite tag" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">(Bez taga)</SelectItem>
+                            {existingTags.map(tag => (
+                              <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                            ))}
+                            <SelectItem value="__custom__">+ Novi tag...</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         Oznaka za kategorizaciju korisnika
                       </p>
