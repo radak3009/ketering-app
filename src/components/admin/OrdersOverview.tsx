@@ -21,6 +21,7 @@ interface OrdersOverviewProps {
 
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
+  const { users } = useUsers();
   
   // Memoize date range values to prevent unnecessary re-renders
   const startDate = orderDateRange?.startDate || '';
@@ -33,9 +34,28 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   
   const [orderSearch, setOrderSearch] = useState("");
   const [userCardFilter, setUserCardFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [pivotView, setPivotView] = useState<"meals" | "users">("meals");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
+
+  // Get unique tags from users
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>();
+    users.forEach(user => {
+      if (user.tag) tags.add(user.tag);
+    });
+    return Array.from(tags).sort();
+  }, [users]);
+
+  // Filter orders by tag
+  const filteredOrders = useMemo(() => {
+    if (tagFilter.length === 0) return orders;
+    return orders.filter(order => {
+      const user = users.find(u => u.user_id === order.user_id);
+      return user?.tag && tagFilter.includes(user.tag);
+    });
+  }, [orders, users, tagFilter]);
 
   const handleDateRangeFilter = () => {
     const hasStartDate = orderDateRange.startDate && orderDateRange.startDate.trim() !== '';
