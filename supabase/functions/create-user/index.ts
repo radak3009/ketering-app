@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { Resend } from 'npm:resend@4.0.0';
+import { Resend } from 'https://esm.sh/resend@4.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -282,6 +282,7 @@ Deno.serve(async (req) => {
     if (full_name) profileUpdates.full_name = full_name;
     if (phone) profileUpdates.phone = phone;
     if (company_card_id) profileUpdates.company_card_id = company_card_id;
+    if (tag) profileUpdates.tag = tag;
     if (date_of_birth) profileUpdates.date_of_birth = date_of_birth;
     profileUpdates.role = role || 'employee';
     // Set password_set based on whether password was provided
