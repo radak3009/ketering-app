@@ -283,13 +283,15 @@ export function UsersManagement() {
       (user.full_name && user.full_name.toLowerCase().includes(userFilters.fullName.toLowerCase()));
     const matchesEmail = !userFilters.email || 
       (user.email && user.email.toLowerCase().includes(userFilters.email.toLowerCase()));
+    const matchesTag = !userFilters.tag || 
+      (user.tag && user.tag.toLowerCase().includes(userFilters.tag.toLowerCase()));
     const matchesPhone = !userFilters.phone || 
       (user.phone && user.phone.includes(userFilters.phone));
     const matchesDob = !userFilters.dateOfBirth || 
       (user.date_of_birth && user.date_of_birth.includes(userFilters.dateOfBirth));
     const matchesRole = userFilters.role === 'all' || user.role === userFilters.role;
     
-    return matchesId && matchesName && matchesEmail && matchesPhone && matchesDob && matchesRole;
+    return matchesId && matchesName && matchesEmail && matchesTag && matchesPhone && matchesDob && matchesRole;
   });
 
   return (
