@@ -87,6 +87,12 @@ export function UsersManagement() {
     isOpen: false
   });
 
+  // Bulk selection state
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
+  const [bulkTagValue, setBulkTagValue] = useState("");
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+
   const resetUserForm = () => {
     setUserForm({
       ...initialUserForm,
