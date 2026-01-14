@@ -740,7 +740,7 @@ export function UsersManagement() {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         Nema korisnika koji odgovaraju filterima
                       </TableCell>
                     </TableRow>
@@ -748,9 +748,16 @@ export function UsersManagement() {
                     filteredUsers.map(user => (
                       <TableRow 
                         key={user.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
                         onClick={() => setSelectedUser({...user})}
                       >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedUserIds.has(user.id)}
+                            onCheckedChange={(checked) => handleSelectUser(user.id, checked === true)}
+                            aria-label={`Izaberi ${user.full_name}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-xs font-medium">
                           {user.company_card_id || <span className="text-muted-foreground">-</span>}
                         </TableCell>
