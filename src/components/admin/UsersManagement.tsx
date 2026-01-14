@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
-import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download } from "lucide-react";
+import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download, Tag, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
