@@ -422,7 +422,7 @@ export function UsersManagement() {
               )}
               <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                 <SheetTrigger asChild>
-                  <Button onClick={() => { resetUserForm(); setIsAddUserOpen(true); }} className="w-full md:w-auto">
+                  <Button onClick={() => { resetUserForm(); setShowCustomTagInput(false); setIsAddUserOpen(true); }} className="w-full md:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Dodaj korisnika
                   </Button>
