@@ -426,6 +426,19 @@ export function UsersManagement() {
                     </div>
                     
                     <div>
+                      <Label htmlFor="user-tag">Tag</Label>
+                      <Input 
+                        id="user-tag" 
+                        value={userForm.tag} 
+                        onChange={e => setUserForm({ ...userForm, tag: e.target.value })} 
+                        placeholder="npr. VIP, Probni, Marketing" 
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Oznaka za kategorizaciju korisnika
+                      </p>
+                    </div>
+                    
+                    <div>
                       <Label>Datum rođenja</Label>
                       <EnhancedDatePicker
                         date={userForm.date_of_birth}
