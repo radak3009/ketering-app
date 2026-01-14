@@ -580,6 +580,60 @@ export function UsersManagement() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Bulk Actions Bar */}
+          {isSomeSelected && (
+            <div className="mb-4 p-3 bg-primary/10 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">
+                  Izabrano: {selectedUserIds.size} korisnika
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertDialog open={bulkTagDialogOpen} onOpenChange={setBulkTagDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Tag className="h-4 w-4 mr-2" />
+                      Izmeni Tag
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Masovna izmena Tag-a</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Unesite novu vrednost Tag-a za {selectedUserIds.size} izabranih korisnika. 
+                        Ostavite prazno da uklonite Tag.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4">
+                      <Label htmlFor="bulk-tag">Novi Tag</Label>
+                      <Input
+                        id="bulk-tag"
+                        value={bulkTagValue}
+                        onChange={(e) => setBulkTagValue(e.target.value)}
+                        placeholder="npr. VIP, Probni, Marketing"
+                      />
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkTagUpdate} disabled={bulkUpdating}>
+                        {bulkUpdating ? 'Ažuriranje...' : 'Primeni'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => setSelectedUserIds(new Set())}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Poništi
+                </Button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8">Učitavanje...</div>
           ) : (
@@ -587,6 +641,13 @@ export function UsersManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={(checked) => handleSelectAll(checked === true)}
+                        aria-label="Izaberi sve"
+                      />
+                    </TableHead>
                     <TableHead className="w-[100px]">
                       <div className="space-y-1">
                         <span className="font-semibold text-xs">ID</span>
