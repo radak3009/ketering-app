@@ -54,6 +54,7 @@ const initialUserForm: UserFormState = {
   email: "",
   phone: "",
   company_card_id: "",
+  tag: "",
   date_of_birth: undefined,
   role: "employee",
   password: generateTemporaryPassword(),
