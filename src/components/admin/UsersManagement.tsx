@@ -67,6 +67,7 @@ export function UsersManagement() {
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [updatingUser, setUpdatingUser] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   
@@ -190,6 +191,7 @@ export function UsersManagement() {
       return;
     }
 
+    setUpdatingUser(true);
     try {
       await updateUser(selectedUser.id, {
         full_name: selectedUser.full_name,
@@ -202,6 +204,8 @@ export function UsersManagement() {
       setSelectedUser(null);
     } catch (error) {
       console.error('Error updating user:', error);
+    } finally {
+      setUpdatingUser(false);
     }
   };
 
@@ -1082,9 +1086,18 @@ export function UsersManagement() {
               <div className="space-y-2 pt-4">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="w-full">
-                      <Save className="h-4 w-4 mr-2" />
-                      Sačuvaj izmene
+                    <Button className="w-full" disabled={updatingUser}>
+                      {updatingUser ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Čuvanje u toku...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Sačuvaj izmene
+                        </>
+                      )}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -1095,8 +1108,17 @@ export function UsersManagement() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleUpdateUser}>Sačuvaj</AlertDialogAction>
+                      <AlertDialogCancel disabled={updatingUser}>Otkaži</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleUpdateUser} disabled={updatingUser}>
+                        {updatingUser ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Čuvanje...
+                          </>
+                        ) : (
+                          'Sačuvaj'
+                        )}
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
