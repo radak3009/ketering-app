@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon } from "lucide-react";
+import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
@@ -31,6 +31,8 @@ export function MenusManagement() {
   
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
+  const [creatingMenu, setCreatingMenu] = useState(false);
+  const [updatingMenu, setUpdatingMenu] = useState(false);
   const [menuMealSearch, setMenuMealSearch] = useState("");
   
   const [menuForm, setMenuForm] = useState<MenuFormState>({
@@ -119,6 +121,7 @@ export function MenusManagement() {
       return;
     }
 
+    setCreatingMenu(true);
     try {
       const menuName = generateMenuName(menuForm.menu_date);
       await createMenu({
@@ -131,11 +134,14 @@ export function MenusManagement() {
       setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
     } catch (error) {
       console.error('Error creating menu:', error);
+    } finally {
+      setCreatingMenu(false);
     }
   };
 
   const handleUpdateMenu = async () => {
     if (!selectedMenu) return;
+    setUpdatingMenu(true);
     try {
       const selectedMealIds = selectedMenu.meals?.map((m: any) => m.meal_id) || [];
       // Regenerate menu name based on new date
@@ -149,6 +155,8 @@ export function MenusManagement() {
       setSelectedMenu(null);
     } catch (error) {
       console.error('Error updating menu:', error);
+    } finally {
+      setUpdatingMenu(false);
     }
   };
 
@@ -324,9 +332,18 @@ export function MenusManagement() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button onClick={handleCreateMenu} className="flex-1" disabled={loading}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Dodaj jelovnik
+                    <Button onClick={handleCreateMenu} className="flex-1" disabled={loading || creatingMenu}>
+                      {creatingMenu ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Kreiranje...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Dodaj jelovnik
+                        </>
+                      )}
                     </Button>
                     <Button variant="outline" onClick={() => setIsCreateMenuOpen(false)}>
                       Završi
@@ -491,9 +508,18 @@ export function MenusManagement() {
               <div className="space-y-2 pt-4">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="w-full">
-                      <Save className="h-4 w-4 mr-2" />
-                      Sačuvaj izmene
+                    <Button className="w-full" disabled={updatingMenu}>
+                      {updatingMenu ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Čuvanje u toku...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Sačuvaj izmene
+                        </>
+                      )}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -504,8 +530,17 @@ export function MenusManagement() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleUpdateMenu}>Sačuvaj</AlertDialogAction>
+                      <AlertDialogCancel disabled={updatingMenu}>Otkaži</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleUpdateMenu} disabled={updatingMenu}>
+                        {updatingMenu ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Čuvanje...
+                          </>
+                        ) : (
+                          'Sačuvaj'
+                        )}
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

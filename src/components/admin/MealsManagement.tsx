@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save } from "lucide-react";
+import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
@@ -61,6 +61,8 @@ export function MealsManagement() {
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
+  const [creatingMeal, setCreatingMeal] = useState(false);
+  const [updatingMeal, setUpdatingMeal] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -96,6 +98,7 @@ export function MealsManagement() {
       return;
     }
 
+    setCreatingMeal(true);
     try {
       let imageUrl = mealForm.image_url;
       if (imageFile) {
@@ -126,6 +129,8 @@ export function MealsManagement() {
       setIsAddMealOpen(false);
     } catch (error) {
       console.error('Error creating meal:', error);
+    } finally {
+      setCreatingMeal(false);
     }
   };
 
@@ -146,6 +151,7 @@ export function MealsManagement() {
       return;
     }
 
+    setUpdatingMeal(true);
     try {
       let imageUrl = selectedMeal.image_url;
       if (imageFile) {
@@ -174,6 +180,8 @@ export function MealsManagement() {
       setImageFile(null);
     } catch (error) {
       console.error('Error updating meal:', error);
+    } finally {
+      setUpdatingMeal(false);
     }
   };
 
@@ -349,9 +357,18 @@ export function MealsManagement() {
                     )}
                   </div>
                   
-                  <Button onClick={handleCreateMeal} className="w-full" disabled={loading}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Dodaj obrok
+                  <Button onClick={handleCreateMeal} className="w-full" disabled={loading || creatingMeal}>
+                    {creatingMeal ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Kreiranje u toku...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Dodaj obrok
+                      </>
+                    )}
                   </Button>
                 </div>
               </SheetContent>
@@ -681,9 +698,18 @@ export function MealsManagement() {
               <div className="space-y-2 pt-4">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="w-full">
-                      <Save className="h-4 w-4 mr-2" />
-                      Sačuvaj izmene
+                    <Button className="w-full" disabled={updatingMeal}>
+                      {updatingMeal ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Čuvanje u toku...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Sačuvaj izmene
+                        </>
+                      )}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -694,8 +720,17 @@ export function MealsManagement() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleUpdateMeal}>Sačuvaj</AlertDialogAction>
+                      <AlertDialogCancel disabled={updatingMeal}>Otkaži</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleUpdateMeal} disabled={updatingMeal}>
+                        {updatingMeal ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Čuvanje...
+                          </>
+                        ) : (
+                          'Sačuvaj'
+                        )}
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
