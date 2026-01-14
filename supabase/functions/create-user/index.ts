@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Resend } from 'npm:resend@4.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,119 @@ interface CreateUserRequest {
   date_of_birth?: string;
   role: 'admin' | 'employee';
   password?: string; // Optional: if provided, creates user with password instead of invite
+}
+
+// Function to send welcome email with credentials
+async function sendWelcomeEmailWithCredentials(
+  resend: Resend,
+  toEmail: string,
+  password: string,
+  fullName?: string,
+  appUrl?: string
+): Promise<void> {
+  const displayName = fullName || 'korisniče';
+  const loginUrl = appUrl || 'https://ketering-app.lovable.app';
+  
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Dobrodošli u Ketering</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-width: 100%; background-color: #f4f4f5;">
+        <tr>
+          <td align="center" style="padding: 40px 20px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              <!-- Header -->
+              <tr>
+                <td style="padding: 40px 40px 20px 40px; text-align: center; border-bottom: 1px solid #e4e4e7;">
+                  <h1 style="margin: 0; color: #18181b; font-size: 28px; font-weight: 700;">🍽️ Ketering</h1>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px;">
+                  <h2 style="margin: 0 0 20px 0; color: #18181b; font-size: 22px; font-weight: 600;">
+                    Dobrodošli, ${displayName}!
+                  </h2>
+                  
+                  <p style="margin: 0 0 24px 0; color: #3f3f46; font-size: 16px; line-height: 1.6;">
+                    Vaš nalog u aplikaciji Ketering je uspešno kreiran. Ispod se nalaze vaši pristupni podaci za prijavu:
+                  </p>
+                  
+                  <!-- Credentials Box -->
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5; border-radius: 8px; margin-bottom: 24px;">
+                    <tr>
+                      <td style="padding: 24px;">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                          <tr>
+                            <td style="padding: 8px 0;">
+                              <span style="color: #71717a; font-size: 14px;">Email adresa:</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 0 0 16px 0;">
+                              <strong style="color: #18181b; font-size: 16px;">${toEmail}</strong>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0;">
+                              <span style="color: #71717a; font-size: 14px;">Lozinka:</span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>
+                              <strong style="color: #18181b; font-size: 16px; font-family: monospace; background-color: #ffffff; padding: 8px 12px; border-radius: 4px; display: inline-block;">${password}</strong>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- CTA Button -->
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                    <tr>
+                      <td align="center">
+                        <a href="${loginUrl}" style="display: inline-block; background-color: #f97316; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px;">
+                          Prijavite se na aplikaciju
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 0; color: #71717a; font-size: 14px; line-height: 1.6;">
+                    💡 <em>Lozinku možete promeniti u podešavanjima profila nakon prijave.</em>
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 24px 40px; background-color: #f4f4f5; border-radius: 0 0 12px 12px;">
+                  <p style="margin: 0; color: #71717a; font-size: 12px; text-align: center;">
+                    Ovaj email je automatski generisan. Molimo vas da ne odgovarate na njega.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  await resend.emails.send({
+    from: 'Ketering <noreply@simpler.rs>',
+    to: [toEmail],
+    subject: 'Dobrodošli u Ketering - Vaši pristupni podaci',
+    html: htmlContent,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -101,6 +215,24 @@ Deno.serve(async (req) => {
       });
       newUser = result.data;
       createError = result.error;
+
+      // Send custom welcome email with credentials using Resend
+      if (!createError && newUser?.user) {
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (resendApiKey) {
+          try {
+            const resend = new Resend(resendApiKey);
+            const appUrl = req.headers.get('origin') || 'https://ketering-app.lovable.app';
+            await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
+            console.log('Welcome email with credentials sent successfully to:', email);
+          } catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+            // Don't throw - user was created successfully, email is secondary
+          }
+        } else {
+          console.warn('RESEND_API_KEY not configured, skipping welcome email');
+        }
+      }
     } else {
       // Send invite email (original behavior)
       const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
