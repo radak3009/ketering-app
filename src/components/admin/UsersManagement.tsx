@@ -245,6 +245,10 @@ export function UsersManagement() {
             const parsedDate = parseImportDate(value);
             if (parsedDate) userData.date_of_birth = new Date(parsedDate);
           }
+          // Tag
+          if (header.includes('tag') || header.includes('oznaka')) {
+            userData.tag = value;
+          }
           // Uloga
           if (header.includes('role') || header.includes('uloga')) {
             userData.role = value.toLowerCase().includes('admin') ? 'admin' : 'employee';
