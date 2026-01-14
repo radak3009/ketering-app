@@ -113,9 +113,9 @@ export function ReportsTab() {
         filename = `prihodi_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
       } else if (reportType === 'users') {
         csvContent = '\uFEFF';
-        csvContent += 'ID,Ime i prezime,Email,Telefon,Rola,ID kartice,Datum kreiranja\n';
+        csvContent += 'ID,Ime i prezime,Email,Tag,Telefon,Rola,ID kartice,Datum kreiranja\n';
         users.forEach(user => {
-          csvContent += `"${user.user_id}","${user.full_name || ''}","${user.email || ''}","${user.phone || ''}","${user.role}","${user.company_card_id || ''}","${user.created_at}"\n`;
+          csvContent += `"${user.user_id}","${user.full_name || ''}","${user.email || ''}","${user.tag || ''}","${user.phone || ''}","${user.role}","${user.company_card_id || ''}","${user.created_at}"\n`;
         });
         filename = `korisnici_${format(new Date(), 'yyyy-MM-dd')}.csv`;
       } else if (reportType === 'meals') {

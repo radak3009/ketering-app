@@ -185,6 +185,7 @@ export function UsersManagement() {
         email: selectedUser.email,
         phone: selectedUser.phone,
         company_card_id: selectedUser.company_card_id,
+        tag: selectedUser.tag || null,
         date_of_birth: selectedUser.date_of_birth || null
       });
       setSelectedUser(null);

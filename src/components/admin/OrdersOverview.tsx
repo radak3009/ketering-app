@@ -187,15 +187,15 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
         <CardContent>
           {loading ? (
             <div className="text-center py-8">Učitavanje...</div>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <p className="text-muted-foreground text-center py-4 text-sm">
               Nema porudžbina za izabrani period
             </p>
           ) : pivotView === "meals" ? (
-            <OrderPivotTable orders={orders} />
+            <OrderPivotTable orders={filteredOrders} />
           ) : (
             <UserOrderPivotTable 
-              orders={orders} 
+              orders={filteredOrders} 
               userCardFilter={userCardFilter}
             />
           )}
