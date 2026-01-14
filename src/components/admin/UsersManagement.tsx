@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
-import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download } from "lucide-react";
+import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download, Tag, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
@@ -86,6 +86,12 @@ export function UsersManagement() {
     confirmPassword: "",
     isOpen: false
   });
+
+  // Bulk selection state
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
+  const [bulkTagValue, setBulkTagValue] = useState("");
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const resetUserForm = () => {
     setUserForm({
@@ -293,6 +299,58 @@ export function UsersManagement() {
     
     return matchesId && matchesName && matchesEmail && matchesTag && matchesPhone && matchesDob && matchesRole;
   });
+
+  // Bulk selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(new Set(filteredUsers.map(u => u.id)));
+    } else {
+      setSelectedUserIds(new Set());
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    const newSet = new Set(selectedUserIds);
+    if (checked) {
+      newSet.add(userId);
+    } else {
+      newSet.delete(userId);
+    }
+    setSelectedUserIds(newSet);
+  };
+
+  const handleBulkTagUpdate = async () => {
+    if (selectedUserIds.size === 0) return;
+    
+    setBulkUpdating(true);
+    try {
+      const updatePromises = Array.from(selectedUserIds).map(userId => 
+        updateUser(userId, { tag: bulkTagValue || null })
+      );
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: 'Uspeh',
+        description: `Tag je ažuriran za ${selectedUserIds.size} korisnika`
+      });
+      
+      setSelectedUserIds(new Set());
+      setBulkTagDialogOpen(false);
+      setBulkTagValue("");
+    } catch (error) {
+      console.error('Bulk update error:', error);
+      toast({
+        title: 'Greška',
+        description: 'Došlo je do greške pri masovnom ažuriranju',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id));
+  const isSomeSelected = selectedUserIds.size > 0;
 
   return (
     <>
@@ -522,6 +580,60 @@ export function UsersManagement() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Bulk Actions Bar */}
+          {isSomeSelected && (
+            <div className="mb-4 p-3 bg-primary/10 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">
+                  Izabrano: {selectedUserIds.size} korisnika
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertDialog open={bulkTagDialogOpen} onOpenChange={setBulkTagDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Tag className="h-4 w-4 mr-2" />
+                      Izmeni Tag
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Masovna izmena Tag-a</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Unesite novu vrednost Tag-a za {selectedUserIds.size} izabranih korisnika. 
+                        Ostavite prazno da uklonite Tag.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4">
+                      <Label htmlFor="bulk-tag">Novi Tag</Label>
+                      <Input
+                        id="bulk-tag"
+                        value={bulkTagValue}
+                        onChange={(e) => setBulkTagValue(e.target.value)}
+                        placeholder="npr. VIP, Probni, Marketing"
+                      />
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkTagUpdate} disabled={bulkUpdating}>
+                        {bulkUpdating ? 'Ažuriranje...' : 'Primeni'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => setSelectedUserIds(new Set())}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Poništi
+                </Button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8">Učitavanje...</div>
           ) : (
@@ -529,6 +641,13 @@ export function UsersManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={(checked) => handleSelectAll(checked === true)}
+                        aria-label="Izaberi sve"
+                      />
+                    </TableHead>
                     <TableHead className="w-[100px]">
                       <div className="space-y-1">
                         <span className="font-semibold text-xs">ID</span>
@@ -621,7 +740,7 @@ export function UsersManagement() {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         Nema korisnika koji odgovaraju filterima
                       </TableCell>
                     </TableRow>
@@ -629,9 +748,16 @@ export function UsersManagement() {
                     filteredUsers.map(user => (
                       <TableRow 
                         key={user.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
                         onClick={() => setSelectedUser({...user})}
                       >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedUserIds.has(user.id)}
+                            onCheckedChange={(checked) => handleSelectUser(user.id, checked === true)}
+                            aria-label={`Izaberi ${user.full_name}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-xs font-medium">
                           {user.company_card_id || <span className="text-muted-foreground">-</span>}
                         </TableCell>
