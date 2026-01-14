@@ -75,6 +75,7 @@ export function UsersManagement() {
     id: '',
     fullName: '',
     email: '',
+    tag: '',
     phone: '',
     dateOfBirth: '',
     role: 'all'
