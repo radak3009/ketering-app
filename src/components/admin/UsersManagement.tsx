@@ -637,7 +637,20 @@ export function UsersManagement() {
                         </TableCell>
                         <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
-                        <TableCell className="text-sm">{user.tag || '-'}</TableCell>
+                        <TableCell className="text-sm">
+                          {user.tag ? (
+                            <Badge 
+                              variant="secondary" 
+                              className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserFilters(prev => ({ ...prev, tag: user.tag || '' }));
+                              }}
+                            >
+                              {user.tag}
+                            </Badge>
+                          ) : '-'}
+                        </TableCell>
                         <TableCell className="text-sm">{user.phone || '-'}</TableCell>
                         <TableCell className="text-sm">
                           {user.date_of_birth ? format(new Date(user.date_of_birth), 'dd.MM.yyyy') : '-'}
