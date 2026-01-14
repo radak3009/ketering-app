@@ -86,10 +86,10 @@ export function ReportsTab() {
         await fetchOrders(reportDateRange.startDate, reportDateRange.endDate);
         
         csvContent = '\uFEFF'; // UTF-8 BOM
-        csvContent += 'ID Porudžbine,Korisnik,Datum porudžbine,Datum dostave,Status,Ukupan iznos,Napomene\n';
+        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Status,Ukupan iznos,Napomene\n';
         orders.forEach(order => {
           const user = users.find(u => u.user_id === order.user_id);
-          csvContent += `"${order.id}","${user?.full_name || 'N/A'}","${order.order_date}","${order.delivery_date || 'N/A'}","${order.status}","${order.total_amount}","${order.notes || ''}"\n`;
+          csvContent += `"${order.id}","${user?.full_name || 'N/A'}","${user?.tag || ''}","${order.order_date}","${order.delivery_date || 'N/A'}","${order.status}","${order.total_amount}","${order.notes || ''}"\n`;
         });
         filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
       } else if (reportType === 'revenue') {

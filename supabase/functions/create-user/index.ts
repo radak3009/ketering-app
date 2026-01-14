@@ -10,6 +10,7 @@ interface CreateUserRequest {
   full_name?: string;
   phone?: string;
   company_card_id?: string;
+  tag?: string;
   date_of_birth?: string;
   role: 'admin' | 'employee';
   password?: string; // Optional: if provided, creates user with password instead of invite

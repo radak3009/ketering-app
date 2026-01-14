@@ -22,6 +22,7 @@ interface UserFormState {
   email: string;
   phone: string;
   company_card_id: string;
+  tag: string;
   date_of_birth: Date | undefined;
   role: Role;
   password: string;
@@ -32,6 +33,7 @@ interface UserFilters {
   id: string;
   fullName: string;
   email: string;
+  tag: string;
   phone: string;
   dateOfBirth: string;
   role: string;
@@ -52,6 +54,7 @@ const initialUserForm: UserFormState = {
   email: "",
   phone: "",
   company_card_id: "",
+  tag: "",
   date_of_birth: undefined,
   role: "employee",
   password: generateTemporaryPassword(),
@@ -72,6 +75,7 @@ export function UsersManagement() {
     id: '',
     fullName: '',
     email: '',
+    tag: '',
     phone: '',
     dateOfBirth: '',
     role: 'all'

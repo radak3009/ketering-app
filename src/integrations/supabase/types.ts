@@ -318,6 +318,7 @@ export type Database = {
           password_set: boolean
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
+          tag: string | null
           updated_at: string
           user_id: string
         }
@@ -332,6 +333,7 @@ export type Database = {
           password_set?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          tag?: string | null
           updated_at?: string
           user_id: string
         }
@@ -346,6 +348,7 @@ export type Database = {
           password_set?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          tag?: string | null
           updated_at?: string
           user_id?: string
         }
