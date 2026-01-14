@@ -294,6 +294,58 @@ export function UsersManagement() {
     return matchesId && matchesName && matchesEmail && matchesTag && matchesPhone && matchesDob && matchesRole;
   });
 
+  // Bulk selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(new Set(filteredUsers.map(u => u.id)));
+    } else {
+      setSelectedUserIds(new Set());
+    }
+  };
+
+  const handleSelectUser = (userId: string, checked: boolean) => {
+    const newSet = new Set(selectedUserIds);
+    if (checked) {
+      newSet.add(userId);
+    } else {
+      newSet.delete(userId);
+    }
+    setSelectedUserIds(newSet);
+  };
+
+  const handleBulkTagUpdate = async () => {
+    if (selectedUserIds.size === 0) return;
+    
+    setBulkUpdating(true);
+    try {
+      const updatePromises = Array.from(selectedUserIds).map(userId => 
+        updateUser(userId, { tag: bulkTagValue || null })
+      );
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: 'Uspeh',
+        description: `Tag je ažuriran za ${selectedUserIds.size} korisnika`
+      });
+      
+      setSelectedUserIds(new Set());
+      setBulkTagDialogOpen(false);
+      setBulkTagValue("");
+    } catch (error) {
+      console.error('Bulk update error:', error);
+      toast({
+        title: 'Greška',
+        description: 'Došlo je do greške pri masovnom ažuriranju',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id));
+  const isSomeSelected = selectedUserIds.size > 0;
+
   return (
     <>
       <Card>
