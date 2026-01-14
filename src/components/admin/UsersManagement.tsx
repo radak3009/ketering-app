@@ -93,6 +93,10 @@ export function UsersManagement() {
   const [bulkTagValue, setBulkTagValue] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
+  // State for custom tag input
+  const [showCustomTagInput, setShowCustomTagInput] = useState(false);
+  const [showBulkCustomTagInput, setShowBulkCustomTagInput] = useState(false);
+
   const resetUserForm = () => {
     setUserForm({
       ...initialUserForm,
