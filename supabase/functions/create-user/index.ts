@@ -215,6 +215,24 @@ Deno.serve(async (req) => {
       });
       newUser = result.data;
       createError = result.error;
+
+      // Send custom welcome email with credentials using Resend
+      if (!createError && newUser?.user) {
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (resendApiKey) {
+          try {
+            const resend = new Resend(resendApiKey);
+            const appUrl = req.headers.get('origin') || 'https://ketering-app.lovable.app';
+            await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
+            console.log('Welcome email with credentials sent successfully to:', email);
+          } catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+            // Don't throw - user was created successfully, email is secondary
+          }
+        } else {
+          console.warn('RESEND_API_KEY not configured, skipping welcome email');
+        }
+      }
     } else {
       // Send invite email (original behavior)
       const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
