@@ -102,8 +102,8 @@ export function UsersManagement() {
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ['Ime i prezime', 'Email', 'ID', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
-    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
+    const headers = ['Ime i prezime', 'Email', 'ID', 'Tag', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
+    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'VIP', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
     
     const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
