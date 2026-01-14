@@ -22,6 +22,7 @@ interface UserFormState {
   email: string;
   phone: string;
   company_card_id: string;
+  tag: string;
   date_of_birth: Date | undefined;
   role: Role;
   password: string;
@@ -32,6 +33,7 @@ interface UserFilters {
   id: string;
   fullName: string;
   email: string;
+  tag: string;
   phone: string;
   dateOfBirth: string;
   role: string;

@@ -147,6 +147,7 @@ export function useUsers() {
           full_name: userData.full_name,
           phone: userData.phone || null,
           company_card_id: userData.company_card_id || null,
+          tag: userData.tag || null,
           date_of_birth: userData.date_of_birth?.toISOString().split('T')[0] || null,
           role: userData.role,
           password: userData.password || null

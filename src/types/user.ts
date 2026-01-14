@@ -24,6 +24,7 @@ export interface UserCreateData {
   email: string;
   phone?: string;
   company_card_id?: string;
+  tag?: string;
   date_of_birth?: Date;
   role: AppRole;
   password?: string;
