@@ -185,13 +185,13 @@ Deno.serve(async (req) => {
     }
 
     const body: CreateUserRequest = await req.json();
-    const { email, full_name, phone, company_card_id, date_of_birth, role, password } = body;
+    const { email, full_name, phone, company_card_id, tag, date_of_birth, role, password } = body;
 
     if (!email) {
       throw new Error('Email je obavezan');
     }
 
-    console.log('Creating user with data:', { email, full_name, phone, company_card_id, date_of_birth, role, hasPassword: !!password });
+    console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, role, hasPassword: !!password });
 
     // Check if email already exists
     const { data: existingProfile } = await supabaseAdmin

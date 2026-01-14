@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +92,10 @@ export function UsersManagement() {
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
   const [bulkTagValue, setBulkTagValue] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
+
+  // State for custom tag input
+  const [showCustomTagInput, setShowCustomTagInput] = useState(false);
+  const [showBulkCustomTagInput, setShowBulkCustomTagInput] = useState(false);
 
   const resetUserForm = () => {
     setUserForm({
@@ -352,6 +356,14 @@ export function UsersManagement() {
   const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id));
   const isSomeSelected = selectedUserIds.size > 0;
 
+  // Get unique existing tags from all users
+  const existingTags = useMemo(() => {
+    const tags = users
+      .map(u => u.tag)
+      .filter((tag): tag is string => !!tag && tag.trim() !== '');
+    return [...new Set(tags)].sort();
+  }, [users]);
+
   return (
     <>
       <Card>
@@ -422,7 +434,7 @@ export function UsersManagement() {
               )}
               <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                 <SheetTrigger asChild>
-                  <Button onClick={() => { resetUserForm(); setIsAddUserOpen(true); }} className="w-full md:w-auto">
+                  <Button onClick={() => { resetUserForm(); setShowCustomTagInput(false); setIsAddUserOpen(true); }} className="w-full md:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Dodaj korisnika
                   </Button>
