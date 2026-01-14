@@ -96,6 +96,7 @@ export function UsersManagement() {
   // State for custom tag input
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   const [showBulkCustomTagInput, setShowBulkCustomTagInput] = useState(false);
+  const [showEditCustomTagInput, setShowEditCustomTagInput] = useState(false);
 
   const resetUserForm = () => {
     setUserForm({
@@ -866,6 +867,7 @@ export function UsersManagement() {
         if (!open) {
           setSelectedUser(null);
           setResetPasswordForm({ newPassword: "", confirmPassword: "", isOpen: false });
+          setShowEditCustomTagInput(false);
         }
       }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
@@ -930,12 +932,53 @@ export function UsersManagement() {
               
                <div>
                  <Label htmlFor="edit-user-tag">Tag</Label>
-                 <Input
-                   id="edit-user-tag"
-                   value={selectedUser.tag || ''}
-                   onChange={e => setSelectedUser({ ...selectedUser, tag: e.target.value })}
-                   placeholder="npr. VIP, Probni, Marketing"
-                 />
+                 {showEditCustomTagInput ? (
+                   <div className="flex gap-2">
+                     <Input 
+                       id="edit-user-tag" 
+                       value={selectedUser.tag || ''} 
+                       onChange={e => setSelectedUser({ ...selectedUser, tag: e.target.value })} 
+                       placeholder="Unesite novi tag" 
+                       autoFocus
+                     />
+                     <Button 
+                       type="button" 
+                       variant="outline" 
+                       size="icon"
+                       onClick={() => {
+                         setShowEditCustomTagInput(false);
+                         setSelectedUser({ ...selectedUser, tag: '' });
+                       }}
+                     >
+                       <X className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 ) : (
+                   <Select 
+                     value={selectedUser.tag || "__none__"} 
+                     onValueChange={(value) => {
+                       if (value === "__custom__") {
+                         setShowEditCustomTagInput(true);
+                         setSelectedUser({ ...selectedUser, tag: '' });
+                       } else if (value === "__none__") {
+                         setSelectedUser({ ...selectedUser, tag: '' });
+                       } else {
+                         setSelectedUser({ ...selectedUser, tag: value });
+                       }
+                     }}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Odaberite tag" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="__none__">(Bez taga)</SelectItem>
+                       {existingTags.map(tag => (
+                         <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                       ))}
+                       <SelectItem value="__custom__">+ Novi tag...</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 )}
                  <p className="text-xs text-muted-foreground mt-1">
                    Oznaka za kategorizaciju korisnika
                  </p>
