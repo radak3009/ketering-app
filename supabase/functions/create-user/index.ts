@@ -24,7 +24,7 @@ async function sendWelcomeEmailWithCredentials(
   password: string,
   fullName?: string,
   appUrl?: string
-): Promise<void> {
+): Promise<{ success: boolean; error?: string; id?: string }> {
   const displayName = fullName || 'korisniče';
   const loginUrl = appUrl || 'https://ketering-app.lovable.app';
   
@@ -122,12 +122,23 @@ async function sendWelcomeEmailWithCredentials(
     </html>
   `;
 
-  await resend.emails.send({
+  console.log('Attempting to send email to:', toEmail);
+  console.log('Using from address: Ketering <noreply@simpler.rs>');
+  
+  const { data, error } = await resend.emails.send({
     from: 'Ketering <noreply@simpler.rs>',
     to: [toEmail],
     subject: 'Dobrodošli u Ketering - Vaši pristupni podaci',
     html: htmlContent,
   });
+
+  if (error) {
+    console.error('Resend API error:', JSON.stringify(error));
+    return { success: false, error: error.message };
+  }
+
+  console.log('Resend API response:', JSON.stringify(data));
+  return { success: true, id: data?.id };
 }
 
 Deno.serve(async (req) => {
@@ -223,10 +234,15 @@ Deno.serve(async (req) => {
           try {
             const resend = new Resend(resendApiKey);
             const appUrl = req.headers.get('origin') || 'https://ketering-app.lovable.app';
-            await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
-            console.log('Welcome email with credentials sent successfully to:', email);
+            const emailResult = await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
+            
+            if (emailResult.success) {
+              console.log('Welcome email sent successfully to:', email, 'Email ID:', emailResult.id);
+            } else {
+              console.error('Failed to send welcome email:', emailResult.error);
+            }
           } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError);
+            console.error('Exception while sending welcome email:', emailError);
             // Don't throw - user was created successfully, email is secondary
           }
         } else {
