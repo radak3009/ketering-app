@@ -736,10 +736,23 @@ export function UsersManagement() {
                 )}
               </div>
               
-              <div>
-                <Label>Datum rođenja</Label>
-                <EnhancedDatePicker
-                  date={selectedUser.date_of_birth ? new Date(selectedUser.date_of_birth) : undefined}
+               <div>
+                 <Label htmlFor="edit-user-tag">Tag</Label>
+                 <Input
+                   id="edit-user-tag"
+                   value={selectedUser.tag || ''}
+                   onChange={e => setSelectedUser({ ...selectedUser, tag: e.target.value })}
+                   placeholder="npr. VIP, Probni, Marketing"
+                 />
+                 <p className="text-xs text-muted-foreground mt-1">
+                   Oznaka za kategorizaciju korisnika
+                 </p>
+               </div>
+
+               <div>
+                 <Label>Datum rođenja</Label>
+                 <EnhancedDatePicker
+                   date={selectedUser.date_of_birth ? new Date(selectedUser.date_of_birth) : undefined}
                   onDateChange={(date) => setSelectedUser({
                     ...selectedUser,
                     date_of_birth: date ? format(date, 'yyyy-MM-dd') : null
