@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Search, Filter, ChevronDown, Tag } from "lucide-react";
+import { Search, Filter, ChevronDown, Tag as TagIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
@@ -21,6 +21,7 @@ interface OrdersOverviewProps {
 
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
+  const { users } = useUsers();
   
   // Memoize date range values to prevent unnecessary re-renders
   const startDate = orderDateRange?.startDate || '';
@@ -33,9 +34,28 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   
   const [orderSearch, setOrderSearch] = useState("");
   const [userCardFilter, setUserCardFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [pivotView, setPivotView] = useState<"meals" | "users">("meals");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
+
+  // Get unique tags from users
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>();
+    users.forEach(user => {
+      if (user.tag) tags.add(user.tag);
+    });
+    return Array.from(tags).sort();
+  }, [users]);
+
+  // Filter orders by tag
+  const filteredOrders = useMemo(() => {
+    if (tagFilter.length === 0) return orders;
+    return orders.filter(order => {
+      const user = users.find(u => u.user_id === order.user_id);
+      return user?.tag && tagFilter.includes(user.tag);
+    });
+  }, [orders, users, tagFilter]);
 
   const handleDateRangeFilter = () => {
     const hasStartDate = orderDateRange.startDate && orderDateRange.startDate.trim() !== '';
@@ -147,6 +167,42 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                 </div>
               )}
               
+              {/* Tag Filter Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full md:w-auto">
+                    <TagIcon className="h-4 w-4 mr-2" />
+                    Tag {tagFilter.length > 0 && `(${tagFilter.length})`}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 max-h-60 overflow-y-auto p-2">
+                  {availableTags.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-2">Nema dostupnih tagova</p>
+                  ) : (
+                    availableTags.map(tag => (
+                      <div key={tag} className="flex items-center space-x-2 p-2">
+                        <Checkbox 
+                          checked={tagFilter.includes(tag)}
+                          onCheckedChange={(checked) => {
+                            setTagFilter(prev => 
+                              checked ? [...prev, tag] : prev.filter(t => t !== tag)
+                            );
+                          }}
+                        />
+                        <span className="text-sm">{tag}</span>
+                      </div>
+                    ))
+                  )}
+                  {tagFilter.length > 0 && (
+                    <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setTagFilter([])}>
+                      Resetuj
+                    </Button>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Date Filter Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full md:w-auto">
@@ -187,15 +243,15 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
         <CardContent>
           {loading ? (
             <div className="text-center py-8">Učitavanje...</div>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <p className="text-muted-foreground text-center py-4 text-sm">
               Nema porudžbina za izabrani period
             </p>
           ) : pivotView === "meals" ? (
-            <OrderPivotTable orders={orders} />
+            <OrderPivotTable orders={filteredOrders} />
           ) : (
             <UserOrderPivotTable 
-              orders={orders} 
+              orders={filteredOrders} 
               userCardFilter={userCardFilter}
             />
           )}

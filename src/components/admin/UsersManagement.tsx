@@ -185,6 +185,7 @@ export function UsersManagement() {
         email: selectedUser.email,
         phone: selectedUser.phone,
         company_card_id: selectedUser.company_card_id,
+        tag: selectedUser.tag || null,
         date_of_birth: selectedUser.date_of_birth || null
       });
       setSelectedUser(null);
@@ -243,6 +244,10 @@ export function UsersManagement() {
           if (header.includes('datum') || header.includes('date') || header.includes('dob') || header.includes('rodjenja') || header.includes('rođenja')) {
             const parsedDate = parseImportDate(value);
             if (parsedDate) userData.date_of_birth = new Date(parsedDate);
+          }
+          // Tag
+          if (header.includes('tag') || header.includes('oznaka')) {
+            userData.tag = value;
           }
           // Uloga
           if (header.includes('role') || header.includes('uloga')) {
