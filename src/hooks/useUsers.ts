@@ -220,6 +220,35 @@ export function useUsers() {
     }
   };
 
+  const sendInvitationWithCredentials = async (userId: string, email: string, fullName?: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invitation', {
+        body: { userId, email, fullName }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Greška pri slanju pozivnice');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: 'Uspeh',
+        description: `Pozivnica sa kredencijalima je poslata na ${email}`
+      });
+    } catch (error) {
+      handleError({ 
+        category: 'auth', 
+        entity: 'korisnik', 
+        error,
+        customMessage: getErrorMessage(error)
+      });
+      throw error;
+    }
+  };
+
   const resetUserPassword = async (userId: string, newPassword: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('reset-user-password', {
@@ -262,6 +291,7 @@ export function useUsers() {
     updateUser,
     deleteUser,
     sendMagicLink,
+    sendInvitationWithCredentials,
     resetUserPassword,
     refetch: fetchUsers
   };

@@ -29,3 +29,6 @@ verify_jwt = true
 
 [functions.login-with-id]
 verify_jwt = false
+
+[functions.send-invitation]
+verify_jwt = true
