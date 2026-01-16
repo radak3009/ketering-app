@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { sendEmail } from '../_shared/smtp.ts';
 
 const corsHeaders = {
@@ -158,29 +158,22 @@ Deno.serve(async (req) => {
       throw new Error('Neautorizovan pristup');
     }
 
-    // IMPORTANT: signing-keys compatible auth validation
-    // Create anon client with Authorization header and fetch the user
+    // Auth validation (Edge Runtime has no persisted session, so ALWAYS pass JWT explicitly)
+    const token = authHeader.slice('Bearer '.length);
+
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
 
-    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser();
+    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser(token);
 
     if (userError || !callerUser) {
       console.error('JWT validation failed:', userError?.message);
       throw new Error('Neautorizovan pristup');
     }
-
-    const callerUserId = callerUser.id;
-    console.log('User validated:', callerUserId);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
