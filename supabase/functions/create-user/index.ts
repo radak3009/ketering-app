@@ -158,10 +158,8 @@ Deno.serve(async (req) => {
       throw new Error('Neautorizovan pristup');
     }
 
-    const token = authHeader.replace('Bearer ', '');
-
     // IMPORTANT: signing-keys compatible auth validation
-    // Use anon client + getClaims() to validate JWT and extract user id
+    // Create anon client with Authorization header and fetch the user
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
@@ -174,15 +172,15 @@ Deno.serve(async (req) => {
       },
     });
 
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser();
 
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error('JWT validation failed:', claimsError?.message);
+    if (userError || !callerUser) {
+      console.error('JWT validation failed:', userError?.message);
       throw new Error('Neautorizovan pristup');
     }
 
-    const callerUserId = claimsData.claims.sub as string;
-    console.log('User claims validated:', callerUserId);
+    const callerUserId = callerUser.id;
+    console.log('User validated:', callerUserId);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
