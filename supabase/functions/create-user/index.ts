@@ -158,31 +158,22 @@ Deno.serve(async (req) => {
       throw new Error('Neautorizovan pristup');
     }
 
-    // IMPORTANT: signing-keys compatible auth validation
-    // Validate JWT and extract user id using getClaims()
+    // Auth validation (Edge Runtime has no persisted session, so ALWAYS pass JWT explicitly)
     const token = authHeader.slice('Bearer '.length);
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
 
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser(token);
 
-    if (claimsError || !claimsData?.claims?.sub) {
-      console.error('JWT validation failed:', claimsError?.message);
+    if (userError || !callerUser) {
+      console.error('JWT validation failed:', userError?.message);
       throw new Error('Neautorizovan pristup');
     }
-
-    const callerUserId = claimsData.claims.sub as string;
-    console.log('User claims validated:', callerUserId);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
