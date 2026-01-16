@@ -154,15 +154,27 @@ Deno.serve(async (req) => {
     // Verify the caller is an admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing Authorization header');
       throw new Error('Nije pronađen autorizacioni header');
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('Validating user token...');
+    
+    // Use admin client to get user from token
     const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
-    if (authError || !callerUser) {
-      throw new Error('Neautorizovan pristup');
+    if (authError) {
+      console.error('Auth error:', authError.message);
+      throw new Error('Neautorizovan pristup: ' + authError.message);
     }
+    
+    if (!callerUser) {
+      console.error('No user found for token');
+      throw new Error('Neautorizovan pristup: korisnik nije pronađen');
+    }
+    
+    console.log('User validated:', callerUser.id, callerUser.email);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
