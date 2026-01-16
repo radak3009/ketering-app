@@ -22,7 +22,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.create-user]
-verify_jwt = true
+verify_jwt = false
 
 [functions.reset-user-password]
 verify_jwt = true
