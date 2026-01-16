@@ -1,4 +1,4 @@
-import nodemailer from "npm:nodemailer@6.9.8";
+import nodemailer from "https://esm.sh/nodemailer@6.9.8";
 
 export interface EmailOptions {
   to: string | string[];
