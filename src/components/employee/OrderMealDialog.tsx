@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ interface OrderMealDialogProps {
 
 export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, totalMenuDays, refreshTrigger }: OrderMealDialogProps) {
   const { t, i18n } = useTranslation();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<string>('');
   const [selectedMeal, setSelectedMeal] = useState<string>('');
@@ -289,6 +290,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
           const nextDate = remainingDates[0];
           setSelectedDate(nextDate);
           setSelectedMeal('');
+          // Scroll to top of dialog after moving to next day
+          scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }, 300);
       
@@ -298,7 +301,7 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent ref={scrollContainerRef} className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('orders.orderMeal')}</DialogTitle>
           {availableDates.length > 0 && (
