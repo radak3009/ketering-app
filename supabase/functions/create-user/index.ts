@@ -153,34 +153,42 @@ Deno.serve(async (req) => {
 
     // Verify the caller is an admin
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('Missing Authorization header');
-      throw new Error('Nije pronađen autorizacioni header');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('Missing or invalid Authorization header');
+      throw new Error('Neautorizovan pristup');
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('Validating user token...');
-    
-    // Use admin client to get user from token
-    const { data: { user: callerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (authError) {
-      console.error('Auth error:', authError.message);
-      throw new Error('Neautorizovan pristup: ' + authError.message);
+
+    // IMPORTANT: signing-keys compatible auth validation
+    // Use anon client + getClaims() to validate JWT and extract user id
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error('JWT validation failed:', claimsError?.message);
+      throw new Error('Neautorizovan pristup');
     }
-    
-    if (!callerUser) {
-      console.error('No user found for token');
-      throw new Error('Neautorizovan pristup: korisnik nije pronađen');
-    }
-    
-    console.log('User validated:', callerUser.id, callerUser.email);
+
+    const callerUserId = claimsData.claims.sub as string;
+    console.log('User claims validated:', callerUserId);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', callerUser.id)
+      .eq('user_id', callerUserId)
       .eq('role', 'admin')
       .maybeSingle();
 
