@@ -159,7 +159,9 @@ Deno.serve(async (req) => {
     }
 
     // IMPORTANT: signing-keys compatible auth validation
-    // Create anon client with Authorization header and fetch the user
+    // Validate JWT and extract user id using getClaims()
+    const token = authHeader.slice('Bearer '.length);
+
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
@@ -172,18 +174,15 @@ Deno.serve(async (req) => {
       },
     });
 
-    // NOTE: getUser() without a jwt expects a stored session and will fail in Edge Runtime.
-    // Always pass the JWT explicitly.
-    const token = authHeader.slice('Bearer '.length);
-    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser(token);
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
 
-    if (userError || !callerUser) {
-      console.error('JWT validation failed:', userError?.message);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error('JWT validation failed:', claimsError?.message);
       throw new Error('Neautorizovan pristup');
     }
 
-    const callerUserId = callerUser.id;
-    console.log('User validated:', callerUserId);
+    const callerUserId = claimsData.claims.sub as string;
+    console.log('User claims validated:', callerUserId);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
