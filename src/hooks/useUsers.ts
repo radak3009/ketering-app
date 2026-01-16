@@ -125,11 +125,16 @@ export function useUsers() {
 
   const deleteUser = async (id: string) => {
     try {
-      const { error } = await supabase.functions.invoke('delete-user', {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
         body: { profileId: id }
       });
 
-      if (error) throw error;
+      // Check for error in response body first
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (error) throw new Error(error.message || 'Greška pri brisanju korisnika');
 
       setUsers(prev => prev.filter(user => user.id !== id));
       handleSuccess({ category: 'delete', entity: 'korisnik' });
