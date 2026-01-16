@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
 import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download, Tag, CheckSquare, Loader2 } from "lucide-react";
+import { SendInvitationDialog } from './SendInvitationDialog';
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
@@ -63,7 +64,7 @@ const initialUserForm: UserFormState = {
 
 export function UsersManagement() {
   const { toast } = useToast();
-  const { users, loading, createUser, updateUser, deleteUser, sendMagicLink, resetUserPassword } = useUsers();
+  const { users, loading, createUser, updateUser, deleteUser, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -99,6 +100,8 @@ export function UsersManagement() {
   const [showBulkCustomTagInput, setShowBulkCustomTagInput] = useState(false);
   const [showEditCustomTagInput, setShowEditCustomTagInput] = useState(false);
 
+  // Invitation dialog state
+  const [inviteDialogUser, setInviteDialogUser] = useState<any>(null);
   const resetUserForm = () => {
     setUserForm({
       ...initialUserForm,
@@ -859,8 +862,9 @@ export function UsersManagement() {
                             variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
-                              sendMagicLink(user.email || '');
+                              setInviteDialogUser(user);
                             }}
+                            title="Pošalji pozivnicu"
                           >
                             <Mail className="h-4 w-4" />
                           </Button>
@@ -1153,6 +1157,15 @@ export function UsersManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Send Invitation Dialog */}
+      <SendInvitationDialog
+        user={inviteDialogUser}
+        open={!!inviteDialogUser}
+        onOpenChange={(open) => !open && setInviteDialogUser(null)}
+        onSendMagicLink={sendMagicLink}
+        onSendCredentials={sendInvitationWithCredentials}
+      />
     </>
   );
 }
