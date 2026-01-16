@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { Resend } from 'https://esm.sh/resend@4.0.0';
+import { sendEmail } from '../_shared/smtp.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,14 +17,13 @@ interface CreateUserRequest {
   password?: string; // Optional: if provided, creates user with password instead of invite
 }
 
-// Function to send welcome email with credentials
+// Function to send welcome email with credentials via SMTP
 async function sendWelcomeEmailWithCredentials(
-  resend: Resend,
   toEmail: string,
   password: string,
   fullName?: string,
   appUrl?: string
-): Promise<{ success: boolean; error?: string; id?: string }> {
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
   const displayName = fullName || 'korisniče';
   const loginUrl = appUrl || 'https://ketering-app.lovable.app';
   
@@ -122,23 +121,15 @@ async function sendWelcomeEmailWithCredentials(
     </html>
   `;
 
-  console.log('Attempting to send email to:', toEmail);
-  console.log('Using from address: Ketering <noreply@simpler.rs>');
+  console.log('Attempting to send welcome email to:', toEmail);
   
-  const { data, error } = await resend.emails.send({
-    from: 'Ketering <noreply@simpler.rs>',
-    to: [toEmail],
+  const result = await sendEmail({
+    to: toEmail,
     subject: 'Dobrodošli u Ketering - Vaši pristupni podaci',
     html: htmlContent,
   });
 
-  if (error) {
-    console.error('Resend API error:', JSON.stringify(error));
-    return { success: false, error: error.message };
-  }
-
-  console.log('Resend API response:', JSON.stringify(data));
-  return { success: true, id: data?.id };
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -227,26 +218,20 @@ Deno.serve(async (req) => {
       newUser = result.data;
       createError = result.error;
 
-      // Send custom welcome email with credentials using Resend
+      // Send custom welcome email with credentials using SMTP
       if (!createError && newUser?.user) {
-        const resendApiKey = Deno.env.get('RESEND_API_KEY');
-        if (resendApiKey) {
-          try {
-            const resend = new Resend(resendApiKey);
-            const appUrl = req.headers.get('origin') || 'https://ketering-app.lovable.app';
-            const emailResult = await sendWelcomeEmailWithCredentials(resend, email, password, full_name, appUrl);
-            
-            if (emailResult.success) {
-              console.log('Welcome email sent successfully to:', email, 'Email ID:', emailResult.id);
-            } else {
-              console.error('Failed to send welcome email:', emailResult.error);
-            }
-          } catch (emailError) {
-            console.error('Exception while sending welcome email:', emailError);
-            // Don't throw - user was created successfully, email is secondary
+        try {
+          const appUrl = req.headers.get('origin') || 'https://ketering-app.lovable.app';
+          const emailResult = await sendWelcomeEmailWithCredentials(email, password, full_name, appUrl);
+          
+          if (emailResult.success) {
+            console.log('Welcome email sent successfully to:', email, 'MessageId:', emailResult.messageId);
+          } else {
+            console.error('Failed to send welcome email:', emailResult.error);
           }
-        } else {
-          console.warn('RESEND_API_KEY not configured, skipping welcome email');
+        } catch (emailError) {
+          console.error('Exception while sending welcome email:', emailError);
+          // Don't throw - user was created successfully, email is secondary
         }
       }
     } else {
@@ -286,8 +271,6 @@ Deno.serve(async (req) => {
     if (date_of_birth) profileUpdates.date_of_birth = date_of_birth;
     profileUpdates.role = role || 'employee';
     // Set password_set based on whether password was provided
-    // If password provided = user can login immediately = password_set = true
-    // If invite email = user needs to set password = password_set = false
     profileUpdates.password_set = !!password;
 
     if (Object.keys(profileUpdates).length > 0) {
@@ -298,7 +281,6 @@ Deno.serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating profile:', updateError);
-        // Don't throw, profile was created, just log the error
       } else {
         console.log('Profile updated successfully');
       }
@@ -319,7 +301,6 @@ Deno.serve(async (req) => {
 
     if (roleError) {
       console.error('Error setting user role:', roleError);
-      // Don't throw, try to continue
     } else {
       console.log('User role set successfully:', role);
     }

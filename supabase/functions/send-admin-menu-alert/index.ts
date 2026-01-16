@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import { Resend } from "https://esm.sh/resend@4.0.1";
+import { sendEmail } from "../_shared/smtp.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -102,11 +101,13 @@ const handler = async (req: Request): Promise<Response> => {
       ? "Jelovnik za sledeću nedelju još uvek nije definisan. Molimo vas da što pre kreirate jelovnik kako bi zaposleni mogli da poručuju obroke."
       : `Trenutno je definisan jelovnik samo za ${menuCount} dan${menuCount === 1 ? '' : 'a'} sledeće nedelje. Preporučujemo da kompletnu nedelju (5 radnih dana).`;
 
-    const emailPromises = adminEmails.map(async (email) => {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const email of adminEmails) {
       try {
-        await resend.emails.send({
-          from: "Ketering <onboarding@resend.dev>",
-          to: [email],
+        const result = await sendEmail({
+          to: email,
           subject,
           html: `
             <h2>${subject}</h2>
@@ -115,23 +116,27 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Zaposleni moraju imati mogućnost da poruče obroke do petka.</p>
           `,
         });
-        console.log(`Alert sent to ${email}`);
-        return { success: true, email };
-      } catch (error) {
-        console.error(`Failed to send alert to ${email}:`, error);
-        return { success: false, email, error };
-      }
-    });
 
-    const results = await Promise.allSettled(emailPromises);
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    
-    console.log(`Sent ${successful}/${adminEmails.length} alerts successfully`);
+        if (result.success) {
+          console.log(`Alert sent to ${email}, messageId: ${result.messageId}`);
+          successCount++;
+        } else {
+          console.error(`Failed to send alert to ${email}:`, result.error);
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Exception sending alert to ${email}:`, error);
+        failCount++;
+      }
+    }
+
+    console.log(`Sent ${successCount}/${adminEmails.length} alerts successfully, ${failCount} failed`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        sent: successful,
+        sent: successCount,
+        failed: failCount,
         total: adminEmails.length,
         menuCount 
       }),
