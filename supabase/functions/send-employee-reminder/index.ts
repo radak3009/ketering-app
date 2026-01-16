@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import { Resend } from "https://esm.sh/resend@4.0.1";
+import { sendEmail } from "../_shared/smtp.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -78,7 +77,10 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending emails to ${emailsToSend.length} employees`);
 
     // Send emails
-    const emailPromises = emailsToSend.map(async ({ email, full_name, hasOrders }) => {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const { email, full_name, hasOrders } of emailsToSend) {
       const subject = hasOrders 
         ? "Podsetnik: Imate porudžbine za sledeću nedelju"
         : "Podsetnik: Poručite obroke za sledeću nedelju";
@@ -88,9 +90,8 @@ const handler = async (req: Request): Promise<Response> => {
         : `Zdravo ${full_name},\n\nJoš uvek niste poručili obroke za sledeću nedelju. Rok za poručivanje je petak u 17:00h.\n\nPrijatan dan!`;
 
       try {
-        await resend.emails.send({
-          from: "Ketering <onboarding@resend.dev>",
-          to: [email],
+        const result = await sendEmail({
+          to: email,
           subject,
           html: `
             <h2>${subject}</h2>
@@ -98,23 +99,27 @@ const handler = async (req: Request): Promise<Response> => {
             <p><strong>Rok za poručivanje: Petak 17:00h</strong></p>
           `,
         });
-        console.log(`Email sent to ${email}`);
-        return { success: true, email };
-      } catch (error) {
-        console.error(`Failed to send email to ${email}:`, error);
-        return { success: false, email, error };
-      }
-    });
 
-    const results = await Promise.allSettled(emailPromises);
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    
-    console.log(`Sent ${successful}/${emailsToSend.length} emails successfully`);
+        if (result.success) {
+          console.log(`Email sent to ${email}, messageId: ${result.messageId}`);
+          successCount++;
+        } else {
+          console.error(`Failed to send email to ${email}:`, result.error);
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Exception sending email to ${email}:`, error);
+        failCount++;
+      }
+    }
+
+    console.log(`Sent ${successCount}/${emailsToSend.length} emails successfully, ${failCount} failed`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        sent: successful,
+        sent: successCount,
+        failed: failCount,
         total: emailsToSend.length 
       }),
       {
