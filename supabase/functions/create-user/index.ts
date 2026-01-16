@@ -158,28 +158,24 @@ Deno.serve(async (req) => {
       throw new Error('Neautorizovan pristup');
     }
 
-    // Auth validation (Edge Runtime has no persisted session, so ALWAYS pass JWT explicitly)
+    // Auth validation - use SERVICE_ROLE client with explicit token
+    // This works because service role can validate any JWT
     const token = authHeader.slice('Bearer '.length);
 
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-
-    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser(token);
+    const { data: { user: callerUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !callerUser) {
       console.error('JWT validation failed:', userError?.message);
       throw new Error('Neautorizovan pristup');
     }
+    
+    console.log('User validated:', callerUser.id, callerUser.email);
 
     // Check if caller is admin using user_roles table
     const { data: callerRole } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', callerUserId)
+      .eq('user_id', callerUser.id)
       .eq('role', 'admin')
       .maybeSingle();
 
