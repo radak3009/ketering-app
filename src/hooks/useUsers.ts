@@ -154,12 +154,16 @@ export function useUsers() {
         }
       });
 
-      if (error) {
-        throw new Error(error.message || 'Greška pri kreiranju korisnika');
-      }
-
+      // Check for error in response body first (edge function returns {error: "..."})
       if (data?.error) {
         throw new Error(data.error);
+      }
+
+      // Then check for network/invoke errors
+      if (error) {
+        // Try to extract error message from the response context
+        const errorMsg = error.message || 'Greška pri kreiranju korisnika';
+        throw new Error(errorMsg);
       }
 
       await fetchUsers();
