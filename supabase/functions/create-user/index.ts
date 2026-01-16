@@ -172,7 +172,10 @@ Deno.serve(async (req) => {
       },
     });
 
-    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser();
+    // NOTE: getUser() without a jwt expects a stored session and will fail in Edge Runtime.
+    // Always pass the JWT explicitly.
+    const token = authHeader.slice('Bearer '.length);
+    const { data: { user: callerUser }, error: userError } = await supabaseAuth.auth.getUser(token);
 
     if (userError || !callerUser) {
       console.error('JWT validation failed:', userError?.message);
