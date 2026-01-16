@@ -1,10 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LandingPage } from '@/components/LandingPage';
-import { EmployeeDashboard } from '@/components/EmployeeDashboard';
-import { AdminDashboard } from '@/components/AdminDashboard';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
+// Lazy load heavy dashboard components
+const EmployeeDashboard = lazy(() => import('@/components/EmployeeDashboard').then(m => ({ default: m.EmployeeDashboard })));
+const AdminDashboard = lazy(() => import('@/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+
+const DashboardLoader = () => (
+  <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
+    <LoadingSpinner size="xl" text="Učitavanje dashboard-a..." />
+  </div>
+);
 
 const Index = () => {
   const { user, profile, loading, isPasswordRecovery } = useAuth();
@@ -71,10 +78,18 @@ const Index = () => {
 
   // Show appropriate dashboard based on user role
   if (profile.role === 'employee') {
-    return <EmployeeDashboard />;
+    return (
+      <Suspense fallback={<DashboardLoader />}>
+        <EmployeeDashboard />
+      </Suspense>
+    );
   }
   
-  return <AdminDashboard />;
+  return (
+    <Suspense fallback={<DashboardLoader />}>
+      <AdminDashboard />
+    </Suspense>
+  );
 };
 
 export default Index;
