@@ -1,4 +1,4 @@
-import nodemailer from "https://esm.sh/nodemailer@6.9.8";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 export interface EmailOptions {
   to: string | string[];
@@ -34,35 +34,44 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465, // Use SSL for port 465, TLS for others
-      auth: {
-        user: smtpUser,
-        pass: smtpPassword,
+    // Port 465 = SSL/TLS (direct encryption)
+    // Port 587 = STARTTLS (upgrade encryption)
+    const useTls = smtpPort === 465;
+    
+    console.log(`Connecting to SMTP: ${smtpHost}:${smtpPort} (TLS: ${useTls})`);
+    console.log(`From: ${fromName} <${fromEmail}>`);
+
+    const client = new SMTPClient({
+      connection: {
+        hostname: smtpHost,
+        port: smtpPort,
+        tls: useTls,
+        auth: {
+          username: smtpUser,
+          password: smtpPassword,
+        },
       },
     });
 
-    const recipients = Array.isArray(options.to) 
-      ? options.to.join(", ") 
-      : options.to;
+    const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
-    console.log(`Sending email via SMTP to: ${recipients}`);
-    console.log(`Using SMTP host: ${smtpHost}:${smtpPort}`);
-    console.log(`From: ${fromName} <${fromEmail}>`);
+    console.log(`Sending email to: ${recipients.join(", ")}`);
+    console.log(`Subject: ${options.subject}`);
 
-    const info = await transporter.sendMail({
+    await client.send({
       from: `${fromName} <${fromEmail}>`,
       to: recipients,
       subject: options.subject,
+      content: "Ovaj email zahteva HTML prikaz.",
       html: options.html,
     });
 
-    console.log("Email sent successfully, messageId:", info.messageId);
+    await client.close();
+
+    console.log("Email sent successfully");
     return { 
       success: true, 
-      messageId: info.messageId 
+      messageId: `smtp-${Date.now()}` 
     };
   } catch (error) {
     console.error("SMTP error:", error);
