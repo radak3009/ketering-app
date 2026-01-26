@@ -27,6 +27,26 @@ export function ReportsTab() {
     endDate: format(endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   });
 
+  // Kiosk tokens state - stored in localStorage for persistence
+  const [employeeToken, setEmployeeToken] = useState(() => 
+    localStorage.getItem('kiosk_employee_token') || ''
+  );
+  const [kitchenToken, setKitchenToken] = useState(() => 
+    localStorage.getItem('kiosk_kitchen_token') || ''
+  );
+
+  const handleEmployeeTokenChange = (value: string) => {
+    const sanitized = value.trim().slice(0, 100);
+    setEmployeeToken(sanitized);
+    localStorage.setItem('kiosk_employee_token', sanitized);
+  };
+
+  const handleKitchenTokenChange = (value: string) => {
+    const sanitized = value.trim().slice(0, 100);
+    setKitchenToken(sanitized);
+    localStorage.setItem('kiosk_kitchen_token', sanitized);
+  };
+
   // Group menus by week for stats
   const groupMenusByWeek = () => {
     const grouped = new Map<string, { 
@@ -147,9 +167,11 @@ export function ReportsTab() {
     }
   };
 
-  // Get kiosk tokens from environment or use placeholder
-  const employeeKioskUrl = `/kiosk/pickup?t=YOUR_EMPLOYEE_TOKEN`;
-  const kitchenKioskUrl = `/kiosk/kitchen?t=YOUR_KITCHEN_TOKEN`;
+  // Generate kiosk URLs with tokens
+  const employeeKioskUrl = `/kiosk/pickup?t=${encodeURIComponent(employeeToken || 'YOUR_EMPLOYEE_TOKEN')}`;
+  const kitchenKioskUrl = `/kiosk/kitchen?t=${encodeURIComponent(kitchenToken || 'YOUR_KITCHEN_TOKEN')}`;
+  
+  const hasValidTokens = employeeToken.length > 0 && kitchenToken.length > 0;
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
@@ -237,7 +259,45 @@ export function ReportsTab() {
           <CardTitle>Kiosk paneli</CardTitle>
           <CardDescription>Pristup kiosk ekranima za preuzimanje obroka</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Token Input Section */}
+          <div className="grid md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
+            <div className="space-y-2">
+              <Label htmlFor="employee-token" className="flex items-center gap-2">
+                <MonitorSmartphone className="h-4 w-4" />
+                Token za ulaz u kantinu
+              </Label>
+              <Input
+                id="employee-token"
+                type="password"
+                placeholder="Unesite KIOSK_TOKEN_EMPLOYEE"
+                value={employeeToken}
+                onChange={(e) => handleEmployeeTokenChange(e.target.value)}
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="kitchen-token" className="flex items-center gap-2">
+                <ChefHat className="h-4 w-4" />
+                Token za kuhinju
+              </Label>
+              <Input
+                id="kitchen-token"
+                type="password"
+                placeholder="Unesite KIOSK_TOKEN_KITCHEN"
+                value={kitchenToken}
+                onChange={(e) => handleKitchenTokenChange(e.target.value)}
+                className="font-mono text-sm"
+              />
+            </div>
+            {!hasValidTokens && (
+              <p className="md:col-span-2 text-sm text-warning">
+                ⚠️ Unesite tokene iz Supabase secrets-a za generisanje ispravnih URL-ova
+              </p>
+            )}
+          </div>
+
+          {/* Kiosk Links */}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
               <div className="flex items-center gap-3">
@@ -254,7 +314,7 @@ export function ReportsTab() {
               <div className="flex items-center gap-2">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" disabled={!employeeToken}>
                       <QrCode className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
@@ -279,7 +339,7 @@ export function ReportsTab() {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild disabled={!employeeToken}>
                   <a href={employeeKioskUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Otvori
@@ -303,7 +363,7 @@ export function ReportsTab() {
               <div className="flex items-center gap-2">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" disabled={!kitchenToken}>
                       <QrCode className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
@@ -328,7 +388,7 @@ export function ReportsTab() {
                     </div>
                   </DialogContent>
                 </Dialog>
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild disabled={!kitchenToken}>
                   <a href={kitchenKioskUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Otvori
@@ -339,8 +399,8 @@ export function ReportsTab() {
           </div>
           
           <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
-            💡 <strong>Napomena:</strong> Linkovi sadrže sigurnosne tokene (KIOSK_TOKEN_EMPLOYEE i KIOSK_TOKEN_KITCHEN). 
-            Zamenite "YOUR_EMPLOYEE_TOKEN" i "YOUR_KITCHEN_TOKEN" sa stvarnim vrednostima iz Supabase secrets-a. 
+            💡 <strong>Napomena:</strong> Tokeni se čuvaju lokalno u vašem pregledaču. 
+            Preuzmite tokene iz Supabase Edge Function secrets-a. 
             Koristite Full Screen (F11) za kiosk mod na tabletima.
           </div>
         </CardContent>
