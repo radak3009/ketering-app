@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ExternalLink, MonitorSmartphone, ChefHat } from "lucide-react";
+import { Download, ExternalLink, MonitorSmartphone, ChefHat, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
 import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function ReportsTab() {
   const { toast } = useToast();
@@ -249,12 +251,41 @@ export function ReportsTab() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <a href={employeeKioskUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Otvori
-                </a>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>QR Kod - Ulaz u kantinu</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center gap-4 py-4">
+                      <div className="p-4 bg-white rounded-lg">
+                        <QRCodeSVG 
+                          value={`${window.location.origin}${employeeKioskUrl}`}
+                          size={200}
+                          level="H"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Skenirajte ovaj QR kod na tabletu za pristup kiosku
+                      </p>
+                      <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
+                        {`${window.location.origin}${employeeKioskUrl}`}
+                      </code>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={employeeKioskUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Otvori
+                  </a>
+                </Button>
+              </div>
             </div>
             
             <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
@@ -269,12 +300,41 @@ export function ReportsTab() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <a href={kitchenKioskUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Otvori
-                </a>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <QrCode className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>QR Kod - Kuhinja</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center gap-4 py-4">
+                      <div className="p-4 bg-white rounded-lg">
+                        <QRCodeSVG 
+                          value={`${window.location.origin}${kitchenKioskUrl}`}
+                          size={200}
+                          level="H"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Skenirajte ovaj QR kod na tabletu za pristup kiosku
+                      </p>
+                      <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
+                        {`${window.location.origin}${kitchenKioskUrl}`}
+                      </code>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={kitchenKioskUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Otvori
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
           
