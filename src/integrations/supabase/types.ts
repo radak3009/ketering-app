@@ -306,6 +306,76 @@ export type Database = {
           },
         ]
       }
+      pickup_requests: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          employee_identifier: string
+          id: string
+          meal_name_snapshot: string | null
+          note: string | null
+          order_id: string | null
+          order_item_id: string | null
+          pickup_date: string
+          profile_id: string | null
+          served_at: string | null
+          served_by: string | null
+          status: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          employee_identifier: string
+          id?: string
+          meal_name_snapshot?: string | null
+          note?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          pickup_date: string
+          profile_id?: string | null
+          served_at?: string | null
+          served_by?: string | null
+          status?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          employee_identifier?: string
+          id?: string
+          meal_name_snapshot?: string | null
+          note?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          pickup_date?: string
+          profile_id?: string | null
+          served_at?: string | null
+          served_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pickup_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pickup_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_card_id: string | null
