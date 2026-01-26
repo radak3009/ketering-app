@@ -171,6 +171,10 @@ export function ReportsTab() {
   const employeeKioskUrl = `/kiosk/pickup?t=${encodeURIComponent(employeeToken || 'YOUR_EMPLOYEE_TOKEN')}`;
   const kitchenKioskUrl = `/kiosk/kitchen?t=${encodeURIComponent(kitchenToken || 'YOUR_KITCHEN_TOKEN')}`;
   
+  // Masked URLs for display (hide token value)
+  const employeeKioskUrlMasked = `/kiosk/pickup?t=••••••••`;
+  const kitchenKioskUrlMasked = `/kiosk/kitchen?t=••••••••`;
+  
   const hasValidTokens = employeeToken.length > 0 && kitchenToken.length > 0;
 
   return (
@@ -334,7 +338,7 @@ export function ReportsTab() {
                         Skenirajte ovaj QR kod na tabletu za pristup kiosku
                       </p>
                       <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
-                        {`${window.location.origin}${employeeKioskUrl}`}
+                        {`${window.location.origin}${employeeKioskUrlMasked}`}
                       </code>
                     </div>
                   </DialogContent>
@@ -383,7 +387,7 @@ export function ReportsTab() {
                         Skenirajte ovaj QR kod na tabletu za pristup kiosku
                       </p>
                       <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
-                        {`${window.location.origin}${kitchenKioskUrl}`}
+                        {`${window.location.origin}${kitchenKioskUrlMasked}`}
                       </code>
                     </div>
                   </DialogContent>
