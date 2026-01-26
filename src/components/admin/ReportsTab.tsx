@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download } from "lucide-react";
+import { Download, ExternalLink, MonitorSmartphone, ChefHat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
@@ -145,6 +145,10 @@ export function ReportsTab() {
     }
   };
 
+  // Get kiosk tokens from environment or use placeholder
+  const employeeKioskUrl = `/kiosk/pickup?t=YOUR_EMPLOYEE_TOKEN`;
+  const kitchenKioskUrl = `/kiosk/kitchen?t=YOUR_KITCHEN_TOKEN`;
+
   return (
     <div className="grid lg:grid-cols-2 gap-6">
       <Card>
@@ -221,6 +225,63 @@ export function ReportsTab() {
             <span className="font-bold">
               {groupedMenus.find(([_, data]) => data.isNextWeek)?.[1]?.menus.length || 0}
             </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Kiosk Panels Card */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Kiosk paneli</CardTitle>
+          <CardDescription>Pristup kiosk ekranima za preuzimanje obroka</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MonitorSmartphone className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Kiosk - Ulaz u kantinu</p>
+                  <p className="text-sm text-muted-foreground">
+                    Za zaposlene da prikažu današnji obrok
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <a href={employeeKioskUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Otvori
+                </a>
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-success/10">
+                  <ChefHat className="h-5 w-5 text-success" />
+                </div>
+                <div>
+                  <p className="font-medium">Kiosk - Kuhinja</p>
+                  <p className="text-sm text-muted-foreground">
+                    Za kuhinjsko osoblje da izdaju obroke
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <a href={kitchenKioskUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Otvori
+                </a>
+              </Button>
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
+            💡 <strong>Napomena:</strong> Linkovi sadrže sigurnosne tokene (KIOSK_TOKEN_EMPLOYEE i KIOSK_TOKEN_KITCHEN). 
+            Zamenite "YOUR_EMPLOYEE_TOKEN" i "YOUR_KITCHEN_TOKEN" sa stvarnim vrednostima iz Supabase secrets-a. 
+            Koristite Full Screen (F11) za kiosk mod na tabletima.
           </div>
         </CardContent>
       </Card>

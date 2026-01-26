@@ -12,6 +12,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const KioskPickup = lazy(() => import("./pages/KioskPickup"));
+const KioskKitchen = lazy(() => import("./pages/KioskKitchen"));
 
 const queryClient = new QueryClient();
 
@@ -25,22 +27,30 @@ const PageLoader = () => (
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Kiosk routes - outside AuthProvider, no auth required */}
+              <Route path="/kiosk/pickup" element={<KioskPickup />} />
+              <Route path="/kiosk/kitchen" element={<KioskKitchen />} />
+              
+              {/* Main app routes - wrapped in AuthProvider */}
+              <Route path="/*" element={
+                <AuthProvider>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AuthProvider>
+              } />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>
 );
