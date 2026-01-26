@@ -32,3 +32,18 @@ verify_jwt = false
 
 [functions.send-invitation]
 verify_jwt = true
+
+[functions.kiosk-show-meal]
+verify_jwt = false
+
+[functions.kiosk-get-queue]
+verify_jwt = false
+
+[functions.kiosk-serve]
+verify_jwt = false
+
+[functions.kiosk-undo]
+verify_jwt = false
+
+[functions.kiosk-delete]
+verify_jwt = false
