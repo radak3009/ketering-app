@@ -114,19 +114,23 @@ export function useKitchenSchedule() {
       try {
         // Upsert each day
         for (const day of schedule) {
+          // Build upsert data - only include id if we have one
+          const upsertData: Record<string, any> = {
+            company_id: null,
+            day_of_week: day.dayOfWeek,
+            enabled: day.enabled,
+            open_time: day.openTime + ":00",
+            close_time: day.closeTime + ":00",
+          };
+          
+          // Only include id if it exists (for updating existing records)
+          if (day.id) {
+            upsertData.id = day.id;
+          }
+
           const { error } = await supabase
             .from("kitchen_schedule_weekly")
-            .upsert(
-              {
-                id: day.id || undefined,
-                company_id: null,
-                day_of_week: day.dayOfWeek,
-                enabled: day.enabled,
-                open_time: day.openTime + ":00",
-                close_time: day.closeTime + ":00",
-              },
-              { onConflict: "company_id,day_of_week" }
-            );
+            .upsert(upsertData as any, { onConflict: "company_id,day_of_week" });
 
           if (error) throw error;
         }
