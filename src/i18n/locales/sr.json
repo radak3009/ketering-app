@@ -279,6 +279,21 @@
     "reminderSent": "Podsetnici su uspešno poslati",
     "errorOccurred": "Došlo je do greške"
   },
+  "notifications": {
+    "title": "Obaveštenja",
+    "description": "Izaberite kako želite da primate podsetnike o naručivanju obroka",
+    "emailNotifications": "Email obaveštenja",
+    "emailDescription": "Primajte podsetnike o naručivanju obroka putem email-a",
+    "pushNotifications": "Push obaveštenja",
+    "pushDescription": "Primajte podsetnike direktno na uređaju",
+    "pushNotSupported": "Vaš pretraživač ne podržava push obaveštenja",
+    "pushBlocked": "Push obaveštenja su blokirana. Omogućite ih u podešavanjima pretraživača.",
+    "scheduleInfo": "Podsetnici se šalju sredom i petkom u 12:00h",
+    "permissionDenied": "Dozvola odbijena",
+    "enableInBrowser": "Omogućite obaveštenja u podešavanjima pretraživača",
+    "updateError": "Nije moguće sačuvati podešavanja",
+    "preferencesUpdated": "Podešavanja obaveštenja su sačuvana"
+  },
   "language": {
     "serbian": "Srpski",
     "english": "English"

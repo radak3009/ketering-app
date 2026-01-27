@@ -10,10 +10,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface EmailData {
+interface UserData {
+  user_id: string;
   email: string;
   full_name: string;
   hasOrders: boolean;
+  email_enabled: boolean;
+  push_enabled: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -51,6 +54,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Found ${profiles?.length || 0} employees`);
 
+    // Get notification preferences for all users
+    const { data: preferences, error: prefsError } = await supabase
+      .from('notification_preferences')
+      .select('user_id, email_enabled, push_enabled');
+
+    if (prefsError) {
+      console.error("Error fetching preferences:", prefsError);
+      // Continue with default preferences (email enabled)
+    }
+
+    const prefsMap = new Map(preferences?.map(p => [p.user_id, p]) || []);
+
     // Check which employees have orders for next week
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -65,22 +80,33 @@ const handler = async (req: Request): Promise<Response> => {
 
     const usersWithOrders = new Set(orders?.map(o => o.user_id) || []);
     
-    // Prepare email list
-    const emailsToSend: EmailData[] = profiles
+    // Prepare user data with preferences
+    const userData: UserData[] = profiles
       ?.filter(p => p.email)
-      .map(p => ({
-        email: p.email!,
-        full_name: p.full_name || 'Korisnik',
-        hasOrders: usersWithOrders.has(p.user_id)
-      })) || [];
+      .map(p => {
+        const prefs = prefsMap.get(p.user_id);
+        return {
+          user_id: p.user_id,
+          email: p.email!,
+          full_name: p.full_name || 'Korisnik',
+          hasOrders: usersWithOrders.has(p.user_id),
+          // Default to email enabled if no preferences set
+          email_enabled: prefs?.email_enabled ?? true,
+          push_enabled: prefs?.push_enabled ?? false,
+        };
+      }) || [];
 
-    console.log(`Sending emails to ${emailsToSend.length} employees`);
+    // Split users by notification preference
+    const emailUsers = userData.filter(u => u.email_enabled);
+    const pushUsers = userData.filter(u => u.push_enabled);
+
+    console.log(`Users: ${userData.length} total, ${emailUsers.length} email, ${pushUsers.length} push`);
 
     // Send emails
-    let successCount = 0;
-    let failCount = 0;
+    let emailSuccess = 0;
+    let emailFail = 0;
 
-    for (const { email, full_name, hasOrders } of emailsToSend) {
+    for (const { email, full_name, hasOrders } of emailUsers) {
       const subject = hasOrders 
         ? "Podsetnik: Imate porudžbine za sledeću nedelju"
         : "Podsetnik: Poručite obroke za sledeću nedelju";
@@ -101,36 +127,78 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         if (result.success) {
-          console.log(`Email sent to ${email}, messageId: ${result.messageId}`);
-          successCount++;
+          console.log(`Email sent to ${email}`);
+          emailSuccess++;
         } else {
           console.error(`Failed to send email to ${email}:`, result.error);
-          failCount++;
+          emailFail++;
         }
       } catch (error) {
         console.error(`Exception sending email to ${email}:`, error);
-        failCount++;
+        emailFail++;
       }
     }
 
-    console.log(`Sent ${successCount}/${emailsToSend.length} emails successfully, ${failCount} failed`);
+    // Send push notifications
+    let pushSuccess = 0;
+    let pushFail = 0;
+
+    if (pushUsers.length > 0) {
+      try {
+        const pushResponse = await fetch(
+          `${supabaseUrl}/functions/v1/send-push-notification`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              userIds: pushUsers.map(u => u.user_id),
+              payload: {
+                title: "Podsetnik za poručivanje",
+                body: "Ne zaboravite da poručite obroke za sledeću nedelju! Rok je petak u 17:00h.",
+                url: "/",
+                tag: "meal-reminder",
+              },
+            }),
+          }
+        );
+
+        if (pushResponse.ok) {
+          const pushResult = await pushResponse.json();
+          pushSuccess = pushResult.sent || 0;
+          pushFail = pushResult.failed || 0;
+          console.log(`Push notifications: ${pushSuccess} sent, ${pushFail} failed`);
+        } else {
+          const errorText = await pushResponse.text();
+          console.error("Push notification error:", errorText);
+          pushFail = pushUsers.length;
+        }
+      } catch (error) {
+        console.error("Error calling push notification function:", error);
+        pushFail = pushUsers.length;
+      }
+    }
+
+    console.log(`Summary - Email: ${emailSuccess}/${emailUsers.length}, Push: ${pushSuccess}/${pushUsers.length}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        sent: successCount,
-        failed: failCount,
-        total: emailsToSend.length 
+        email: { sent: emailSuccess, failed: emailFail, total: emailUsers.length },
+        push: { sent: pushSuccess, failed: pushFail, total: pushUsers.length },
       }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
-  } catch (error: any) {
-    console.error("Error in send-employee-reminder:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in send-employee-reminder:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
