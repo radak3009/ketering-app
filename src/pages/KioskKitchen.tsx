@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { kioskApi } from "@/services/kioskApi";
+import { useKioskRealtime } from "@/hooks/useKioskRealtime";
 import { 
   CheckCircle, 
   XCircle, 
@@ -13,7 +14,10 @@ import {
   Trash2, 
   ChefHat,
   Clock,
-  User
+  User,
+  Wifi,
+  WifiOff,
+  RefreshCw
 } from "lucide-react";
 import type { QueueItem } from "@/types/kiosk";
 import { format } from "date-fns";
@@ -33,53 +37,39 @@ export default function KioskKitchen() {
   const token = searchParams.get("t") || "";
   
   const [authorized, setAuthorized] = useState<boolean | null>(null);
-  const [pending, setPending] = useState<QueueItem[]>([]);
-  const [served, setServed] = useState<QueueItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<QueueItem | null>(null);
 
-  const fetchQueue = useCallback(async () => {
-    if (!token) {
-      setAuthorized(false);
-      setLoading(false);
-      return;
-    }
+  const handleAuthError = useCallback(() => {
+    setAuthorized(false);
+  }, []);
 
-    try {
-      const data = await kioskApi.getQueue(token);
-      setPending(data.pending || []);
-      setServed(data.served || []);
-      setAuthorized(true);
-    } catch (error) {
-      console.error("Queue fetch error:", error);
-      if (error instanceof Error && error.message.includes("Nedozvoljen")) {
-        setAuthorized(false);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+  const {
+    pending,
+    served,
+    loading,
+    connectionStatus,
+    isProcessing,
+    setIsProcessing,
+    setPending,
+    setServed,
+    refetch
+  } = useKioskRealtime({
+    token,
+    onAuthError: handleAuthError
+  });
 
-  // Initial fetch
-  useEffect(() => {
-    fetchQueue();
-  }, [fetchQueue]);
+  // Set authorized to true once we get data
+  if (authorized === null && !loading && (pending.length > 0 || served.length > 0 || connectionStatus === 'connected')) {
+    setAuthorized(true);
+  }
 
-  // Polling every 2.5 seconds - skip if processing to avoid race conditions
-  useEffect(() => {
-    if (!authorized) return;
-
-    const interval = setInterval(() => {
-      if (!isProcessing) {
-        fetchQueue();
-      }
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [authorized, fetchQueue, isProcessing]);
+  // Handle initial load - if loading completed without auth error, we're authorized
+  if (authorized === null && !loading && connectionStatus !== 'disconnected') {
+    setAuthorized(true);
+  }
 
   const handleServe = async (item: QueueItem) => {
     setProcessingId(item.id);
@@ -91,10 +81,11 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.serve(token, item.id);
-      await fetchQueue();
+      // Realtime will confirm the update, but fetch as backup
+      await refetch();
     } catch (error) {
       console.error("Serve error:", error);
-      await fetchQueue();
+      await refetch();
     } finally {
       setProcessingId(null);
       setIsProcessing(false);
@@ -111,10 +102,10 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.undo(token, item.id);
-      await fetchQueue();
+      await refetch();
     } catch (error) {
       console.error("Undo error:", error);
-      await fetchQueue();
+      await refetch();
     } finally {
       setProcessingId(null);
       setIsProcessing(false);
@@ -139,10 +130,10 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.delete(token, itemToDelete.id);
-      await fetchQueue();
+      await refetch();
     } catch (error) {
       console.error("Delete error:", error);
-      await fetchQueue();
+      await refetch();
     } finally {
       setProcessingId(null);
       setIsProcessing(false);
@@ -156,6 +147,34 @@ export default function KioskKitchen() {
     } catch {
       return "--:--";
     }
+  };
+
+  // Connection status indicator component
+  const ConnectionIndicator = () => {
+    if (connectionStatus === 'connected') {
+      return (
+        <div className="flex items-center gap-2 text-sm text-success">
+          <Wifi className="h-4 w-4" />
+          <span className="hidden sm:inline">Povezano</span>
+        </div>
+      );
+    }
+    
+    if (connectionStatus === 'connecting') {
+      return (
+        <div className="flex items-center gap-2 text-sm text-warning">
+          <RefreshCw className="h-4 w-4 animate-spin" />
+          <span className="hidden sm:inline">Povezivanje...</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <WifiOff className="h-4 w-4" />
+        <span className="hidden sm:inline">Sinhronizacija (45s)</span>
+      </div>
+    );
   };
 
   // Unauthorized screen
@@ -192,8 +211,11 @@ export default function KioskKitchen() {
           <ChefHat className="h-8 w-8 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">KUHINJA</h1>
         </div>
-        <div className="text-muted-foreground">
-          Danas: {today}
+        <div className="flex items-center gap-4">
+          <ConnectionIndicator />
+          <div className="text-muted-foreground">
+            {today}
+          </div>
         </div>
       </div>
 
