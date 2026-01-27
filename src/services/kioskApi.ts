@@ -1,4 +1,4 @@
-import type { ShowMealResponse, GetQueueResponse } from "@/types/kiosk";
+import type { ShowMealResponse, GetQueueResponse, KitchenStatus } from "@/types/kiosk";
 
 const SUPABASE_URL = "https://qqrvezuesxaappslfvrh.supabase.co";
 
@@ -93,6 +93,44 @@ export const kioskApi = {
     
     if (!response.ok) {
       throw new Error(data.error || "Greška pri brisanju");
+    }
+    
+    return data;
+  },
+
+  async confirmPickup(token: string, pickupRequestId: string): Promise<{ success: boolean }> {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/kiosk-confirm-pickup`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kioskToken: token, pickupRequestId }),
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || "Greška pri potvrdi");
+    }
+    
+    return data;
+  },
+
+  async getKitchenStatus(token: string, companyId?: string): Promise<KitchenStatus> {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/kiosk-get-kitchen-status`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kioskToken: token, companyId }),
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || "Greška pri učitavanju statusa");
     }
     
     return data;

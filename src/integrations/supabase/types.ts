@@ -68,6 +68,91 @@ export type Database = {
         }
         Relationships: []
       }
+      kitchen_schedule_exceptions: {
+        Row: {
+          close_time: string | null
+          closed_all_day: boolean
+          company_id: string | null
+          created_at: string
+          exception_date: string
+          id: string
+          note: string | null
+          open_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          close_time?: string | null
+          closed_all_day?: boolean
+          company_id?: string | null
+          created_at?: string
+          exception_date: string
+          id?: string
+          note?: string | null
+          open_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string | null
+          closed_all_day?: boolean
+          company_id?: string | null
+          created_at?: string
+          exception_date?: string
+          id?: string
+          note?: string | null
+          open_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_schedule_exceptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kitchen_schedule_weekly: {
+        Row: {
+          close_time: string
+          company_id: string | null
+          created_at: string
+          day_of_week: number
+          enabled: boolean
+          id: string
+          open_time: string
+          updated_at: string
+        }
+        Insert: {
+          close_time: string
+          company_id?: string | null
+          created_at?: string
+          day_of_week: number
+          enabled?: boolean
+          id?: string
+          open_time: string
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string
+          company_id?: string | null
+          created_at?: string
+          day_of_week?: number
+          enabled?: boolean
+          id?: string
+          open_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitchen_schedule_weekly_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meals: {
         Row: {
           allergens: string[] | null
