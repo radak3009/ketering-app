@@ -53,7 +53,8 @@
       "users": "Users",
       "feedback": "Feedback",
       "notifications": "Notifications",
-      "reports": "Reports"
+      "reports": "Reports",
+      "settings": "Settings"
     },
     "notifications": {
       "title": "Notifications",

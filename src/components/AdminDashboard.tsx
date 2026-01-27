@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useMeals } from "@/hooks/useMeals";
@@ -23,6 +23,7 @@ const MenusManagement = lazy(() => import("./admin/MenusManagement").then(m => (
 const UsersManagement = lazy(() => import("./admin/UsersManagement").then(m => ({ default: m.UsersManagement })));
 const OrdersOverview = lazy(() => import("./admin/OrdersOverview").then(m => ({ default: m.OrdersOverview })));
 const ReportsTab = lazy(() => import("./admin/ReportsTab").then(m => ({ default: m.ReportsTab })));
+const SettingsTab = lazy(() => import("./admin/SettingsTab").then(m => ({ default: m.SettingsTab })));
 
 const TabLoader = () => {
   const { t } = useTranslation();
@@ -169,7 +170,7 @@ export function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs defaultValue="orders" className="space-y-4 md:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 h-auto gap-1 p-1">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto gap-1 p-1">
             <TabsTrigger value="orders" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.orders')}</span>
@@ -204,6 +205,11 @@ export function AdminDashboard() {
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.reports')}</span>
               <span className="sm:hidden">Izv.</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs md:text-sm py-2">
+              <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+              <span className="hidden sm:inline">{t('admin.tabs.settings')}</span>
+              <span className="sm:hidden">Pod.</span>
             </TabsTrigger>
           </TabsList>
 
@@ -306,6 +312,13 @@ export function AdminDashboard() {
           <TabsContent value="reports">
             <Suspense fallback={<TabLoader />}>
               <ReportsTab />
+            </Suspense>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Suspense fallback={<TabLoader />}>
+              <SettingsTab />
             </Suspense>
           </TabsContent>
         </Tabs>
