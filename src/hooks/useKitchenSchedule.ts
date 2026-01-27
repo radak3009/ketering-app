@@ -112,27 +112,56 @@ export function useKitchenSchedule() {
     async (schedule: WeeklySchedule[]) => {
       setSaving(true);
       try {
-        // Upsert each day
         for (const day of schedule) {
-          // Build upsert data - only include id if we have one
-          const upsertData: Record<string, any> = {
-            company_id: null,
-            day_of_week: day.dayOfWeek,
-            enabled: day.enabled,
-            open_time: day.openTime + ":00",
-            close_time: day.closeTime + ":00",
-          };
-          
-          // Only include id if it exists (for updating existing records)
           if (day.id) {
-            upsertData.id = day.id;
+            // Update existing record by ID
+            const { error } = await supabase
+              .from("kitchen_schedule_weekly")
+              .update({
+                enabled: day.enabled,
+                open_time: day.openTime + ":00",
+                close_time: day.closeTime + ":00",
+              })
+              .eq("id", day.id);
+
+            if (error) throw error;
+          } else {
+            // Insert new record - find by day_of_week and company_id IS NULL, then update
+            // or insert if not exists
+            const { data: existing } = await supabase
+              .from("kitchen_schedule_weekly")
+              .select("id")
+              .eq("day_of_week", day.dayOfWeek)
+              .is("company_id", null)
+              .maybeSingle();
+
+            if (existing) {
+              // Update existing
+              const { error } = await supabase
+                .from("kitchen_schedule_weekly")
+                .update({
+                  enabled: day.enabled,
+                  open_time: day.openTime + ":00",
+                  close_time: day.closeTime + ":00",
+                })
+                .eq("id", existing.id);
+
+              if (error) throw error;
+            } else {
+              // Insert new
+              const { error } = await supabase
+                .from("kitchen_schedule_weekly")
+                .insert({
+                  company_id: null,
+                  day_of_week: day.dayOfWeek,
+                  enabled: day.enabled,
+                  open_time: day.openTime + ":00",
+                  close_time: day.closeTime + ":00",
+                });
+
+              if (error) throw error;
+            }
           }
-
-          const { error } = await supabase
-            .from("kitchen_schedule_weekly")
-            .upsert(upsertData as any, { onConflict: "company_id,day_of_week" });
-
-          if (error) throw error;
         }
 
         toast({
