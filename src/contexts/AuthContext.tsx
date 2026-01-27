@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -46,10 +46,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return sessionStorage.getItem('isPasswordRecovery') === 'true';
   });
 
-  const clearPasswordRecovery = () => {
+  const clearPasswordRecovery = useCallback(() => {
     setIsPasswordRecovery(false);
     sessionStorage.removeItem('isPasswordRecovery');
-  };
+  }, []);
 
   useEffect(() => {
     // Check if we have auth parameters (from email verification, magic link, or invite)
@@ -62,7 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hasAuthParams = hasHashParams || hasCodeParam;
     
     if (hasAuthParams) {
-      console.log('[AuthContext] Processing auth parameters...', { hasHashParams, hasCodeParam });
+      if (import.meta.env.DEV) {
+        console.log('[AuthContext] Processing auth parameters...', { hasHashParams, hasCodeParam });
+      }
       setProcessingAuth(true);
     }
 
@@ -70,19 +72,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleCodeExchange = async () => {
       const code = queryParams.get('code');
       if (code) {
-        console.log('[AuthContext] Exchanging code for session...');
+        if (import.meta.env.DEV) {
+          console.log('[AuthContext] Exchanging code for session...');
+        }
         try {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) {
-            console.error('[AuthContext] Code exchange error:', error);
+            if (import.meta.env.DEV) {
+              console.error('[AuthContext] Code exchange error:', error);
+            }
           } else {
-            console.log('[AuthContext] Code exchange successful:', data.user?.email);
+            if (import.meta.env.DEV) {
+              console.log('[AuthContext] Code exchange successful:', data.user?.email);
+            }
           }
           // Clean up URL after exchange
           const cleanUrl = window.location.origin + window.location.pathname;
           window.history.replaceState({}, document.title, cleanUrl);
         } catch (err) {
-          console.error('[AuthContext] Unexpected code exchange error:', err);
+          if (import.meta.env.DEV) {
+            console.error('[AuthContext] Unexpected code exchange error:', err);
+          }
         }
       }
     };
@@ -95,12 +105,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Helper function to fetch user profile - OUTSIDE the callback
     const fetchUserProfile = async (userId: string) => {
       try {
-        console.log('[AuthContext] Fetching profile for user:', userId);
+        if (import.meta.env.DEV) {
+          console.log('[AuthContext] Fetching profile for user:', userId);
+        }
         
         const [profileResult, roleResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('*')
+            .select('id, user_id, company_id, full_name, email, phone, role, password_set, created_at, updated_at')
             .eq('user_id', userId)
             .maybeSingle(),
           supabase
@@ -114,7 +126,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: roleData, error: roleError } = roleResult;
         
         if (profileError) {
-          console.error('[AuthContext] Error fetching profile:', profileError);
+          if (import.meta.env.DEV) {
+            console.error('[AuthContext] Error fetching profile:', profileError);
+          }
           setLoading(false);
           setProcessingAuth(false);
           return;
@@ -124,7 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (profileData) {
           if (roleError) {
-            console.error('[AuthContext] Error fetching role:', roleError);
+            if (import.meta.env.DEV) {
+              console.error('[AuthContext] Error fetching role:', roleError);
+            }
             userRole = (profileData.role as 'admin' | 'employee') || 'employee';
           } else if (roleData) {
             const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
@@ -134,10 +150,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         
-        console.log('[AuthContext] Profile loaded successfully:', { userId, role: userRole });
+        if (import.meta.env.DEV) {
+          console.log('[AuthContext] Profile loaded successfully:', { userId, role: userRole });
+        }
         setProfile(profileData ? { ...profileData, role: userRole } : null);
       } catch (error) {
-        console.error('[AuthContext] Unexpected error fetching profile:', error);
+        if (import.meta.env.DEV) {
+          console.error('[AuthContext] Unexpected error fetching profile:', error);
+        }
       } finally {
         setProcessingAuth(false);
         setLoading(false);
@@ -147,11 +167,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener - SYNCHRONOUS callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
+        if (import.meta.env.DEV) {
+          console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
+        }
         
         // Detektuj PASSWORD_RECOVERY event - najpouzdaniji način
         if (event === 'PASSWORD_RECOVERY') {
-          console.log('[AuthContext] PASSWORD_RECOVERY event detected');
+          if (import.meta.env.DEV) {
+            console.log('[AuthContext] PASSWORD_RECOVERY event detected');
+          }
           setIsPasswordRecovery(true);
           sessionStorage.setItem('isPasswordRecovery', 'true');
         }
@@ -174,7 +198,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[AuthContext] Initial session check:', session?.user?.email);
+      if (import.meta.env.DEV) {
+        console.log('[AuthContext] Initial session check:', session?.user?.email);
+      }
       // Don't set state here - let onAuthStateChange handle it to avoid race condition
       if (!session && !hasAuthParams) {
         setLoading(false);
@@ -184,9 +210,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'employee' = 'employee') => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, role: 'admin' | 'employee' = 'employee') => {
     // First check if user with this email already exists using secure function
-    const { data: emailExists, error: checkError } = await supabase
+    const { data: emailExists } = await supabase
       .rpc('email_exists', { check_email: email });
 
     if (emailExists) {
@@ -212,40 +238,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
     return { error };
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
     return { error };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
-      console.log('Attempting to sign out...');
+      if (import.meta.env.DEV) {
+        console.log('Attempting to sign out...');
+      }
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('Sign out error:', error);
+        if (import.meta.env.DEV) {
+          console.error('Sign out error:', error);
+        }
         // Even if there's an error, clear local state
         setSession(null);
         setUser(null);
         setProfile(null);
       } else {
-        console.log('Sign out successful');
+        if (import.meta.env.DEV) {
+          console.log('Sign out successful');
+        }
       }
     } catch (error) {
-      console.error('Unexpected sign out error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Unexpected sign out error:', error);
+      }
       // Clear local state even on unexpected errors
       setSession(null);
       setUser(null);
       setProfile(null);
     }
-  };
+  }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -253,9 +287,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
     return { error };
-  };
+  }, []);
 
-  const signInWithMagicLink = async (email: string) => {
+  const signInWithMagicLink = useCallback(async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -263,32 +297,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
     return { error };
-  };
+  }, []);
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth?recovery=true`
     });
     return { error };
-  };
+  }, []);
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = useCallback(async (newPassword: string) => {
     const { error } = await supabase.auth.updateUser({
       password: newPassword
     });
     return { error };
-  };
+  }, []);
 
   // Computed property: user needs to set password if profile exists and password_set is false
   const requiresPasswordSetup = profile !== null && profile.password_set === false;
 
   // Function to refresh profile (after password is set)
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       const [profileResult, roleResult] = await Promise.all([
         supabase
           .from('profiles')
-          .select('*')
+          .select('id, user_id, company_id, full_name, email, phone, role, password_set, created_at, updated_at')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
@@ -312,9 +346,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile({ ...profileData, role: userRole });
       }
     }
-  };
+  }, [user]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     session,
     profile,
@@ -330,7 +364,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInWithMagicLink,
     resetPassword,
     updatePassword
-  };
+  }), [
+    user, session, profile, loading, processingAuth,
+    isPasswordRecovery, requiresPasswordSetup,
+    clearPasswordRecovery, refreshProfile, signUp, signIn,
+    signOut, signInWithGoogle, signInWithMagicLink,
+    resetPassword, updatePassword
+  ]);
 
   return (
     <AuthContext.Provider value={value}>
