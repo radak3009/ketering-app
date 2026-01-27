@@ -38,6 +38,7 @@ export default function KioskKitchen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<QueueItem | null>(null);
 
@@ -68,16 +69,21 @@ export default function KioskKitchen() {
     fetchQueue();
   }, [fetchQueue]);
 
-  // Polling every 2.5 seconds
+  // Polling every 2.5 seconds - skip if processing to avoid race conditions
   useEffect(() => {
     if (!authorized) return;
 
-    const interval = setInterval(fetchQueue, 2500);
+    const interval = setInterval(() => {
+      if (!isProcessing) {
+        fetchQueue();
+      }
+    }, 2500);
     return () => clearInterval(interval);
-  }, [authorized, fetchQueue]);
+  }, [authorized, fetchQueue, isProcessing]);
 
   const handleServe = async (item: QueueItem) => {
     setProcessingId(item.id);
+    setIsProcessing(true);
     
     // Optimistic update
     setPending(prev => prev.filter(p => p.id !== item.id));
@@ -85,17 +91,19 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.serve(token, item.id);
+      await fetchQueue();
     } catch (error) {
       console.error("Serve error:", error);
-      // Revert on error
-      fetchQueue();
+      await fetchQueue();
     } finally {
       setProcessingId(null);
+      setIsProcessing(false);
     }
   };
 
   const handleUndo = async (item: QueueItem) => {
     setProcessingId(item.id);
+    setIsProcessing(true);
     
     // Optimistic update
     setServed(prev => prev.filter(s => s.id !== item.id));
@@ -103,12 +111,13 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.undo(token, item.id);
+      await fetchQueue();
     } catch (error) {
       console.error("Undo error:", error);
-      // Revert on error
-      fetchQueue();
+      await fetchQueue();
     } finally {
       setProcessingId(null);
+      setIsProcessing(false);
     }
   };
 
@@ -121,6 +130,7 @@ export default function KioskKitchen() {
     if (!itemToDelete) return;
 
     setProcessingId(itemToDelete.id);
+    setIsProcessing(true);
     setDeleteDialogOpen(false);
     
     // Optimistic update
@@ -129,12 +139,13 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.delete(token, itemToDelete.id);
+      await fetchQueue();
     } catch (error) {
       console.error("Delete error:", error);
-      // Revert on error
-      fetchQueue();
+      await fetchQueue();
     } finally {
       setProcessingId(null);
+      setIsProcessing(false);
       setItemToDelete(null);
     }
   };
