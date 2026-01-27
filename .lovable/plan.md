@@ -1,174 +1,285 @@
 
 
-## Plan: Optimizacija performansi frontend aplikacije
+## Plan: Supabase Realtime na Kitchen Kiosku sa Fallback Pollingom
 
-### Pregled izmena
+### Pregled
 
-Ovaj plan implementira 5 optimizacija koje poboljšavaju performanse aplikacije bez narušavanja funkcionalnosti.
+Ovaj plan zamenjuje agresivan polling (svake 2.5s) sa Supabase Realtime WebSocket konekcijom, uz fallback polling (30-60s) kao sigurnosnu mrežu.
 
 ---
 
-### A) AuthContext – Stabilnost referenci i smanjenje re-rendera
+### Arhitektura rešenja
 
-**Problem:** `value` objekat se kreira na svakom renderu, što uzrokuje nepotrebne re-rendere svih komponenti koje koriste `useAuth()`.
-
-**Rešenje:**
-
-1. Umotati sve funkcije u `useCallback`:
-   - `signUp`, `signIn`, `signOut`, `signInWithGoogle`, `signInWithMagicLink`, `resetPassword`, `updatePassword`, `refreshProfile`, `clearPasswordRecovery`
-
-2. Umotati `value` objekat u `useMemo` sa svim zavisnostima
-
-**Fajl:** `src/contexts/AuthContext.tsx`
-
-```typescript
-// Primer za signIn
-const signIn = useCallback(async (email: string, password: string) => {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  return { error };
-}, []);
-
-// Primer za value
-const value = useMemo(() => ({
-  user,
-  session,
-  profile,
-  loading: loading || processingAuth,
-  isPasswordRecovery,
-  requiresPasswordSetup,
-  clearPasswordRecovery,
-  refreshProfile,
-  signUp,
-  signIn,
-  signOut,
-  signInWithGoogle,
-  signInWithMagicLink,
-  resetPassword,
-  updatePassword
-}), [
-  user, session, profile, loading, processingAuth,
-  isPasswordRecovery, requiresPasswordSetup,
-  clearPasswordRecovery, refreshProfile, signUp, signIn,
-  signOut, signInWithGoogle, signInWithMagicLink,
-  resetPassword, updatePassword
-]);
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                        KioskKitchen Component                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
+│  │   Realtime      │    │   Fallback      │    │   Connection    │  │
+│  │   Subscription  │    │   Polling       │    │   Monitor       │  │
+│  │   (primary)     │    │   (safety net)  │    │   (health)      │  │
+│  └────────┬────────┘    └────────┬────────┘    └────────┬────────┘  │
+│           │                      │                      │           │
+│           └──────────────────────┼──────────────────────┘           │
+│                                  │                                  │
+│                         ┌────────▼────────┐                         │
+│                         │    fetchQueue   │                         │
+│                         │    (unified)    │                         │
+│                         └─────────────────┘                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Supabase Backend                             │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐                         │
+│  │ pickup_requests │◄───│   Realtime      │                         │
+│  │     (table)     │    │   Publication   │                         │
+│  └─────────────────┘    └─────────────────┘                         │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### B) useUsers.fetchUsers() – Optimizacija O(n) umesto O(n×m)
+### Faze implementacije
 
-**Problem:** Trenutna implementacija koristi `find()` unutar `map()` što ima kvadratnu složenost.
+#### Faza 1: Omogućavanje Realtime-a za `pickup_requests` tabelu
 
-**Rešenje:** Koristiti `Map` za O(1) lookup rola.
+Potrebna je SQL migracija koja dodaje tabelu u Supabase Realtime publikaciju.
 
-**Fajl:** `src/hooks/useUsers.ts`
+**Migracija:**
+```sql
+-- Enable realtime for pickup_requests table
+ALTER PUBLICATION supabase_realtime ADD TABLE pickup_requests;
 
-```typescript
-// Trenutno (O(n×m)):
-const usersWithRoles = (profilesData || []).map(profile => {
-  const userRole = (rolesData as any)?.find((r: any) => r.user_id === profile.user_id);
-  return { ...profile, role: userRole?.role || 'employee' };
-});
-
-// Novo (O(n)):
-const roleByUserId = new Map(
-  (rolesData as any[] ?? []).map((r: any) => [r.user_id, r.role])
-);
-
-const usersWithRoles = (profilesData || []).map(profile => ({
-  ...profile,
-  role: roleByUserId.get(profile.user_id) || 'employee'
-} as ProfileWithRole));
+-- Set REPLICA IDENTITY FULL for complete row data in realtime updates
+ALTER TABLE pickup_requests REPLICA IDENTITY FULL;
 ```
 
----
-
-### C) Eksplicitne kolone umesto select('*')
-
-**Problem:** `select('*')` prenosi nepotrebne podatke i povećava latenciju.
-
-**Rešenje:** Definisati eksplicitne kolone za svaki upit. Implementirati postepeno po hook-u.
-
-| Hook | Trenutno | Novo |
-|------|----------|------|
-| `useUsers.ts` (fetchUsers) | `select('*')` | `select('id, user_id, full_name, email, phone, company_card_id, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')` |
-| `useUsers.ts` (updateUser) | `select('*')` | `select('id, user_id, full_name, email, phone, company_card_id, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')` |
-| `useFeedback.ts` | `select('*')` | `select('id, user_id, content, created_at, obradeno')` |
-
-**Napomena:** Ova optimizacija se može implementirati inkrementalno. Prvo A, B, D, E, pa zatim C po potrebi.
+**Zašto `REPLICA IDENTITY FULL`:**
+- Omogućava slanje kompletnih podataka reda u realtime event payload-u
+- Neophodno za DELETE evente (inače bi dobili samo ID)
 
 ---
 
-### D) Uklanjanje production logova
+#### Faza 2: Kreiranje custom hook-a `useKioskRealtime`
 
-**Problem:** `console.log` u AuthContext-u usporava kiosk uređaje i može otkriti osetljive informacije.
+Novi hook koji enkapsulira logiku Realtime + Fallback polling.
 
-**Rešenje:** Umotati sve logove u `if (import.meta.env.DEV)` proveru.
+**Fajl:** `src/hooks/useKioskRealtime.ts`
 
-**Fajl:** `src/contexts/AuthContext.tsx`
+**Ključne funkcionalnosti:**
+
+1. **Realtime subscription**
+   - Pretplata na `pickup_requests` tabelu
+   - Filtriranje po `pickup_date = today`
+   - Praćenje INSERT, UPDATE, DELETE eventa
+
+2. **Connection health monitoring**
+   - Praćenje statusa konekcije (`SUBSCRIBED`, `CHANNEL_ERROR`, `TIMED_OUT`)
+   - Automatski reconnect pri prekidu
+
+3. **Fallback polling**
+   - Interval: 45 sekundi (kompromis između 30s i 60s)
+   - Aktivira se uvek kao "safety net"
+   - Ne interferira sa realtime update-ima
+
+4. **Visibility API integration**
+   - Detekcija kada je tab/app "asleep"
+   - Force fetch kada se vraća u fokus
+
+**Struktura hook-a:**
 
 ```typescript
-// Trenutno:
-console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
+interface UseKioskRealtimeOptions {
+  token: string;
+  onAuthError?: () => void;
+}
 
-// Novo:
-if (import.meta.env.DEV) {
-  console.log('[AuthContext] Auth state changed:', event, session?.user?.email);
+interface UseKioskRealtimeReturn {
+  pending: QueueItem[];
+  served: QueueItem[];
+  loading: boolean;
+  connectionStatus: 'connected' | 'connecting' | 'disconnected';
+  lastUpdate: Date | null;
+  refetch: () => Promise<void>;
 }
 ```
 
-**Lokacije za izmenu (9 logova):**
-- Linija 57: Processing auth parameters
-- Linija 72: Exchanging code for session
-- Linija 76: Code exchange error
-- Linija 78: Code exchange successful
-- Linija 91: Fetching profile for user
-- Linija 119: Profile loaded successfully
-- Linija 131: Auth state changed
-- Linija 160: Initial session check
-- Linija 171: Attempting to sign out (i ostali logovi u signOut)
+**Logika:**
+
+```text
+1. Initial fetch
+   └─► fetchQueue() → setPending/setServed
+
+2. Setup Realtime channel
+   └─► supabase.channel('kiosk-kitchen-realtime')
+       └─► .on('postgres_changes', {
+             event: '*',
+             schema: 'public',
+             table: 'pickup_requests',
+             filter: `pickup_date=eq.${today}`
+           })
+       └─► Handle events:
+           ├─► INSERT: Append to pending (if status='pending')
+           ├─► UPDATE: Move between lists based on status
+           └─► DELETE: Remove from both lists
+
+3. Monitor connection status
+   └─► .subscribe((status) => {
+         'SUBSCRIBED' → setConnected(true)
+         'CHANNEL_ERROR' → setConnected(false), retry
+         'TIMED_OUT' → setConnected(false), retry
+       })
+
+4. Fallback polling (45s interval)
+   └─► Runs independently
+   └─► Skipped during active processing (isProcessing flag)
+
+5. Visibility change listener
+   └─► document.addEventListener('visibilitychange')
+   └─► If visible && wasHidden > 5s → fetchQueue()
+```
 
 ---
 
-### E) Bundle hygiene – Jedan lockfile
+#### Faza 3: Integracija u KioskKitchen komponentu
 
-**Problem:** Projekt ima i `bun.lockb` i `package-lock.json`, što može uzrokovati nekonzistentne dependency verzije.
+**Fajl:** `src/pages/KioskKitchen.tsx`
 
-**Rešenje:** Zadržati samo `bun.lockb` jer projekt koristi Bun.
+**Izmene:**
 
-**Akcija:** Obrisati `package-lock.json` fajl.
+1. **Zamena direktnog polling-a sa hook-om**
+   - Uklanjanje postojećeg 2.5s polling interval-a
+   - Korišćenje `useKioskRealtime` hook-a
+
+2. **Optimistic updates ostaju**
+   - Trenutni optimistic update pattern se zadržava
+   - Realtime event će potvrditi/korigovati UI state
+
+3. **Prikaz connection status-a**
+   - Vizuelni indikator kada je WebSocket prekinut
+   - Korisnik zna da fallback polling radi
+
+4. **Pauziranje polling-a tokom procesiranja**
+   - Ista logika kao sada: `isProcessing` flag
+   - Sprečava race conditions
+
+**Novi UI element:**
+
+```text
+┌───────────────────────────────────────────┐
+│ 🟢 Povezano u realnom vremenu             │  ← Realtime aktivan
+│ 🟡 Sinhronizacija... (polling)            │  ← Fallback mode
+│ 🔴 Nije povezano - pokušaj ponovnog...    │  ← Potpuni prekid
+└───────────────────────────────────────────┘
+```
 
 ---
 
-### Redosled implementacije
+### Tehnički detalji
 
-| Prioritet | Optimizacija | Rizik | Uticaj |
-|-----------|--------------|-------|--------|
-| 1 | D) Dev-only logovi | Nizak | Srednji |
-| 2 | E) Brisanje package-lock.json | Nizak | Nizak |
-| 3 | B) Map lookup u useUsers | Nizak | Srednji |
-| 4 | A) useMemo/useCallback u AuthContext | Srednji | Visok |
-| 5 | C) Eksplicitne kolone | Srednji | Srednji |
+#### Supabase Realtime filter
+
+```typescript
+.on('postgres_changes', {
+  event: '*',
+  schema: 'public',
+  table: 'pickup_requests',
+  filter: `pickup_date=eq.${today}`  // Filter za današnji datum
+}, handleChange)
+```
+
+#### Event handling logika
+
+| Event Type | Payload | Akcija |
+|------------|---------|--------|
+| INSERT | new record | Dodaj u `pending` ako status='pending' |
+| UPDATE | old → new | Premesti između `pending`/`served` |
+| DELETE | old record | Ukloni iz obe liste |
+
+#### Debouncing
+
+```typescript
+// Sprečava višestruke fetch-ove za rapid-fire evente
+const debouncedFetch = useMemo(() => 
+  debounce(() => fetchQueue(), 300), 
+[fetchQueue]);
+```
+
+#### Visibility API
+
+```typescript
+useEffect(() => {
+  let hiddenAt: number | null = null;
+  
+  const handleVisibility = () => {
+    if (document.hidden) {
+      hiddenAt = Date.now();
+    } else if (hiddenAt && Date.now() - hiddenAt > 5000) {
+      // App was hidden for 5+ seconds, force refresh
+      fetchQueue();
+    }
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibility);
+  return () => document.removeEventListener('visibilitychange', handleVisibility);
+}, [fetchQueue]);
+```
 
 ---
 
 ### Fajlovi za izmenu
 
-| Fajl | Izmene |
-|------|--------|
-| `src/contexts/AuthContext.tsx` | useCallback za funkcije, useMemo za value, dev-only logovi |
-| `src/hooks/useUsers.ts` | Map lookup za role |
-| `src/hooks/useFeedback.ts` | Eksplicitne kolone (opciono) |
-| `package-lock.json` | Obrisati fajl |
+| Fajl | Akcija | Opis |
+|------|--------|------|
+| `supabase/migrations/[timestamp].sql` | CREATE | Omogući realtime za pickup_requests |
+| `src/hooks/useKioskRealtime.ts` | CREATE | Novi hook za realtime + fallback |
+| `src/pages/KioskKitchen.tsx` | UPDATE | Integracija hook-a, uklanjanje starog pollinga |
 
 ---
 
-### Testiranje nakon implementacije
+### Prednosti
 
-1. **Auth tok:** Provera prijave, registracije, magic link, password recovery
-2. **Admin dashboard:** Provera učitavanja korisnika, CRUD operacija
-3. **Employee dashboard:** Provera naručivanja, profila, feedback-a
-4. **Kiosk:** Provera Kitchen i Pickup kioska
-5. **Console:** Verifikacija da nema logova u production modu
+| Aspekt | Pre (polling 2.5s) | Posle (realtime + fallback) |
+|--------|-------------------|----------------------------|
+| Latencija | 0-2.5s | ~100-300ms |
+| Network requests | ~24/min | ~1-2/min + WebSocket |
+| Battery drain | Visok | Nizak |
+| Vizuelno bljeskanje | Moguće | Eliminisano |
+| Offline resilience | Nema | Fallback aktivan |
+
+---
+
+### Rizici i mitigacije
+
+| Rizik | Mitigacija |
+|-------|------------|
+| WebSocket prekid | Fallback polling preuzima |
+| Propušten event | 45s polling kao backup |
+| Tab "asleep" | Visibility API force refresh |
+| Race condition | isProcessing flag pauzira sve |
+| Memory leak | Proper cleanup u useEffect return |
+
+---
+
+### Testiranje
+
+1. **Realtime funkcionisanje**
+   - Otvoriti dva browser taba
+   - Na Employee kiosku uneti ID → videti instant update na Kitchen kiosku
+
+2. **Fallback aktivacija**
+   - Onemogućiti WebSocket (DevTools → Network throttle)
+   - Verifikovati da polling preuzima nakon 45s
+
+3. **Visibility recovery**
+   - Prebaciti na drugi tab 10+ sekundi
+   - Vratiti se → verifikovati instant refresh
+
+4. **Optimistic updates**
+   - Kliknuti "Izdato" → UI odmah reaguje
+   - Realtime potvrđuje bez bljeskanja
 
