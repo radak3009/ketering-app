@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isKitchenOpen } from "../_shared/kitchen-schedule.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,13 +125,18 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingPending) {
+      // Check kitchen status
+      const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
+      
       return new Response(
         JSON.stringify({
           found: true,
           fullName: profile.full_name || "",
           mealName,
           pickupRequestId: existingPending.id,
-          message: "Zahtev je već kreiran"
+          message: "Zahtev je već kreiran",
+          kitchenOpen: kitchenStatus.isOpen,
+          confirmationRequired: !kitchenStatus.isOpen
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -146,13 +152,18 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingServed) {
+      // Check kitchen status
+      const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
+      
       return new Response(
         JSON.stringify({
           found: true,
           fullName: profile.full_name || "",
           mealName,
           alreadyServed: true,
-          message: "Obrok je već preuzet"
+          message: "Obrok je već preuzet",
+          kitchenOpen: kitchenStatus.isOpen,
+          confirmationRequired: !kitchenStatus.isOpen
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -182,12 +193,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check kitchen status for new pickup request
+    const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
+
     return new Response(
       JSON.stringify({
         found: true,
         fullName: profile.full_name || "",
         mealName,
-        pickupRequestId: pickupRequest.id
+        pickupRequestId: pickupRequest.id,
+        kitchenOpen: kitchenStatus.isOpen,
+        confirmationRequired: !kitchenStatus.isOpen
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

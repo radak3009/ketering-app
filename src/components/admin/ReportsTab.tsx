@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ExternalLink, MonitorSmartphone, ChefHat, QrCode } from "lucide-react";
+import { Download, ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
@@ -13,6 +13,7 @@ import { useMenus } from "@/hooks/useMenus";
 import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
 
 export function ReportsTab() {
   const { toast } = useToast();
@@ -407,6 +408,22 @@ export function ReportsTab() {
             Preuzmite tokene iz Supabase Edge Function secrets-a. 
             Koristite Full Screen (F11) za kiosk mod na tabletima.
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Kitchen Schedule Settings */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Radno vreme kuhinje
+          </CardTitle>
+          <CardDescription>
+            Podešavanje radnog vremena i izuzetaka za kiosk sistem
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <KitchenScheduleSettings />
         </CardContent>
       </Card>
     </div>

@@ -29,6 +29,16 @@ export interface ShowMealResponse {
   pickupRequestId?: string;
   alreadyServed?: boolean;
   error?: string;
+  kitchenOpen?: boolean;
+  confirmationRequired?: boolean;
+}
+
+export interface KitchenStatus {
+  isOpen: boolean;
+  openTime: string | null;
+  closeTime: string | null;
+  currentTime: string;
+  reason: 'open' | 'exception_closed' | 'weekly_closed' | 'outside_hours';
 }
 
 export interface GetQueueResponse {

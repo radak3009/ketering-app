@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.kiosk-delete]
 verify_jwt = false
+
+[functions.kiosk-confirm-pickup]
+verify_jwt = false
+
+[functions.kiosk-get-kitchen-status]
+verify_jwt = false
