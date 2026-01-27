@@ -14,7 +14,7 @@ export function useUsers() {
       setLoading(true);
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, full_name, email, phone, company_card_id, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -23,13 +23,15 @@ export function useUsers() {
         .from('user_roles' as any)
         .select('user_id, role');
 
-      const usersWithRoles = (profilesData || []).map(profile => {
-        const userRole = (rolesData as any)?.find((r: any) => r.user_id === profile.user_id);
-        return {
-          ...profile,
-          role: userRole?.role || 'employee'
-        } as ProfileWithRole;
-      });
+      // O(n) lookup using Map instead of O(n×m) with find()
+      const roleByUserId = new Map(
+        (rolesData as any[] ?? []).map((r: any) => [r.user_id, r.role])
+      );
+
+      const usersWithRoles = (profilesData || []).map(profile => ({
+        ...profile,
+        role: roleByUserId.get(profile.user_id) || 'employee'
+      } as ProfileWithRole));
 
       setUsers(usersWithRoles);
     } catch (error) {
@@ -86,7 +88,7 @@ export function useUsers() {
       } else if (updates.email) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, user_id, full_name, email, phone, company_card_id, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
           .eq('id', id)
           .single();
 
