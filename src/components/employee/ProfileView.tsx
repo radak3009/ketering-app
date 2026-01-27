@@ -14,6 +14,7 @@ import { User } from '@supabase/supabase-js';
 import { Loader2, User as UserIcon, Lock, Eye, EyeOff, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { NotificationSettings } from './NotificationSettings';
 
 interface ProfileViewProps {
   user: User | null;
@@ -385,6 +386,13 @@ export function ProfileView({ user, isPasswordSetupMode = false }: ProfileViewPr
               </Button>
             </div>
           </div>
+
+          {!isPasswordSetupMode && (
+            <>
+              <Separator className="my-6" />
+              <NotificationSettings />
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

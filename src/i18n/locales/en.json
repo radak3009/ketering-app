@@ -279,6 +279,21 @@
     "reminderSent": "Reminders sent successfully",
     "errorOccurred": "An error occurred"
   },
+  "notifications": {
+    "title": "Notifications",
+    "description": "Choose how you want to receive meal ordering reminders",
+    "emailNotifications": "Email notifications",
+    "emailDescription": "Receive meal ordering reminders via email",
+    "pushNotifications": "Push notifications",
+    "pushDescription": "Receive reminders directly on your device",
+    "pushNotSupported": "Your browser does not support push notifications",
+    "pushBlocked": "Push notifications are blocked. Enable them in browser settings.",
+    "scheduleInfo": "Reminders are sent on Wednesdays and Fridays at 12:00 PM",
+    "permissionDenied": "Permission denied",
+    "enableInBrowser": "Enable notifications in browser settings",
+    "updateError": "Cannot save settings",
+    "preferencesUpdated": "Notification settings saved"
+  },
   "language": {
     "serbian": "Srpski",
     "english": "English"
