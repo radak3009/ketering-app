@@ -223,19 +223,19 @@ export default function KioskKitchen() {
       <Card>
         <CardHeader className="pb-2">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="pending" className="text-base">
-                Za izdavanje
+            <TabsList className="grid w-full grid-cols-2 h-12">
+              <TabsTrigger value="pending" className="text-base flex items-center justify-center gap-2">
+                <span>Za izdavanje</span>
                 {pending.length > 0 && (
-                  <Badge variant="destructive" className="ml-2">
+                  <Badge variant="destructive">
                     {pending.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="served" className="text-base">
-                Izdato danas
+              <TabsTrigger value="served" className="text-base flex items-center justify-center gap-2">
+                <span>Izdato danas</span>
                 {served.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
+                  <Badge variant="secondary">
                     {served.length}
                   </Badge>
                 )}
