@@ -53,7 +53,8 @@
       "users": "Korisnici",
       "feedback": "Povratne",
       "notifications": "Obaveštenja",
-      "reports": "Izveštaji"
+      "reports": "Izveštaji",
+      "settings": "Postavke"
     },
     "notifications": {
       "title": "Obaveštenja",
