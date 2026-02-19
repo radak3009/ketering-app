@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   user_id: string;
   company_id: string | null;
+  company_card_id: string | null;
   full_name: string | null;
   email: string | null;
   phone: string | null;
@@ -112,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const [profileResult, roleResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, user_id, company_id, full_name, email, phone, role, password_set, created_at, updated_at')
+            .select('id, user_id, company_id, company_card_id, full_name, email, phone, role, password_set, created_at, updated_at')
             .eq('user_id', userId)
             .maybeSingle(),
           supabase
@@ -322,7 +323,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const [profileResult, roleResult] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, user_id, company_id, full_name, email, phone, role, password_set, created_at, updated_at')
+          .select('id, user_id, company_id, company_card_id, full_name, email, phone, role, password_set, created_at, updated_at')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
