@@ -1,147 +1,84 @@
 
-## Plan: Dodavanje taba "Postavke" u Admin Dashboard
 
-### Pregled izmena
+## Plan: Prikaz ID-a i imena korisnika u header-u Employee panela
 
-Kreiraćemo novi tab "Postavke" u Admin Dashboard-u i u njega premestiti:
-1. Kiosk paneli sekciju (pristup kiosk ekranima sa tokenima i QR kodovima)
-2. Radno vreme kuhinje (KitchenScheduleSettings komponenta)
+### Pregled
 
-### Fajlovi za izmenu/kreiranje
+Prikazati `company_card_id` (ID zaposlenog) i `full_name` (Ime i Prezime) ulogovanog korisnika u gornjoj traci Employee Dashboard-a, vidljivo na desktop i tablet ekranima (sakriveno na mobilnim).
+
+### Optimalna pozicija
+
+Informacije o korisniku ce biti postavljene **levo od dugmeta "Odjavi se"**, a desno od AI ikonice. Ovako korisnik odmah vidi ko je ulogovan pre nego sto klikne na odjavu.
+
+```text
+Header layout (desktop/tablet):
+┌──────────────────────────────────────────────────────────────────┐
+│ [Logo] Ketering Portal          [AI] [RS] [Theme] [User] [Odjavi se] │
+│        Porucite obroke...                          ▲                  │
+│                                          ID: 12345                   │
+│                                          Ime Prezime                 │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+Korisnicke informacije ce biti prikazane kao kompaktan blok sa malim tekstom (ID i ime), vidljiv samo na `sm:` i vecim ekranima. Na mobilnim uredajima, ove informacije su dostupne kroz "Profil" tab.
+
+### Fajlovi za izmenu
 
 | Fajl | Akcija | Opis |
 |------|--------|------|
-| `src/components/admin/SettingsTab.tsx` | CREATE | Nova komponenta sa premešenim sadržajem |
-| `src/components/AdminDashboard.tsx` | UPDATE | Dodati novi tab "Postavke" |
-| `src/components/admin/ReportsTab.tsx` | UPDATE | Ukloniti Kiosk panele i KitchenScheduleSettings |
-| `src/i18n/locales/sr.json` | UPDATE | Dodati prevod za "settings" tab |
-| `src/i18n/locales/en.json` | UPDATE | Dodati prevod za "settings" tab |
+| `src/contexts/AuthContext.tsx` | UPDATE | Dodati `company_card_id` u profile SELECT upit |
+| `src/components/EmployeeDashboard.tsx` | UPDATE | Dodati prikaz korisnickih podataka u header |
 
 ---
 
 ### Detalji implementacije
 
-#### 1. Kreiranje `SettingsTab.tsx`
+#### 1. AuthContext.tsx - Dodati `company_card_id` u profile fetch
 
-Nova komponenta koja će sadržati:
-- **Kiosk paneli** - unos tokena, QR kodovi, linkovi ka kioscima
-- **Radno vreme kuhinje** - KitchenScheduleSettings komponenta
+Obe lokacije gde se profil ucitava (`fetchUserProfile` i `refreshProfile`) treba azurirati da ukljuce `company_card_id` polje u SELECT upit.
 
-Struktura komponente:
-```text
-SettingsTab
-├── Kiosk paneli Card
-│   ├── Token input sekcija (employee + kitchen)
-│   ├── Kiosk linkovi sa QR kodovima
-│   └── Napomena o korišćenju
-└── Radno vreme kuhinje Card
-    └── KitchenScheduleSettings komponenta
-```
-
-#### 2. Izmena `AdminDashboard.tsx`
-
-- Dodati lazy import za `SettingsTab`
-- Dodati novi `TabsTrigger` za "settings" tab sa ikonom `Settings`
-- Dodati `TabsContent` koji renderuje `SettingsTab`
-- Ažurirati grid kolone sa 7 na 8 tabova
-
-Izmena TabsList:
+Takodje, `Profile` interfejs u AuthContext-u treba prosiriti sa:
 ```typescript
-// Promena grid-cols-7 na grid-cols-8
-<TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto gap-1 p-1">
-  // ... postojeći tabovi ...
-  <TabsTrigger value="settings" className="text-xs md:text-sm py-2">
-    <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-    <span className="hidden sm:inline">{t('admin.tabs.settings')}</span>
-    <span className="sm:hidden">Pod.</span>
-  </TabsTrigger>
-</TabsList>
-```
-
-#### 3. Izmena `ReportsTab.tsx`
-
-Ukloniti sledeće sekcije:
-- Kiosk paneli Card (linije ~261-412)
-- Kitchen Schedule Settings Card (linije ~414-428)
-- Ukloniti nepotrebne importee (`KitchenScheduleSettings`, `Clock`, `QRCodeSVG`, `Dialog` komponente, `MonitorSmartphone`, `ChefHat` ikone ako se više ne koriste)
-- Ukloniti state za tokene (`employeeToken`, `kitchenToken`)
-
-Nakon izmena, ReportsTab će sadržati samo:
-- Generisanje izveštaja (CSV export)
-- Brze statistike
-
-Grid layout se menja sa `lg:grid-cols-2` na jednostavan `grid gap-6 md:grid-cols-2`.
-
-#### 4. Ažuriranje i18n prevoda
-
-**sr.json:**
-```json
-"admin": {
-  "tabs": {
-    // ... postojeći tabovi ...
-    "settings": "Postavke"
-  }
+interface Profile {
+  // ... postojeca polja ...
+  company_card_id: string | null;
 }
 ```
 
-**en.json:**
-```json
-"admin": {
-  "tabs": {
-    // ... existing tabs ...
-    "settings": "Settings"
-  }
-}
-```
+#### 2. EmployeeDashboard.tsx - Prikaz u header-u
 
----
+Dodati blok sa korisnickim podacima izmedju AI ikonice i Language toggle-a (ili pre "Odjavi se" dugmeta). Koristice se `profile` iz `useAuth()`:
 
-### Vizuelni prikaz nove strukture tabova
-
-```text
-Admin Dashboard Tabs (8 tabova):
-┌──────────┬────────┬──────────┬──────────┬──────────┬─────────────┬──────────┬──────────┐
-│ Porudž.  │ Obroci │ Jelovnici│ Korisnici│ Povratne │ Obaveštenja │ Izveštaji│ Postavke │
-└──────────┴────────┴──────────┴──────────┴──────────┴─────────────┴──────────┴──────────┘
-                                                                               ▲
-                                                                               │
-                                                                          NOV TAB
-
-Sadržaj taba "Postavke":
-┌─────────────────────────────────────────────────────────────────────────────────────────┐
-│ Kiosk paneli                                                                             │
-│ ┌─────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ Token inputs: [Employee Token] [Kitchen Token]                                      │ │
-│ │ Kiosk linkovi: [Ulaz u kantinu] [QR] [Otvori]  |  [Kuhinja] [QR] [Otvori]          │ │
-│ │ Napomena: Tokeni se čuvaju lokalno...                                               │ │
-│ └─────────────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                          │
-│ Radno vreme kuhinje                                                                      │
-│ ┌─────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ <KitchenScheduleSettings />                                                          │ │
-│ │ - Nedeljni raspored (Pon-Ned)                                                        │ │
-│ │ - Izuzeci (praznici, posebni dani)                                                   │ │
-│ └─────────────────────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-### Tehnički detalji
-
-**Importi za SettingsTab.tsx:**
 ```typescript
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
-import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
+const { signOut, user, profile, requiresPasswordSetup } = useAuth();
 ```
 
-**Mobilni prikaz:**
-- Na mobilnim uređajima, skraćenica za tab: "Pod." (Postavke)
-- Responsive grid za kiosk linkove: `grid md:grid-cols-2 gap-4`
+Prikaz ce biti:
+- **ID:** `profile?.company_card_id` (ili prazno ako nije postavljeno)
+- **Ime:** `profile?.full_name`
+- Vidljivost: `hidden sm:flex` - sakriveno na malim mobilnim ekranima
+- Stilizacija: kompaktan tekst, `text-xs` ili `text-sm`, desno poravnanje
+
+Pozicija u kodu - izmedju Language/Theme toggle-ova i "Odjavi se" dugmeta:
+
+```typescript
+{/* User Info - visible on tablet/desktop */}
+{!requiresPasswordSetup && profile && (
+  <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground">
+    {profile.company_card_id && (
+      <span className="font-mono font-medium text-foreground">
+        ID: {profile.company_card_id}
+      </span>
+    )}
+    {profile.full_name && (
+      <span className="truncate max-w-[150px]">{profile.full_name}</span>
+    )}
+  </div>
+)}
+```
+
+### Rezime vizuelnog prikaza
+
+- **Desktop/Tablet (>=640px):** ID i ime vidljivi u header-u, kompaktno poravnati
+- **Mobilni (<640px):** Sakriveno - korisnik pristupa podacima kroz "Profil" tab
+- Koristi se `text-muted-foreground` za ime i `font-mono` za ID radi vizuelne razlike
