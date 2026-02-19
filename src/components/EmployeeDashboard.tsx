@@ -121,6 +121,19 @@ export function EmployeeDashboard() {
               )}
               <LanguageToggle />
               <ThemeToggle />
+              {/* User Info - visible on tablet/desktop */}
+              {!requiresPasswordSetup && profile && (
+                <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground border-r pr-2 mr-1">
+                  {profile.company_card_id && (
+                    <span className="font-mono font-medium text-foreground">
+                      ID: {profile.company_card_id}
+                    </span>
+                  )}
+                  {profile.full_name && (
+                    <span className="truncate max-w-[150px]">{profile.full_name}</span>
+                  )}
+                </div>
+              )}
               {!requiresPasswordSetup && (
                 <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
                   <LogOut className="h-4 w-4" />
