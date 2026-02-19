@@ -6,6 +6,7 @@ interface Profile {
   id: string;
   user_id: string;
   company_id: string | null;
+  company_card_id: string | null;
   full_name: string | null;
   email: string | null;
   phone: string | null;
