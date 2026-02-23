@@ -1,112 +1,144 @@
 
 
-## Plan: Zamena "Password Setup" sa "Company Card ID Setup" pri prvoj prijavi
+## Plan: Obavezni odabir organizacije (TAG) pri prvoj prijavi + Admin toggle
 
 ### Pregled
 
-Trenutno, kada se korisnik prvi put prijavi, sistem zahteva postavljanje lozinke (`password_set = false`). Ovo nema smisla jer korisnik vec unosi lozinku prilikom registracije. Umesto toga, sistem ce zahtevati unos jedinstvenog ID-a zaposlenog (`company_card_id`) pre nego sto korisnik moze koristiti aplikaciju.
+Prosiricemo onboarding flow zaposlenih da, nakon unosa ID-a, moraju odabrati i Organizaciju (tag) koristeci radio button sa opcijama "Proizvodnja" i "Hogo". Admin u Podesavanjima moze da ukljuci/iskljuci vidljivost Tag opcije za zaposlene.
 
-Nakon sto korisnik uspesno unese ID, polje postaje trajno zakljucano (read-only) i korisnik ga vise ne moze menjati. Samo admin moze menjati ID zaposlenog.
-
-### Promena logike
+### Potrebne izmene
 
 ```text
-TRENUTNO:                           NOVO:
-password_set = false                company_card_id = null
-  -> zahtevaj lozinku                 -> zahtevaj unos ID-a
-  -> password_set = true              -> sacuvaj ID
-                                      -> polje postaje read-only zauvek
+Flow zaposlenog pri prvoj prijavi:
+1. Unesi ID (vec implementirano)
+2. Odaberi Organizaciju (NOVO) - radio button: Proizvodnja / Hogo
+3. Sacuvaj oba -> pristup aplikaciji
+
+Admin panel -> Podesavanja:
+- Novi toggle: "Prikaži organizacionu jedinicu zaposlenima" (ON/OFF)
+- Cuva se u tabeli app_settings u bazi
 ```
-
-### Fajlovi za izmenu
-
-| Fajl | Akcija | Opis |
-|------|--------|------|
-| `src/contexts/AuthContext.tsx` | UPDATE | Promeniti `requiresPasswordSetup` u `requiresIdSetup`, logika bazirana na `company_card_id` |
-| `src/components/EmployeeDashboard.tsx` | UPDATE | Preimenovati reference, azurirati alert poruku |
-| `src/components/employee/ProfileView.tsx` | UPDATE | Zameniti password setup sa ID setup sekcijom; nakon unosa ID postaje read-only |
-| `src/i18n/locales/sr.json` | UPDATE | Novi prevodi za ID setup |
-| `src/i18n/locales/en.json` | UPDATE | Novi prevodi za ID setup |
 
 ---
 
-### Detalji implementacije
+### 1. Nova tabela: `app_settings`
 
-#### 1. AuthContext.tsx
+Kreirati tabelu za cuvanje konfiguracije aplikacije:
 
-- Preimenovati `requiresPasswordSetup` u `requiresIdSetup`
-- Nova logika:
-  ```typescript
-  // STARO:
-  const requiresPasswordSetup = profile !== null && profile.password_set === false;
+```sql
+CREATE TABLE public.app_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text UNIQUE NOT NULL,
+  value jsonb NOT NULL DEFAULT 'true'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-  // NOVO:
-  const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
-  ```
-- Azurirati interfejs `AuthContextType` i `value` objekat
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 
-#### 2. EmployeeDashboard.tsx
+-- Svi autentifikovani korisnici mogu citati podesavanja
+CREATE POLICY "Authenticated users can read settings"
+  ON public.app_settings FOR SELECT
+  TO authenticated
+  USING (true);
 
-- Zameniti sve reference `requiresPasswordSetup` sa `requiresIdSetup`
-- Azurirati alert poruku na "Morate uneti svoj ID zaposlenog"
-- Proslediti `isIdSetupMode` umesto `isPasswordSetupMode` u `ProfileView`
+-- Samo admini mogu menjati
+CREATE POLICY "Admins can manage settings"
+  ON public.app_settings FOR ALL
+  USING (is_admin_user(auth.uid()));
 
-#### 3. ProfileView.tsx - Glavna izmena
-
-**ID Setup rezim** (`isIdSetupMode = true`, kada korisnik nema ID):
-- Prikazati istaknutu sekciju za unos `company_card_id`
-- Polje za unos: numericko, max 10 cifara
-- Validacija u realnom vremenu:
-  - Samo cifre (regex `^[0-9]+$`)
-  - Maksimalno 10 karaktera
-  - Provera jedinstvenosti u bazi pre cuvanja
-- Greska ako ID vec postoji: "ID XXXXX je vec dodeljen drugom korisniku"
-- Dugme "Sacuvaj ID" koje cuva, poziva `refreshProfile()`, i korisnik dobija pristup
-
-**Normalan rezim** (korisnik VEC ima ID):
-- Polje `company_card_id` je **uvek read-only** - prikazuje se kao disabled input ili staticni tekst
-- Korisnik ne moze menjati svoj ID nakon sto ga jednom postavi
-- Samo admin moze menjati ID kroz admin panel (UsersManagement)
-- Prikazati helper tekst: "ID je trajno dodeljen. Kontaktirajte administratora za promenu."
-
-**Rezime ponasanja polja:**
-
-```text
-Stanje                    | Polje ID
---------------------------|------------------
-Nema ID (setup mode)      | Editabilno + validacija
-Ima ID (normalan rezim)   | Read-only, zauvek
-Admin menja u admin panelu| Editabilno (vec implementirano)
+-- Inicijalni podatak - tag selekcija vidljiva po default-u
+INSERT INTO public.app_settings (key, value)
+VALUES ('tag_selection_visible', 'true'::jsonb);
 ```
 
-#### 4. Validacija jedinstvenosti
+### 2. Novi hook: `src/hooks/useAppSettings.ts`
 
-Direktan upit ka bazi pre cuvanja:
+- Fetch `app_settings` tabele
+- Funkcija `getSetting(key)` i `updateSetting(key, value)` 
+- Kesirano putem TanStack Query
+
+### 3. Izmena `AuthContext.tsx`
+
+Prosiriti `requiresIdSetup` logiku:
 
 ```typescript
-const { data } = await supabase
-  .from('profiles')
-  .select('id, full_name')
-  .eq('company_card_id', inputValue)
-  .maybeSingle();
+// STARO:
+const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
 
-if (data) {
-  // ID vec postoji - prikazati gresku
-}
+// NOVO - takodje zahteva tag ako je tag_selection_visible ukljucen:
+const requiresIdSetup = profile !== null && profile.role === 'employee' && 
+  (!profile.company_card_id || (tagSelectionVisible && !profile.tag));
 ```
 
-Baza vec ima UNIQUE constraint kao dodatnu zastitu.
+AuthContext ce morati da fetch-uje `tag_selection_visible` setting iz baze da bi odredio da li je tag obavezan.
 
-#### 5. Prevodi (sr.json / en.json)
+### 4. Izmena `ProfileView.tsx`
+
+U ID setup sekciji dodati:
+
+- **Radio button grupa** ispod ID polja (prikazuje se samo ako je `tag_selection_visible = true`):
+  - Opcija 1: "Proizvodnja"
+  - Opcija 2: "Hogo"
+  - Helper tekst iznad: "Odaberite organizacionu jedinicu"
+- Dugme "Sacuvaj" sada cuva i `company_card_id` i `tag` u jednom koraku
+- Validacija: oba polja moraju biti popunjena pre cuvanja (ako je tag vidljiv)
+
+```text
++------------------------------------------+
+|  Unesite ID zaposlenog                   |
+|  +---------------------------------+     |
+|  | [___________] ID broj           |     |
+|  +---------------------------------+     |
+|                                          |
+|  Odaberite organizacionu jedinicu        |
+|  ( ) Proizvodnja                         |
+|  ( ) Hogo                                |
+|                                          |
+|              [ Sacuvaj ID ]              |
++------------------------------------------+
+```
+
+### 5. Izmena `SettingsTab.tsx`
+
+Dodati novu karticu ispod "Radno vreme kuhinje":
+
+```text
++------------------------------------------+
+|  Podesavanja zaposlenih                  |
+|  Konfigurisite opcije vidljive za        |
+|  zaposlene                               |
+|                                          |
+|  Organizaciona jedinica (Tag)            |
+|  Prikazite opciju za odabir              |
+|  organizacione jedinice                  |
+|  zaposlenima prilikom registracije       |
+|  [Toggle ON/OFF]                         |
++------------------------------------------+
+```
+
+- Koristi `useAppSettings` hook
+- Toggle switch koji UPDATE-uje `app_settings` red za `tag_selection_visible`
+
+### 6. Prevodi (sr.json / en.json)
 
 Novi kljucevi:
-- `profile.idSetupRequired` - Alert poruka u headeru
-- `profile.setupId` - Naslov sekcije
-- `profile.setupIdDescription` - Opis sta korisnik treba da uradi
-- `profile.enterCompanyCardId` - Placeholder
-- `profile.saveId` - Tekst dugmeta
-- `profile.idAlreadyExists` - Greska jedinstvenosti
-- `profile.idSetSuccess` - Poruka o uspehu
-- `profile.idReadOnlyHelp` - "ID je trajno dodeljen. Kontaktirajte administratora za promenu."
-- `employee.idSetupWarning` - Upozorenje u dashboard headeru
+- `profile.selectOrganization` - "Odaberite organizacionu jedinicu"
+- `profile.organizationRequired` - "Morate odabrati organizacionu jedinicu"
+- `settings.employeeSettings` - "Podešavanja zaposlenih"
+- `settings.employeeSettingsDesc` - "Konfigurisanje opcija vidljivih zaposlenima"
+- `settings.tagSelectionVisible` - "Organizaciona jedinica (Tag)"
+- `settings.tagSelectionVisibleDesc` - "Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije"
+
+### Fajlovi za izmenu
+
+| Fajl | Akcija |
+|------|--------|
+| Migracija | CREATE `app_settings` tabela + RLS + seed |
+| `src/hooks/useAppSettings.ts` | CREATE - hook za citanje/update app_settings |
+| `src/contexts/AuthContext.tsx` | UPDATE - dodati tag uslov u `requiresIdSetup` |
+| `src/components/employee/ProfileView.tsx` | UPDATE - dodati radio button za organizaciju |
+| `src/components/admin/SettingsTab.tsx` | UPDATE - dodati toggle za tag vidljivost |
+| `src/i18n/locales/sr.json` | UPDATE - novi prevodi |
+| `src/i18n/locales/en.json` | UPDATE - novi prevodi |
 
