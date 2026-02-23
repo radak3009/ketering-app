@@ -25,7 +25,7 @@ interface AuthContextType {
   requiresIdSetup: boolean; // True if employee hasn't set company_card_id
   clearPasswordRecovery: () => void;
   refreshProfile: () => Promise<void>; // Refresh profile after password set
-  signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee') => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee', tag?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<{ error: any }>;
