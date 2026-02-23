@@ -337,6 +337,10 @@ export function SettingsTab() {
                         <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
                           {getRegistrationUrl(tag)}
                         </code>
+                        <Button onClick={() => printQrCode(tag)} className="w-full">
+                          <Printer className="h-4 w-4 mr-2" />
+                          Štampaj QR kod
+                        </Button>
                       </div>
                     </DialogContent>
                   </Dialog>
