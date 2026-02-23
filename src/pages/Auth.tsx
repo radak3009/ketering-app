@@ -99,6 +99,9 @@ export default function Auth() {
     }
   }, [user, profile, navigate, authLoading, isRecoveryMode]);
 
+  // Read tag from URL
+  const tagFromUrl = searchParams.get('tag');
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -110,7 +113,8 @@ export default function Auth() {
         validatedData.email,
         validatedData.password,
         validatedData.fullName,
-        'employee'
+        'employee',
+        tagFromUrl || undefined
       );
       
       if (error) {
