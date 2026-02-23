@@ -45,6 +45,45 @@ export function SettingsTab() {
     toast({ title: "Kopirano!", description: "Link je kopiran u clipboard." });
   };
 
+  const printQrCode = (tag: string) => {
+    const url = getRegistrationUrl(tag);
+    const printWindow = window.open('', '_blank', 'width=600,height=800');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>QR Kod - ${tag}</title>
+        <style>
+          body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; font-family:system-ui,sans-serif; }
+          h1 { font-size:28px; margin-bottom:8px; }
+          .subtitle { font-size:14px; color:#666; margin-bottom:32px; }
+          .qr-container { padding:24px; border:2px solid #e5e7eb; border-radius:16px; }
+          .url { font-size:11px; color:#999; margin-top:24px; word-break:break-all; max-width:400px; text-align:center; }
+          .instructions { font-size:16px; margin-top:24px; color:#333; }
+          @media print { body { padding:0; } }
+        </style>
+      </head>
+      <body>
+        <h1>${tag}</h1>
+        <p class="subtitle">Ketering Portal - Registracija</p>
+        <div class="qr-container" id="qr"></div>
+        <p class="instructions">Skenirajte QR kod za registraciju</p>
+        <p class="url">${url}</p>
+        <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"><\/script>
+        <script>
+          var canvas = document.createElement('canvas');
+          QRCode.toCanvas(canvas, '${url}', {width:300,margin:2,errorCorrectionLevel:'H'}, function(){
+            document.getElementById('qr').appendChild(canvas);
+            setTimeout(function(){ window.print(); window.close(); }, 500);
+          });
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
     localStorage.getItem('kiosk_employee_token') || ''
