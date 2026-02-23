@@ -74,7 +74,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
     setFetching(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, phone, company_card_id, date_of_birth')
+      .select('full_name, phone, company_card_id, tag, date_of_birth')
       .eq('user_id', user.id)
       .single();
 
