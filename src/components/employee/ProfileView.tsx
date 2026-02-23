@@ -89,6 +89,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
       setFullName(data.full_name || '');
       setPhone(data.phone || '');
       setCompanyCardId(data.company_card_id || '');
+      setCurrentTag(data.tag || '');
       setDateOfBirth(data.date_of_birth ? new Date(data.date_of_birth) : undefined);
     }
   };
