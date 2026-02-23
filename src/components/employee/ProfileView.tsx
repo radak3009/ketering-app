@@ -346,7 +346,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
               <div className="flex justify-end pt-2">
                 <Button 
                   onClick={handleSaveId} 
-                  disabled={idLoading || !idInput} 
+                  disabled={idLoading || !idInput || (tagSelectionVisible && !tagInput)} 
                   size="lg"
                   className="gap-2"
                 >

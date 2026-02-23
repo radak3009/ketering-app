@@ -218,6 +218,41 @@ export function SettingsTab() {
           <KitchenScheduleSettings />
         </CardContent>
       </Card>
+
+      {/* Employee Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            {t('settings.employeeSettings', 'Podešavanja zaposlenih')}
+          </CardTitle>
+          <CardDescription>
+            {t('settings.employeeSettingsDesc', 'Konfigurisanje opcija vidljivih zaposlenima')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-1">
+              <Label className="text-base">{t('settings.tagSelectionVisible', 'Organizaciona jedinica (Tag)')}</Label>
+              <p className="text-sm text-muted-foreground">
+                {t('settings.tagSelectionVisibleDesc', 'Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije')}
+              </p>
+            </div>
+            <Switch
+              checked={tagSelectionVisible}
+              disabled={isUpdating}
+              onCheckedChange={async (checked) => {
+                try {
+                  await updateSetting({ key: 'tag_selection_visible', value: checked });
+                  toast({ title: t('toast.success'), description: t('toast.profileUpdated') });
+                } catch {
+                  toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
+                }
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
