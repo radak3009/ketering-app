@@ -224,7 +224,7 @@ export function SettingsTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            {t('settings.employeeSettings', 'Podešavanja zaposlenih')}
+            {t('settings.employeeSettings', 'Podešavanje organizacije')}
           </CardTitle>
           <CardDescription>
             {t('settings.employeeSettingsDesc', 'Konfigurisanje opcija vidljivih zaposlenima')}
