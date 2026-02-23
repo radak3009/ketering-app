@@ -230,6 +230,98 @@ export function SettingsTab() {
         </CardContent>
       </Card>
 
+      {/* Tag Registration QR Codes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            Registracijski linkovi po grupama
+          </CardTitle>
+          <CardDescription>
+            Generišite QR kodove za registraciju zaposlenih sa automatskim dodeljivanjem grupe (TAG)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Naziv nove grupe (npr. Marketing)"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addTag()}
+              className="flex-1"
+            />
+            <Button onClick={addTag} size="sm" disabled={!newTag.trim()}>
+              <Plus className="h-4 w-4 mr-1" />
+              Dodaj
+            </Button>
+          </div>
+
+          <div className="grid gap-3">
+            {tags.map((tag) => (
+              <div key={tag} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <Tag className="h-4 w-4 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{tag}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">
+                      {getRegistrationUrl(tag)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(getRegistrationUrl(tag))}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <QrCode className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>QR Kod - {tag}</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex flex-col items-center gap-4 py-4">
+                        <div className="p-4 bg-white rounded-lg">
+                          <QRCodeSVG 
+                            value={getRegistrationUrl(tag)}
+                            size={200}
+                            level="H"
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground text-center">
+                          Skenirajte za registraciju u grupu <strong>{tag}</strong>
+                        </p>
+                        <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
+                          {getRegistrationUrl(tag)}
+                        </code>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  <Button variant="ghost" size="sm" onClick={() => removeTag(tag)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {tags.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nema definisanih grupa. Dodajte prvu grupu iznad.
+            </p>
+          )}
+
+          <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
+            💡 <strong>Napomena:</strong> Kada se korisnik registruje preko ovih linkova, 
+            TAG grupa se automatski dodeljuje njihovom profilu. Možete dodati neograničen broj grupa.
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Kitchen Schedule Settings */}
       <Card>
         <CardHeader>
