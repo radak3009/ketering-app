@@ -26,15 +26,20 @@ interface ProfileViewProps {
 export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
   const { t } = useTranslation();
   const { refreshProfile } = useAuth();
+  const { getSetting, isLoading: settingsLoading } = useAppSettings();
+  const tagSelectionVisible = getSetting('tag_selection_visible') === true;
+  
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [companyCardId, setCompanyCardId] = useState('');
+  const [currentTag, setCurrentTag] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   
   // ID setup state
   const [idInput, setIdInput] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const [idError, setIdError] = useState('');
   const [idLoading, setIdLoading] = useState(false);
   const idSectionRef = useRef<HTMLDivElement>(null);
