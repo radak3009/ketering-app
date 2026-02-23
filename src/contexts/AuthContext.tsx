@@ -314,8 +314,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   }, []);
 
-  // Computed property: employee needs to set company_card_id if not set
-  const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
+  // Fetch tag_selection_visible setting
+  const [tagSelectionVisible, setTagSelectionVisible] = useState(false);
+  
+  useEffect(() => {
+    if (!session) return;
+    const fetchTagSetting = async () => {
+      const { data } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'tag_selection_visible')
+        .maybeSingle();
+      if (data) {
+        setTagSelectionVisible((data as any).value === true);
+      }
+    };
+    fetchTagSetting();
+  }, [session]);
+
+  // Computed property: employee needs to set company_card_id (and tag if visible)
+  const requiresIdSetup = profile !== null && profile.role === 'employee' && 
+    (!profile.company_card_id || (tagSelectionVisible && !profile.tag));
 
   // Function to refresh profile (after password is set)
   const refreshProfile = useCallback(async () => {
