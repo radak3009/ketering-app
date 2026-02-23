@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard, Info } from 'lucide-react';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LanguageToggle } from '@/components/ui/language-toggle';
