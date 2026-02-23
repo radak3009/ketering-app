@@ -27,7 +27,9 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
   const { t } = useTranslation();
   const { refreshProfile } = useAuth();
   const { getSetting, isLoading: settingsLoading } = useAppSettings();
-  const tagSelectionVisible = getSetting('tag_selection_visible') === true;
+  const tagVisibility = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
+  const visibleTags = Object.entries(tagVisibility).filter(([, v]) => v === true).map(([k]) => k);
+  const tagSelectionVisible = visibleTags.length > 0;
   
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
