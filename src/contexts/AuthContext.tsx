@@ -25,7 +25,7 @@ interface AuthContextType {
   requiresIdSetup: boolean; // True if employee hasn't set company_card_id
   clearPasswordRecovery: () => void;
   refreshProfile: () => Promise<void>; // Refresh profile after password set
-  signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee') => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee', tag?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<{ error: any }>;
@@ -211,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string, role: 'admin' | 'employee' = 'employee') => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, role: 'admin' | 'employee' = 'employee', tag?: string) => {
     // First check if user with this email already exists using secure function
     const { data: emailExists } = await supabase
       .rpc('email_exists', { check_email: email });
@@ -234,7 +234,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
-          role: role
+          role: role,
+          tag: tag || null
         }
       }
     });

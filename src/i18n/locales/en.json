@@ -123,6 +123,7 @@
     "connecting": "Connecting...",
     "registerWithGoogle": "Register with Google",
     "loadingProfile": "Loading profile...",
+    "registeringForTag": "Registering for group",
     "validation": {
       "invalidEmail": "Invalid email address",
       "passwordMin": "Password must be at least 6 characters",
