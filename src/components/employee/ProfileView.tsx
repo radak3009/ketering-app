@@ -311,6 +311,24 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="idSetup">{t('profile.companyCardId')}</Label>
+                <Input
+                  id="idSetup"
+                  value={idInput}
+                  onChange={(e) => handleIdInputChange(e.target.value)}
+                  placeholder={t('profile.enterCompanyCardId')}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={10}
+                  autoFocus
+                  className={idError ? 'border-destructive' : ''}
+                />
+                {idError && (
+                  <p className="text-sm text-destructive">{idError}</p>
+                )}
+              </div>
+
               {/* Tag / Organization selection */}
               {settingsLoading ? (
                 <div className="space-y-3">
@@ -333,23 +351,6 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                   </RadioGroup>
                 </div>
               ) : null}
-              <div className="space-y-2">
-                <Label htmlFor="idSetup">{t('profile.companyCardId')}</Label>
-                <Input
-                  id="idSetup"
-                  value={idInput}
-                  onChange={(e) => handleIdInputChange(e.target.value)}
-                  placeholder={t('profile.enterCompanyCardId')}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={10}
-                  autoFocus
-                  className={idError ? 'border-destructive' : ''}
-                />
-                {idError && (
-                  <p className="text-sm text-destructive">{idError}</p>
-                )}
-              </div>
 
               <div className="flex justify-end pt-2">
                 <Button 
