@@ -189,7 +189,15 @@
     "passwordMinLength": "Password must be at least 6 characters",
     "enterNewPassword": "Enter new password",
     "passwordMismatch": "Passwords do not match",
-    "changePasswordButton": "Change password"
+    "changePasswordButton": "Change password",
+    "selectOrganization": "Select organizational unit",
+    "organizationRequired": "You must select an organizational unit"
+  },
+  "settings": {
+    "employeeSettings": "Employee Settings",
+    "employeeSettingsDesc": "Configure options visible to employees",
+    "tagSelectionVisible": "Organizational Unit (Tag)",
+    "tagSelectionVisibleDesc": "Show organizational unit selection option to employees during registration"
   },
   "orders": {
     "title": "Orders",

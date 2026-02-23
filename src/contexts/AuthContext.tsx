@@ -7,11 +7,12 @@ interface Profile {
   user_id: string;
   company_id: string | null;
   company_card_id: string | null;
+  tag: string | null;
   full_name: string | null;
   email: string | null;
   phone: string | null;
-  role: 'admin' | 'employee' | null; // Fetched from user_roles table
-  password_set: boolean; // Tracks if user has set their password (false for invited users)
+  role: 'admin' | 'employee' | null;
+  password_set: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -113,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const [profileResult, roleResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, user_id, company_id, company_card_id, full_name, email, phone, role, password_set, created_at, updated_at')
+            .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
             .eq('user_id', userId)
             .maybeSingle(),
           supabase
@@ -314,8 +315,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   }, []);
 
-  // Computed property: employee needs to set company_card_id if not set
-  const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
+  // Fetch tag_selection_visible setting
+  const [tagSelectionVisible, setTagSelectionVisible] = useState(false);
+  
+  useEffect(() => {
+    if (!session) return;
+    const fetchTagSetting = async () => {
+      const { data } = await supabase
+        .from('app_settings' as any)
+        .select('value')
+        .eq('key', 'tag_selection_visible')
+        .maybeSingle();
+      if (data) {
+        setTagSelectionVisible((data as any).value === true);
+      }
+    };
+    fetchTagSetting();
+  }, [session]);
+
+  // Computed property: employee needs to set company_card_id (and tag if visible)
+  const requiresIdSetup = profile !== null && profile.role === 'employee' && 
+    (!profile.company_card_id || (tagSelectionVisible && !profile.tag));
 
   // Function to refresh profile (after password is set)
   const refreshProfile = useCallback(async () => {
@@ -323,7 +343,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const [profileResult, roleResult] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id, user_id, company_id, company_card_id, full_name, email, phone, role, password_set, created_at, updated_at')
+          .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase

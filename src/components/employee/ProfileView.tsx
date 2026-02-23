@@ -7,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { User } from '@supabase/supabase-js';
 import { Loader2, User as UserIcon, Lock, Eye, EyeOff, AlertTriangle, CheckCircle2, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
@@ -24,15 +26,20 @@ interface ProfileViewProps {
 export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
   const { t } = useTranslation();
   const { refreshProfile } = useAuth();
+  const { getSetting, isLoading: settingsLoading } = useAppSettings();
+  const tagSelectionVisible = getSetting('tag_selection_visible') === true;
+  
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [companyCardId, setCompanyCardId] = useState('');
+  const [currentTag, setCurrentTag] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   
   // ID setup state
   const [idInput, setIdInput] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const [idError, setIdError] = useState('');
   const [idLoading, setIdLoading] = useState(false);
   const idSectionRef = useRef<HTMLDivElement>(null);
@@ -67,7 +74,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
     setFetching(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, phone, company_card_id, date_of_birth')
+      .select('full_name, phone, company_card_id, tag, date_of_birth')
       .eq('user_id', user.id)
       .single();
 
@@ -82,6 +89,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
       setFullName(data.full_name || '');
       setPhone(data.phone || '');
       setCompanyCardId(data.company_card_id || '');
+      setCurrentTag(data.tag || '');
       setDateOfBirth(data.date_of_birth ? new Date(data.date_of_birth) : undefined);
     }
   };
@@ -125,12 +133,18 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
     setIdError('');
   };
 
-  // Save company card ID
+  // Save company card ID and tag
   const handleSaveId = async () => {
     if (!user || !idInput) return;
 
     if (!/^[0-9]+$/.test(idInput)) {
       setIdError(t('profile.idMustBeNumeric', 'ID mora biti numerička vrednost'));
+      return;
+    }
+
+    // Validate tag if visible
+    if (tagSelectionVisible && !tagInput) {
+      setIdError(t('profile.organizationRequired', 'Morate odabrati organizacionu jedinicu'));
       return;
     }
 
@@ -150,10 +164,15 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
       return;
     }
 
-    // Save
+    // Save ID + tag
+    const updateData: any = { company_card_id: idInput };
+    if (tagSelectionVisible && tagInput) {
+      updateData.tag = tagInput;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ company_card_id: idInput })
+      .update(updateData)
       .eq('user_id', user.id);
 
     setIdLoading(false);
@@ -290,6 +309,22 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 </div>
               </div>
 
+              {/* Tag / Organization selection */}
+              {tagSelectionVisible && (
+                <div className="space-y-3">
+                  <Label>{t('profile.selectOrganization', 'Odaberite organizacionu jedinicu')}</Label>
+                  <RadioGroup value={tagInput} onValueChange={setTagInput}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Proizvodnja" id="tag-proizvodnja" />
+                      <Label htmlFor="tag-proizvodnja" className="cursor-pointer">Proizvodnja</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Hogo" id="tag-hogo" />
+                      <Label htmlFor="tag-hogo" className="cursor-pointer">Hogo</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="idSetup">{t('profile.companyCardId')}</Label>
                 <Input
@@ -311,7 +346,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
               <div className="flex justify-end pt-2">
                 <Button 
                   onClick={handleSaveId} 
-                  disabled={idLoading || !idInput} 
+                  disabled={idLoading || !idInput || (tagSelectionVisible && !tagInput)} 
                   size="lg"
                   className="gap-2"
                 >

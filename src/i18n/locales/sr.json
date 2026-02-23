@@ -189,7 +189,15 @@
     "passwordMinLength": "Lozinka mora imati najmanje 6 karaktera",
     "enterNewPassword": "Unesite novu lozinku",
     "passwordMismatch": "Lozinke se ne podudaraju",
-    "changePasswordButton": "Promeni lozinku"
+    "changePasswordButton": "Promeni lozinku",
+    "selectOrganization": "Odaberite organizacionu jedinicu",
+    "organizationRequired": "Morate odabrati organizacionu jedinicu"
+  },
+  "settings": {
+    "employeeSettings": "Podešavanja zaposlenih",
+    "employeeSettingsDesc": "Konfigurisanje opcija vidljivih zaposlenima",
+    "tagSelectionVisible": "Organizaciona jedinica (Tag)",
+    "tagSelectionVisibleDesc": "Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije"
   },
   "orders": {
     "title": "Porudžbine",
