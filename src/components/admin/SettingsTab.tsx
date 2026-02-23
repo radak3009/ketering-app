@@ -5,84 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock, Tag, Copy, Plus, Trash2, Printer } from "lucide-react";
+import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
-import { useToast } from "@/hooks/use-toast";
 
 export function SettingsTab() {
   const { t } = useTranslation();
-  const { toast } = useToast();
-
-  // Tag-based registration links
-  const [tags, setTags] = useState<string[]>(() => {
-    const saved = localStorage.getItem('registration_tags');
-    return saved ? JSON.parse(saved) : ['Proizvodnja', 'Hogo'];
-  });
-  const [newTag, setNewTag] = useState('');
-
-  const addTag = () => {
-    const trimmed = newTag.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      const updated = [...tags, trimmed];
-      setTags(updated);
-      localStorage.setItem('registration_tags', JSON.stringify(updated));
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    const updated = tags.filter(t => t !== tag);
-    setTags(updated);
-    localStorage.setItem('registration_tags', JSON.stringify(updated));
-  };
-
-  const getRegistrationUrl = (tag: string) => 
-    `${window.location.origin}/auth?tag=${encodeURIComponent(tag)}`;
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Kopirano!", description: "Link je kopiran u clipboard." });
-  };
-
-  const printQrCode = (tag: string) => {
-    const url = getRegistrationUrl(tag);
-    const printWindow = window.open('', '_blank', 'width=600,height=800');
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>QR Kod - ${tag}</title>
-        <style>
-          body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; font-family:system-ui,sans-serif; }
-          h1 { font-size:28px; margin-bottom:8px; }
-          .subtitle { font-size:14px; color:#666; margin-bottom:32px; }
-          .qr-container { padding:24px; border:2px solid #e5e7eb; border-radius:16px; }
-          .url { font-size:11px; color:#999; margin-top:24px; word-break:break-all; max-width:400px; text-align:center; }
-          .instructions { font-size:16px; margin-top:24px; color:#333; }
-          @media print { body { padding:0; } }
-        </style>
-      </head>
-      <body>
-        <h1>${tag}</h1>
-        <p class="subtitle">Ketering Portal - Registracija</p>
-        <div class="qr-container" id="qr"></div>
-        <p class="instructions">Skenirajte QR kod za registraciju</p>
-        <p class="url">${url}</p>
-        <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"><\/script>
-        <script>
-          var canvas = document.createElement('canvas');
-          QRCode.toCanvas(canvas, '${url}', {width:300,margin:2,errorCorrectionLevel:'H'}, function(){
-            document.getElementById('qr').appendChild(canvas);
-            setTimeout(function(){ window.print(); window.close(); }, 500);
-          });
-        <\/script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
 
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
@@ -265,102 +193,6 @@ export function SettingsTab() {
             💡 <strong>Napomena:</strong> Tokeni se čuvaju lokalno u vašem pregledaču. 
             Preuzmite tokene iz Supabase Edge Function secrets-a. 
             Koristite Full Screen (F11) za kiosk mod na tabletima.
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tag Registration QR Codes */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            Registracijski linkovi po grupama
-          </CardTitle>
-          <CardDescription>
-            Generišite QR kodove za registraciju zaposlenih sa automatskim dodeljivanjem grupe (TAG)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Naziv nove grupe (npr. Marketing)"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addTag()}
-              className="flex-1"
-            />
-            <Button onClick={addTag} size="sm" disabled={!newTag.trim()}>
-              <Plus className="h-4 w-4 mr-1" />
-              Dodaj
-            </Button>
-          </div>
-
-          <div className="grid gap-3">
-            {tags.map((tag) => (
-              <div key={tag} className="flex items-center justify-between p-3 border rounded-lg bg-card">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-accent/10">
-                    <Tag className="h-4 w-4 text-accent-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{tag}</p>
-                    <p className="text-xs text-muted-foreground truncate max-w-[200px] md:max-w-[400px]">
-                      {getRegistrationUrl(tag)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(getRegistrationUrl(tag))}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <QrCode className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>QR Kod - {tag}</DialogTitle>
-                      </DialogHeader>
-                      <div className="flex flex-col items-center gap-4 py-4">
-                        <div className="p-4 bg-white rounded-lg">
-                          <QRCodeSVG 
-                            value={getRegistrationUrl(tag)}
-                            size={200}
-                            level="H"
-                          />
-                        </div>
-                        <p className="text-sm text-muted-foreground text-center">
-                          Skenirajte za registraciju u grupu <strong>{tag}</strong>
-                        </p>
-                        <code className="text-xs bg-muted p-2 rounded break-all max-w-full">
-                          {getRegistrationUrl(tag)}
-                        </code>
-                        <Button onClick={() => printQrCode(tag)} className="w-full">
-                          <Printer className="h-4 w-4 mr-2" />
-                          Štampaj QR kod
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  <Button variant="ghost" size="sm" onClick={() => removeTag(tag)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {tags.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nema definisanih grupa. Dodajte prvu grupu iznad.
-            </p>
-          )}
-
-          <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
-            💡 <strong>Napomena:</strong> Kada se korisnik registruje preko ovih linkova, 
-            TAG grupa se automatski dodeljuje njihovom profilu. Možete dodati neograničen broj grupa.
           </div>
         </CardContent>
       </Card>

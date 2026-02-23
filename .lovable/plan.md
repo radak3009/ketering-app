@@ -1,135 +1,112 @@
 
 
-## Plan: Automatsko dodeljivanje TAG-a pri registraciji putem linka
+## Plan: Zamena "Password Setup" sa "Company Card ID Setup" pri prvoj prijavi
 
 ### Pregled
 
-Kreiranje razlicitih registracijskih linkova koji automatski dodeljuju TAG korisniku. Na primer:
-- `https://ketering-app.lovable.app/auth?tag=Proizvodnja` - za zaposlene u proizvodnji
-- `https://ketering-app.lovable.app/auth?tag=Hogo` - za zaposlene u hotelu HOGO
-- Moze se dodati neogranicen broj tagova u buducnosti
+Trenutno, kada se korisnik prvi put prijavi, sistem zahteva postavljanje lozinke (`password_set = false`). Ovo nema smisla jer korisnik vec unosi lozinku prilikom registracije. Umesto toga, sistem ce zahtevati unos jedinstvenog ID-a zaposlenog (`company_card_id`) pre nego sto korisnik moze koristiti aplikaciju.
 
-### Kako funkcionise
+Nakon sto korisnik uspesno unese ID, polje postaje trajno zakljucano (read-only) i korisnik ga vise ne moze menjati. Samo admin moze menjati ID zaposlenog.
+
+### Promena logike
 
 ```text
-QR kod "Proizvodnja"                    QR kod "Hogo"
-/auth?tag=Proizvodnja                   /auth?tag=Hogo
-        |                                      |
-        v                                      v
-   Auth stranica cita tag iz URL-a
-        |
-        v
-   signUp() salje tag kao user_metadata
-        |
-        v
-   handle_new_user() trigger cuva tag u profiles tabelu
-        |
-        v
-   Korisnik automatski ima dodeljen TAG
+TRENUTNO:                           NOVO:
+password_set = false                company_card_id = null
+  -> zahtevaj lozinku                 -> zahtevaj unos ID-a
+  -> password_set = true              -> sacuvaj ID
+                                      -> polje postaje read-only zauvek
 ```
 
 ### Fajlovi za izmenu
 
 | Fajl | Akcija | Opis |
 |------|--------|------|
-| `src/pages/Auth.tsx` | UPDATE | Citanje `tag` query parametra, prosledjivanje u signUp |
-| `src/contexts/AuthContext.tsx` | UPDATE | Dodati `tag` parametar u signUp funkciju i user_metadata |
-| Database migration | UPDATE | Azurirati `handle_new_user()` trigger da cita `tag` iz metadata |
-| `src/components/admin/SettingsTab.tsx` | UPDATE | Dodati sekciju za generisanje QR kodova po TAG-u |
+| `src/contexts/AuthContext.tsx` | UPDATE | Promeniti `requiresPasswordSetup` u `requiresIdSetup`, logika bazirana na `company_card_id` |
+| `src/components/EmployeeDashboard.tsx` | UPDATE | Preimenovati reference, azurirati alert poruku |
+| `src/components/employee/ProfileView.tsx` | UPDATE | Zameniti password setup sa ID setup sekcijom; nakon unosa ID postaje read-only |
+| `src/i18n/locales/sr.json` | UPDATE | Novi prevodi za ID setup |
+| `src/i18n/locales/en.json` | UPDATE | Novi prevodi za ID setup |
 
 ---
 
 ### Detalji implementacije
 
-#### 1. Auth.tsx - Citanje TAG parametra iz URL-a
+#### 1. AuthContext.tsx
 
-```typescript
-// Vec postoji: const [searchParams] = useSearchParams();
-const tagFromUrl = searchParams.get('tag'); // "Proizvodnja", "Hogo", itd.
+- Preimenovati `requiresPasswordSetup` u `requiresIdSetup`
+- Nova logika:
+  ```typescript
+  // STARO:
+  const requiresPasswordSetup = profile !== null && profile.password_set === false;
 
-// Pri pozivanju signUp, proslediti tag:
-await signUp(email, password, fullName, 'employee', tagFromUrl || undefined);
-```
+  // NOVO:
+  const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
+  ```
+- Azurirati interfejs `AuthContextType` i `value` objekat
 
-Tag se prikazuje korisniku na registracionoj formi kao info poruka (npr. "Registrujete se za: Proizvodnja") da korisnik zna koji tag dobija.
+#### 2. EmployeeDashboard.tsx
 
-#### 2. AuthContext.tsx - Prosiriti signUp
+- Zameniti sve reference `requiresPasswordSetup` sa `requiresIdSetup`
+- Azurirati alert poruku na "Morate uneti svoj ID zaposlenog"
+- Proslediti `isIdSetupMode` umesto `isPasswordSetupMode` u `ProfileView`
 
-Dodati `tag` parametar u `signUp` funkciju:
+#### 3. ProfileView.tsx - Glavna izmena
 
-```typescript
-const signUp = async (email, password, fullName, role = 'employee', tag?: string) => {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        role: role,
-        tag: tag || null,  // NOVO
-      }
-    }
-  });
-  return { error };
-};
-```
+**ID Setup rezim** (`isIdSetupMode = true`, kada korisnik nema ID):
+- Prikazati istaknutu sekciju za unos `company_card_id`
+- Polje za unos: numericko, max 10 cifara
+- Validacija u realnom vremenu:
+  - Samo cifre (regex `^[0-9]+$`)
+  - Maksimalno 10 karaktera
+  - Provera jedinstvenosti u bazi pre cuvanja
+- Greska ako ID vec postoji: "ID XXXXX je vec dodeljen drugom korisniku"
+- Dugme "Sacuvaj ID" koje cuva, poziva `refreshProfile()`, i korisnik dobija pristup
 
-Azurirati interfejs `AuthContextType` da ukljuci novi parametar.
+**Normalan rezim** (korisnik VEC ima ID):
+- Polje `company_card_id` je **uvek read-only** - prikazuje se kao disabled input ili staticni tekst
+- Korisnik ne moze menjati svoj ID nakon sto ga jednom postavi
+- Samo admin moze menjati ID kroz admin panel (UsersManagement)
+- Prikazati helper tekst: "ID je trajno dodeljen. Kontaktirajte administratora za promenu."
 
-#### 3. Database Migration - Azurirati handle_new_user() trigger
-
-Trenutni trigger ne cita `tag` iz metadata. Treba ga azurirati:
-
-```sql
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $function$
-BEGIN
-  INSERT INTO public.profiles (user_id, full_name, email, role, tag)
-  VALUES (
-    new.id,
-    new.raw_user_meta_data ->> 'full_name',
-    new.email,
-    COALESCE((new.raw_user_meta_data ->> 'role')::app_role, 'employee'::app_role),
-    new.raw_user_meta_data ->> 'tag'  -- NOVO: cuva tag iz metadata
-  );
-  RETURN new;
-END;
-$function$
-```
-
-#### 4. SettingsTab.tsx - Sekcija za generisanje QR kodova po TAG-u
-
-Dodati novu karticu u admin podesavanja koja omogucava:
-- Unos naziva TAG-a (npr. "Proizvodnja", "Hogo")
-- Automatsko generisanje linka: `https://ketering-app.lovable.app/auth?tag=Proizvodnja`
-- QR kod za svaki TAG (koristi vec instaliran `qrcode.react`)
-- Dugme za kopiranje linka
-
-Ovo koristi vec postojece komponente (`QRCodeSVG`, `Dialog`) iz `SettingsTab.tsx` fajla.
-
-#### 5. Auth.tsx - Vizuelna indikacija TAG-a
-
-Na registracionoj formi, ako je tag prisutan u URL-u, prikazati info badge:
+**Rezime ponasanja polja:**
 
 ```text
-+----------------------------------+
-|  Registracija                    |
-|                                  |
-|  [i] Registrujete se za:        |
-|      Proizvodnja                 |
-|                                  |
-|  Ime: [____________]            |
-|  Email: [____________]          |
-|  Lozinka: [____________]        |
-|                                  |
-|  [Registruj se]                 |
-+----------------------------------+
+Stanje                    | Polje ID
+--------------------------|------------------
+Nema ID (setup mode)      | Editabilno + validacija
+Ima ID (normalan rezim)   | Read-only, zauvek
+Admin menja u admin panelu| Editabilno (vec implementirano)
 ```
 
-### Buducnost
+#### 4. Validacija jedinstvenosti
 
-Ovaj pristup je skalabilan - za svaki novi tag, admin samo unese naziv u Settings i generise novi QR kod. Nije potrebna nikakva promena koda za dodavanje novih tagova.
+Direktan upit ka bazi pre cuvanja:
+
+```typescript
+const { data } = await supabase
+  .from('profiles')
+  .select('id, full_name')
+  .eq('company_card_id', inputValue)
+  .maybeSingle();
+
+if (data) {
+  // ID vec postoji - prikazati gresku
+}
+```
+
+Baza vec ima UNIQUE constraint kao dodatnu zastitu.
+
+#### 5. Prevodi (sr.json / en.json)
+
+Novi kljucevi:
+- `profile.idSetupRequired` - Alert poruka u headeru
+- `profile.setupId` - Naslov sekcije
+- `profile.setupIdDescription` - Opis sta korisnik treba da uradi
+- `profile.enterCompanyCardId` - Placeholder
+- `profile.saveId` - Tekst dugmeta
+- `profile.idAlreadyExists` - Greska jedinstvenosti
+- `profile.idSetSuccess` - Poruka o uspehu
+- `profile.idReadOnlyHelp` - "ID je trajno dodeljen. Kontaktirajte administratora za promenu."
+- `employee.idSetupWarning` - Upozorenje u dashboard headeru
+

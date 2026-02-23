@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard, Info } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard } from 'lucide-react';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -99,9 +99,6 @@ export default function Auth() {
     }
   }, [user, profile, navigate, authLoading, isRecoveryMode]);
 
-  // Read tag from URL
-  const tagFromUrl = searchParams.get('tag');
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -113,8 +110,7 @@ export default function Auth() {
         validatedData.email,
         validatedData.password,
         validatedData.fullName,
-        'employee',
-        tagFromUrl || undefined
+        'employee'
       );
       
       if (error) {
@@ -688,14 +684,6 @@ export default function Auth() {
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
-                {tagFromUrl && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
-                    <Info className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span>
-                      {t('auth.registeringForTag')}: <strong>{tagFromUrl}</strong>
-                    </span>
-                  </div>
-                )}
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">{t('auth.fullName')}</Label>
