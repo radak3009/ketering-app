@@ -380,6 +380,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Hook for consuming auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
