@@ -1,84 +1,112 @@
 
 
-## Plan: Prikaz ID-a i imena korisnika u header-u Employee panela
+## Plan: Zamena "Password Setup" sa "Company Card ID Setup" pri prvoj prijavi
 
 ### Pregled
 
-Prikazati `company_card_id` (ID zaposlenog) i `full_name` (Ime i Prezime) ulogovanog korisnika u gornjoj traci Employee Dashboard-a, vidljivo na desktop i tablet ekranima (sakriveno na mobilnim).
+Trenutno, kada se korisnik prvi put prijavi, sistem zahteva postavljanje lozinke (`password_set = false`). Ovo nema smisla jer korisnik vec unosi lozinku prilikom registracije. Umesto toga, sistem ce zahtevati unos jedinstvenog ID-a zaposlenog (`company_card_id`) pre nego sto korisnik moze koristiti aplikaciju.
 
-### Optimalna pozicija
+Nakon sto korisnik uspesno unese ID, polje postaje trajno zakljucano (read-only) i korisnik ga vise ne moze menjati. Samo admin moze menjati ID zaposlenog.
 
-Informacije o korisniku ce biti postavljene **levo od dugmeta "Odjavi se"**, a desno od AI ikonice. Ovako korisnik odmah vidi ko je ulogovan pre nego sto klikne na odjavu.
+### Promena logike
 
 ```text
-Header layout (desktop/tablet):
-┌──────────────────────────────────────────────────────────────────┐
-│ [Logo] Ketering Portal          [AI] [RS] [Theme] [User] [Odjavi se] │
-│        Porucite obroke...                          ▲                  │
-│                                          ID: 12345                   │
-│                                          Ime Prezime                 │
-└──────────────────────────────────────────────────────────────────┘
+TRENUTNO:                           NOVO:
+password_set = false                company_card_id = null
+  -> zahtevaj lozinku                 -> zahtevaj unos ID-a
+  -> password_set = true              -> sacuvaj ID
+                                      -> polje postaje read-only zauvek
 ```
-
-Korisnicke informacije ce biti prikazane kao kompaktan blok sa malim tekstom (ID i ime), vidljiv samo na `sm:` i vecim ekranima. Na mobilnim uredajima, ove informacije su dostupne kroz "Profil" tab.
 
 ### Fajlovi za izmenu
 
 | Fajl | Akcija | Opis |
 |------|--------|------|
-| `src/contexts/AuthContext.tsx` | UPDATE | Dodati `company_card_id` u profile SELECT upit |
-| `src/components/EmployeeDashboard.tsx` | UPDATE | Dodati prikaz korisnickih podataka u header |
+| `src/contexts/AuthContext.tsx` | UPDATE | Promeniti `requiresPasswordSetup` u `requiresIdSetup`, logika bazirana na `company_card_id` |
+| `src/components/EmployeeDashboard.tsx` | UPDATE | Preimenovati reference, azurirati alert poruku |
+| `src/components/employee/ProfileView.tsx` | UPDATE | Zameniti password setup sa ID setup sekcijom; nakon unosa ID postaje read-only |
+| `src/i18n/locales/sr.json` | UPDATE | Novi prevodi za ID setup |
+| `src/i18n/locales/en.json` | UPDATE | Novi prevodi za ID setup |
 
 ---
 
 ### Detalji implementacije
 
-#### 1. AuthContext.tsx - Dodati `company_card_id` u profile fetch
+#### 1. AuthContext.tsx
 
-Obe lokacije gde se profil ucitava (`fetchUserProfile` i `refreshProfile`) treba azurirati da ukljuce `company_card_id` polje u SELECT upit.
+- Preimenovati `requiresPasswordSetup` u `requiresIdSetup`
+- Nova logika:
+  ```typescript
+  // STARO:
+  const requiresPasswordSetup = profile !== null && profile.password_set === false;
 
-Takodje, `Profile` interfejs u AuthContext-u treba prosiriti sa:
+  // NOVO:
+  const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
+  ```
+- Azurirati interfejs `AuthContextType` i `value` objekat
+
+#### 2. EmployeeDashboard.tsx
+
+- Zameniti sve reference `requiresPasswordSetup` sa `requiresIdSetup`
+- Azurirati alert poruku na "Morate uneti svoj ID zaposlenog"
+- Proslediti `isIdSetupMode` umesto `isPasswordSetupMode` u `ProfileView`
+
+#### 3. ProfileView.tsx - Glavna izmena
+
+**ID Setup rezim** (`isIdSetupMode = true`, kada korisnik nema ID):
+- Prikazati istaknutu sekciju za unos `company_card_id`
+- Polje za unos: numericko, max 10 cifara
+- Validacija u realnom vremenu:
+  - Samo cifre (regex `^[0-9]+$`)
+  - Maksimalno 10 karaktera
+  - Provera jedinstvenosti u bazi pre cuvanja
+- Greska ako ID vec postoji: "ID XXXXX je vec dodeljen drugom korisniku"
+- Dugme "Sacuvaj ID" koje cuva, poziva `refreshProfile()`, i korisnik dobija pristup
+
+**Normalan rezim** (korisnik VEC ima ID):
+- Polje `company_card_id` je **uvek read-only** - prikazuje se kao disabled input ili staticni tekst
+- Korisnik ne moze menjati svoj ID nakon sto ga jednom postavi
+- Samo admin moze menjati ID kroz admin panel (UsersManagement)
+- Prikazati helper tekst: "ID je trajno dodeljen. Kontaktirajte administratora za promenu."
+
+**Rezime ponasanja polja:**
+
+```text
+Stanje                    | Polje ID
+--------------------------|------------------
+Nema ID (setup mode)      | Editabilno + validacija
+Ima ID (normalan rezim)   | Read-only, zauvek
+Admin menja u admin panelu| Editabilno (vec implementirano)
+```
+
+#### 4. Validacija jedinstvenosti
+
+Direktan upit ka bazi pre cuvanja:
+
 ```typescript
-interface Profile {
-  // ... postojeca polja ...
-  company_card_id: string | null;
+const { data } = await supabase
+  .from('profiles')
+  .select('id, full_name')
+  .eq('company_card_id', inputValue)
+  .maybeSingle();
+
+if (data) {
+  // ID vec postoji - prikazati gresku
 }
 ```
 
-#### 2. EmployeeDashboard.tsx - Prikaz u header-u
+Baza vec ima UNIQUE constraint kao dodatnu zastitu.
 
-Dodati blok sa korisnickim podacima izmedju AI ikonice i Language toggle-a (ili pre "Odjavi se" dugmeta). Koristice se `profile` iz `useAuth()`:
+#### 5. Prevodi (sr.json / en.json)
 
-```typescript
-const { signOut, user, profile, requiresPasswordSetup } = useAuth();
-```
+Novi kljucevi:
+- `profile.idSetupRequired` - Alert poruka u headeru
+- `profile.setupId` - Naslov sekcije
+- `profile.setupIdDescription` - Opis sta korisnik treba da uradi
+- `profile.enterCompanyCardId` - Placeholder
+- `profile.saveId` - Tekst dugmeta
+- `profile.idAlreadyExists` - Greska jedinstvenosti
+- `profile.idSetSuccess` - Poruka o uspehu
+- `profile.idReadOnlyHelp` - "ID je trajno dodeljen. Kontaktirajte administratora za promenu."
+- `employee.idSetupWarning` - Upozorenje u dashboard headeru
 
-Prikaz ce biti:
-- **ID:** `profile?.company_card_id` (ili prazno ako nije postavljeno)
-- **Ime:** `profile?.full_name`
-- Vidljivost: `hidden sm:flex` - sakriveno na malim mobilnim ekranima
-- Stilizacija: kompaktan tekst, `text-xs` ili `text-sm`, desno poravnanje
-
-Pozicija u kodu - izmedju Language/Theme toggle-ova i "Odjavi se" dugmeta:
-
-```typescript
-{/* User Info - visible on tablet/desktop */}
-{!requiresPasswordSetup && profile && (
-  <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground">
-    {profile.company_card_id && (
-      <span className="font-mono font-medium text-foreground">
-        ID: {profile.company_card_id}
-      </span>
-    )}
-    {profile.full_name && (
-      <span className="truncate max-w-[150px]">{profile.full_name}</span>
-    )}
-  </div>
-)}
-```
-
-### Rezime vizuelnog prikaza
-
-- **Desktop/Tablet (>=640px):** ID i ime vidljivi u header-u, kompaktno poravnati
-- **Mobilni (<640px):** Sakriveno - korisnik pristupa podacima kroz "Profil" tab
-- Koristi se `text-muted-foreground` za ime i `font-mono` za ID radi vizuelne razlike
