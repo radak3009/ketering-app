@@ -1,0 +1,1 @@
+UPDATE public.app_settings SET value = '{"Proizvodnja": true, "Hogo": true}'::jsonb WHERE key = 'tag_selection_visible';
