@@ -194,7 +194,7 @@
     "organizationRequired": "You must select an organizational unit"
   },
   "settings": {
-    "employeeSettings": "Employee Settings",
+    "employeeSettings": "Organization Settings",
     "employeeSettingsDesc": "Configure options visible to employees",
     "tagSelectionVisible": "Organizational Unit (Tag)",
     "tagSelectionVisibleDesc": "Show organizational unit selection option to employees during registration"

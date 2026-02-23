@@ -194,7 +194,7 @@
     "organizationRequired": "Morate odabrati organizacionu jedinicu"
   },
   "settings": {
-    "employeeSettings": "Podešavanja zaposlenih",
+    "employeeSettings": "Podešavanje organizacije",
     "employeeSettingsDesc": "Konfigurisanje opcija vidljivih zaposlenima",
     "tagSelectionVisible": "Organizaciona jedinica (Tag)",
     "tagSelectionVisibleDesc": "Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije"
