@@ -123,6 +123,7 @@
     "loadingProfile": "Učitavanje profila...",
     "emailPlaceholder": "vas@email.com",
     "namePlaceholder": "Marko Marković",
+    "registeringForTag": "Registrujete se za grupu",
     "validation": {
       "invalidEmail": "Neispravna email adresa",
       "passwordMin": "Lozinka mora imati najmanje 6 karaktera",

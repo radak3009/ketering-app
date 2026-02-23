@@ -688,6 +688,14 @@ export default function Auth() {
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
+                {tagFromUrl && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+                    <Info className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span>
+                      {t('auth.registeringForTag')}: <strong>{tagFromUrl}</strong>
+                    </span>
+                  </div>
+                )}
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">{t('auth.fullName')}</Label>
