@@ -312,7 +312,15 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
               </div>
 
               {/* Tag / Organization selection */}
-              {tagSelectionVisible && (
+              {settingsLoading ? (
+                <div className="space-y-3">
+                  <Label>{t('profile.selectOrganization', 'Odaberite organizacionu jedinicu')}</Label>
+                  <div className="flex items-center gap-2 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{t('common.loading', 'Učitavanje...')}</span>
+                  </div>
+                </div>
+              ) : tagSelectionVisible ? (
                 <div className="space-y-3">
                   <Label>{t('profile.selectOrganization', 'Odaberite organizacionu jedinicu')}</Label>
                   <RadioGroup value={tagInput} onValueChange={setTagInput}>
@@ -324,7 +332,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                     ))}
                   </RadioGroup>
                 </div>
-              )}
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="idSetup">{t('profile.companyCardId')}</Label>
                 <Input

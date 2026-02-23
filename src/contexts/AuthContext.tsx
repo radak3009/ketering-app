@@ -387,7 +387,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     session,
     profile,
-    loading: loading || processingAuth,
+    loading: loading || processingAuth || (!!session && !tagSettingLoaded),
     isPasswordRecovery,
     requiresIdSetup,
     clearPasswordRecovery,
