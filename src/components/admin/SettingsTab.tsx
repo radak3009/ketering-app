@@ -4,10 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock } from "lucide-react";
+import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { useToast } from "@/hooks/use-toast";
 
 export function SettingsTab() {
   const { t } = useTranslation();
