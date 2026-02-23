@@ -27,7 +27,9 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
   const { t } = useTranslation();
   const { refreshProfile } = useAuth();
   const { getSetting, isLoading: settingsLoading } = useAppSettings();
-  const tagSelectionVisible = getSetting('tag_selection_visible') === true;
+  const tagVisibility = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
+  const visibleTags = Object.entries(tagVisibility).filter(([, v]) => v === true).map(([k]) => k);
+  const tagSelectionVisible = visibleTags.length > 0;
   
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -314,14 +316,12 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 <div className="space-y-3">
                   <Label>{t('profile.selectOrganization', 'Odaberite organizacionu jedinicu')}</Label>
                   <RadioGroup value={tagInput} onValueChange={setTagInput}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Proizvodnja" id="tag-proizvodnja" />
-                      <Label htmlFor="tag-proizvodnja" className="cursor-pointer">Proizvodnja</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Hogo" id="tag-hogo" />
-                      <Label htmlFor="tag-hogo" className="cursor-pointer">Hogo</Label>
-                    </div>
+                    {visibleTags.map((tag) => (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <RadioGroupItem value={tag} id={`tag-${tag.toLowerCase()}`} />
+                        <Label htmlFor={`tag-${tag.toLowerCase()}`} className="cursor-pointer">{tag}</Label>
+                      </div>
+                    ))}
                   </RadioGroup>
                 </div>
               )}
