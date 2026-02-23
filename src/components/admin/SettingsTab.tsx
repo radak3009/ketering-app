@@ -230,27 +230,35 @@ export function SettingsTab() {
             {t('settings.employeeSettingsDesc', 'Konfigurisanje opcija vidljivih zaposlenima')}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="space-y-1">
-              <Label className="text-base">{t('settings.tagSelectionVisible', 'Organizaciona jedinica (Tag)')}</Label>
-              <p className="text-sm text-muted-foreground">
-                {t('settings.tagSelectionVisibleDesc', 'Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije')}
-              </p>
-            </div>
-            <Switch
-              checked={tagSelectionVisible}
-              disabled={isUpdating}
-              onCheckedChange={async (checked) => {
-                try {
-                  await updateSetting({ key: 'tag_selection_visible', value: checked });
-                  toast({ title: t('toast.success'), description: t('toast.profileUpdated') });
-                } catch {
-                  toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
-                }
-              }}
-            />
-          </div>
+        <CardContent className="space-y-3">
+          <Label className="text-base">{t('settings.tagSelectionVisible', 'Organizaciona jedinica (Tag)')}</Label>
+          <p className="text-sm text-muted-foreground">
+            {t('settings.tagSelectionVisibleDesc', 'Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije')}
+          </p>
+          {(['Proizvodnja', 'Hogo'] as const).map((tag) => {
+            const tagVisibility = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
+            const isVisible = tagVisibility[tag] === true;
+            return (
+              <div key={tag} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="space-y-1">
+                  <Label className="text-base">{tag}</Label>
+                </div>
+                <Switch
+                  checked={isVisible}
+                  disabled={isUpdating}
+                  onCheckedChange={async (checked) => {
+                    try {
+                      const current = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
+                      await updateSetting({ key: 'tag_selection_visible', value: { ...current, [tag]: checked } });
+                      toast({ title: t('toast.success'), description: t('toast.profileUpdated') });
+                    } catch {
+                      toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
+                    }
+                  }}
+                />
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
     </div>
