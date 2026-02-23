@@ -22,7 +22,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isPasswordRecovery: boolean;
-  requiresPasswordSetup: boolean; // True if user hasn't set password (invited users)
+  requiresIdSetup: boolean; // True if employee hasn't set company_card_id
   clearPasswordRecovery: () => void;
   refreshProfile: () => Promise<void>; // Refresh profile after password set
   signUp: (email: string, password: string, fullName: string, role?: 'admin' | 'employee') => Promise<{ error: any }>;
@@ -314,8 +314,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   }, []);
 
-  // Computed property: user needs to set password if profile exists and password_set is false
-  const requiresPasswordSetup = profile !== null && profile.password_set === false;
+  // Computed property: employee needs to set company_card_id if not set
+  const requiresIdSetup = profile !== null && profile.role === 'employee' && !profile.company_card_id;
 
   // Function to refresh profile (after password is set)
   const refreshProfile = useCallback(async () => {
@@ -355,7 +355,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading: loading || processingAuth,
     isPasswordRecovery,
-    requiresPasswordSetup,
+    requiresIdSetup,
     clearPasswordRecovery,
     refreshProfile,
     signUp,
@@ -367,7 +367,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updatePassword
   }), [
     user, session, profile, loading, processingAuth,
-    isPasswordRecovery, requiresPasswordSetup,
+    isPasswordRecovery, requiresIdSetup,
     clearPasswordRecovery, refreshProfile, signUp, signIn,
     signOut, signInWithGoogle, signInWithMagicLink,
     resetPassword, updatePassword

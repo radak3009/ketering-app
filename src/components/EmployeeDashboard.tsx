@@ -19,10 +19,10 @@ type View = 'current' | 'next' | 'feedback' | 'profile';
 
 export function EmployeeDashboard() {
   const { t } = useTranslation();
-  const { signOut, user, profile, requiresPasswordSetup } = useAuth();
+  const { signOut, user, profile, requiresIdSetup } = useAuth();
   
   // Force profile view if password not set
-  const [currentView, setCurrentView] = useState<View>(requiresPasswordSetup ? 'profile' : 'next');
+  const [currentView, setCurrentView] = useState<View>(requiresIdSetup ? 'profile' : 'next');
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [totalMenuDays, setTotalMenuDays] = useState(0);
@@ -38,12 +38,12 @@ export function EmployeeDashboard() {
 
   const { employeeNotification } = useNotifications(user?.id, false);
 
-  // Force profile view when requiresPasswordSetup changes
+  // Force profile view when requiresIdSetup changes
   useEffect(() => {
-    if (requiresPasswordSetup) {
+    if (requiresIdSetup) {
       setCurrentView('profile');
     }
-  }, [requiresPasswordSetup]);
+  }, [requiresIdSetup]);
 
   useEffect(() => {
     if (user?.id) {
@@ -83,7 +83,7 @@ export function EmployeeDashboard() {
 
   // Handler for navigation - block if password not set
   const handleNavigate = (view: View) => {
-    if (requiresPasswordSetup && view !== 'profile') {
+    if (requiresIdSetup && view !== 'profile') {
       // Don't allow navigation to other views
       return;
     }
@@ -108,7 +108,7 @@ export function EmployeeDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {!requiresPasswordSetup && (
+              {!requiresIdSetup && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -122,7 +122,7 @@ export function EmployeeDashboard() {
               <LanguageToggle />
               <ThemeToggle />
               {/* User Info - visible on tablet/desktop */}
-              {!requiresPasswordSetup && profile && (
+              {!requiresIdSetup && profile && (
                 <div className="hidden sm:flex flex-col items-end text-xs text-muted-foreground border-r pr-2 mr-1">
                   {profile.company_card_id && (
                     <span className="font-mono font-medium text-foreground">
@@ -134,7 +134,7 @@ export function EmployeeDashboard() {
                   )}
                 </div>
               )}
-              {!requiresPasswordSetup && (
+              {!requiresIdSetup && (
                 <Button onClick={signOut} variant="outline" size="sm" className="gap-2">
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('common.signOut')}</span>
@@ -148,17 +148,17 @@ export function EmployeeDashboard() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         {/* Password Setup Warning Alert */}
-        {requiresPasswordSetup && (
+        {requiresIdSetup && (
           <Alert className="mb-4 border-destructive bg-destructive/10">
             <AlertTriangle className="h-4 w-4 text-destructive" />
             <AlertDescription className="text-destructive font-medium">
-              {t('profile.passwordSetupRequired')}
+              {t('profile.idSetupRequired')}
             </AlertDescription>
           </Alert>
         )}
 
         {/* Notification Alert */}
-        {employeeNotification && !requiresPasswordSetup && (
+        {employeeNotification && !requiresIdSetup && (
           <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950/20">
             <Bell className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-800 dark:text-amber-200">
@@ -168,7 +168,7 @@ export function EmployeeDashboard() {
         )}
 
         {/* Desktop Navigation - Hidden when password not set */}
-        {!requiresPasswordSetup && (
+        {!requiresIdSetup && (
           <div className="hidden md:flex gap-2 mb-6">
             <Button
               variant={currentView === 'next' ? 'default' : 'outline'}
@@ -207,7 +207,7 @@ export function EmployeeDashboard() {
 
         {/* Content Area */}
         <div className="max-w-4xl mx-auto">
-          {currentView === 'next' && !requiresPasswordSetup && (
+          {currentView === 'next' && !requiresIdSetup && (
             <NextWeekView
               orders={nextWeekOrders}
               loading={loading}
@@ -217,21 +217,21 @@ export function EmployeeDashboard() {
               totalMenuDays={totalMenuDays}
             />
           )}
-          {currentView === 'current' && !requiresPasswordSetup && (
+          {currentView === 'current' && !requiresIdSetup && (
             <CurrentWeekView orders={currentWeekOrders} loading={loading} />
           )}
-          {currentView === 'feedback' && !requiresPasswordSetup && <FeedbackView />}
-          {(currentView === 'profile' || requiresPasswordSetup) && (
+          {currentView === 'feedback' && !requiresIdSetup && <FeedbackView />}
+          {(currentView === 'profile' || requiresIdSetup) && (
             <ProfileView 
               user={user} 
-              isPasswordSetupMode={requiresPasswordSetup}
+              isIdSetupMode={requiresIdSetup}
             />
           )}
         </div>
       </div>
 
       {/* Mobile Bottom Navigation - Hidden when password not set */}
-      {!requiresPasswordSetup && (
+      {!requiresIdSetup && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
           <div className="grid grid-cols-5 gap-1 p-2">
             <Button
@@ -279,7 +279,7 @@ export function EmployeeDashboard() {
       )}
 
       {/* Dialogs - Only available when password is set */}
-      {!requiresPasswordSetup && (
+      {!requiresIdSetup && (
         <OrderMealDialog
           open={orderDialogOpen}
           onOpenChange={setOrderDialogOpen}
@@ -291,7 +291,7 @@ export function EmployeeDashboard() {
       )}
 
       {/* AI Help Chat - Only available when password is set */}
-      {!requiresPasswordSetup && (
+      {!requiresIdSetup && (
         <AIHelpChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
       )}
     </div>
