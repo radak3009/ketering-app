@@ -7,11 +7,12 @@ interface Profile {
   user_id: string;
   company_id: string | null;
   company_card_id: string | null;
+  tag: string | null;
   full_name: string | null;
   email: string | null;
   phone: string | null;
-  role: 'admin' | 'employee' | null; // Fetched from user_roles table
-  password_set: boolean; // Tracks if user has set their password (false for invited users)
+  role: 'admin' | 'employee' | null;
+  password_set: boolean;
   created_at: string;
   updated_at: string;
 }
