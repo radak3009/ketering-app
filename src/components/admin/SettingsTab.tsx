@@ -14,6 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 
 export function SettingsTab() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const { getSetting, updateSetting, isUpdating } = useAppSettings();
+  const tagSelectionVisible = getSetting('tag_selection_visible') === true;
 
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
