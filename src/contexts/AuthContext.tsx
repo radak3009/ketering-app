@@ -327,7 +327,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('key', 'tag_selection_visible')
         .maybeSingle();
       if (data) {
-        setTagSelectionVisible((data as any).value === true);
+        const val = (data as any).value;
+        // Now value is an object like { "Proizvodnja": true, "Hogo": false }
+        const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
+        setTagSelectionVisible(anyVisible);
       }
     };
     fetchTagSetting();

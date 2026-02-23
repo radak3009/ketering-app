@@ -316,14 +316,12 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 <div className="space-y-3">
                   <Label>{t('profile.selectOrganization', 'Odaberite organizacionu jedinicu')}</Label>
                   <RadioGroup value={tagInput} onValueChange={setTagInput}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Proizvodnja" id="tag-proizvodnja" />
-                      <Label htmlFor="tag-proizvodnja" className="cursor-pointer">Proizvodnja</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Hogo" id="tag-hogo" />
-                      <Label htmlFor="tag-hogo" className="cursor-pointer">Hogo</Label>
-                    </div>
+                    {visibleTags.map((tag) => (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <RadioGroupItem value={tag} id={`tag-${tag.toLowerCase()}`} />
+                        <Label htmlFor={`tag-${tag.toLowerCase()}`} className="cursor-pointer">{tag}</Label>
+                      </div>
+                    ))}
                   </RadioGroup>
                 </div>
               )}

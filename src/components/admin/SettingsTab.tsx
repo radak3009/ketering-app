@@ -16,7 +16,7 @@ export function SettingsTab() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { getSetting, updateSetting, isUpdating } = useAppSettings();
-  const tagSelectionVisible = getSetting('tag_selection_visible') === true;
+  // tag_selection_visible is now a per-tag object: { "Proizvodnja": true, "Hogo": false }
 
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
