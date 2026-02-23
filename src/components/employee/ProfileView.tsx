@@ -7,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EnhancedDatePicker } from '@/components/ui/enhanced-date-picker';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { User } from '@supabase/supabase-js';
 import { Loader2, User as UserIcon, Lock, Eye, EyeOff, AlertTriangle, CheckCircle2, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
