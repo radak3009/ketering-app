@@ -12,6 +12,38 @@ import { useToast } from "@/hooks/use-toast";
 
 export function SettingsTab() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+
+  // Tag-based registration links
+  const [tags, setTags] = useState<string[]>(() => {
+    const saved = localStorage.getItem('registration_tags');
+    return saved ? JSON.parse(saved) : ['Proizvodnja', 'Hogo'];
+  });
+  const [newTag, setNewTag] = useState('');
+
+  const addTag = () => {
+    const trimmed = newTag.trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      const updated = [...tags, trimmed];
+      setTags(updated);
+      localStorage.setItem('registration_tags', JSON.stringify(updated));
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    const updated = tags.filter(t => t !== tag);
+    setTags(updated);
+    localStorage.setItem('registration_tags', JSON.stringify(updated));
+  };
+
+  const getRegistrationUrl = (tag: string) => 
+    `${window.location.origin}/auth?tag=${encodeURIComponent(tag)}`;
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Kopirano!", description: "Link je kopiran u clipboard." });
+  };
 
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
