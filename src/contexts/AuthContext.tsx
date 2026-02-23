@@ -317,20 +317,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch tag_selection_visible setting
   const [tagSelectionVisible, setTagSelectionVisible] = useState(false);
+  const [tagSettingLoaded, setTagSettingLoaded] = useState(false);
   
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      setTagSettingLoaded(false);
+      return;
+    }
     const fetchTagSetting = async () => {
-      const { data } = await supabase
-        .from('app_settings' as any)
-        .select('value')
-        .eq('key', 'tag_selection_visible')
-        .maybeSingle();
-      if (data) {
-        const val = (data as any).value;
-        // Now value is an object like { "Proizvodnja": true, "Hogo": false }
-        const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
-        setTagSelectionVisible(anyVisible);
+      try {
+        const { data } = await supabase
+          .from('app_settings' as any)
+          .select('value')
+          .eq('key', 'tag_selection_visible')
+          .maybeSingle();
+        if (data) {
+          const val = (data as any).value;
+          const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
+          setTagSelectionVisible(anyVisible);
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[AuthContext] Error fetching tag setting:', error);
+        }
+      } finally {
+        setTagSettingLoaded(true);
       }
     };
     fetchTagSetting();
