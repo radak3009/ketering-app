@@ -452,6 +452,7 @@ export type Database = {
           employee_identifier: string
           fiscal_error: string | null
           fiscal_external_id: string | null
+          fiscal_retry_count: number
           fiscal_status: string
           fiscalized_at: string | null
           id: string
@@ -477,6 +478,7 @@ export type Database = {
           employee_identifier: string
           fiscal_error?: string | null
           fiscal_external_id?: string | null
+          fiscal_retry_count?: number
           fiscal_status?: string
           fiscalized_at?: string | null
           id?: string
@@ -502,6 +504,7 @@ export type Database = {
           employee_identifier?: string
           fiscal_error?: string | null
           fiscal_external_id?: string | null
+          fiscal_retry_count?: number
           fiscal_status?: string
           fiscalized_at?: string | null
           id?: string
