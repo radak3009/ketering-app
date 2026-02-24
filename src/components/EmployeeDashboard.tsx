@@ -218,7 +218,7 @@ export function EmployeeDashboard() {
             />
           )}
           {currentView === 'current' && !requiresIdSetup && (
-            <CurrentWeekView orders={currentWeekOrders} loading={loading} />
+            <CurrentWeekView orders={currentWeekOrders} loading={loading} onRefresh={refetch} />
           )}
           {currentView === 'feedback' && !requiresIdSetup && <FeedbackView />}
           {(currentView === 'profile' || requiresIdSetup) && (

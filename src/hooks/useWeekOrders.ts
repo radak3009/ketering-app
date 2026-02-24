@@ -60,6 +60,25 @@ export const useWeekOrders = (userId: string | undefined) => {
       return [];
     }
 
+    // Fetch fiscal statuses from pickup_requests for these order items
+    const orderItemIds = data?.map((item: any) => item.id) || [];
+    let pickupMap: Record<string, { id: string; fiscal_status: string }> = {};
+    
+    if (orderItemIds.length > 0) {
+      const { data: pickups } = await supabase
+        .from('pickup_requests')
+        .select('id, order_item_id, fiscal_status')
+        .in('order_item_id', orderItemIds);
+      
+      if (pickups) {
+        pickups.forEach((p: any) => {
+          if (p.order_item_id) {
+            pickupMap[p.order_item_id] = { id: p.id, fiscal_status: p.fiscal_status };
+          }
+        });
+      }
+    }
+
     const groupedByDate: { [key: string]: OrderItemForWeekView[] } = {};
     
     data?.forEach((item: any) => {
@@ -67,6 +86,7 @@ export const useWeekOrders = (userId: string | undefined) => {
       if (!groupedByDate[deliveryDate]) {
         groupedByDate[deliveryDate] = [];
       }
+      const pickup = pickupMap[item.id];
       groupedByDate[deliveryDate].push({
         id: item.id,
         order_id: item.order_id,
@@ -75,6 +95,8 @@ export const useWeekOrders = (userId: string | undefined) => {
         pickup_status: item.pickup_status,
         pickup_time: item.pickup_time,
         delivery_date: deliveryDate,
+        fiscal_status: pickup?.fiscal_status,
+        pickup_request_id: pickup?.id,
         meal: item.meals
       });
     });

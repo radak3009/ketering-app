@@ -124,6 +124,21 @@ Deno.serve(async (req) => {
         .eq("id", pickupRequest.order_item_id);
     }
 
+    // Fire-and-forget fiscalization
+    try {
+      const fiscalizeUrl = `${supabaseUrl}/functions/v1/fiscalize-meal`;
+      fetch(fiscalizeUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pickupId: pickupRequestId,
+          kioskToken: kioskToken,
+        }),
+      }).catch((err) => console.error("Fiscalize fire-and-forget error:", err));
+    } catch (e) {
+      console.error("Fiscalize dispatch error:", e);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -11,9 +11,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 interface CurrentWeekViewProps {
   orders: WeekOrder[];
   loading: boolean;
+  onRefresh?: () => void;
 }
 
-export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
+export function CurrentWeekView({ orders, loading, onRefresh }: CurrentWeekViewProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'sr' ? sr : enUS;
   
@@ -71,7 +72,7 @@ export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
                   ) : (
                     <div className="space-y-3 mt-3">
                       {order.items.map((item) => (
-                        <MealCard key={item.id} item={item} />
+                        <MealCard key={item.id} item={item} onRefresh={onRefresh} />
                       ))}
                     </div>
                   )}

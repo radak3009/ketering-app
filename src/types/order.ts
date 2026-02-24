@@ -26,6 +26,8 @@ export interface OrderItemForWeekView {
   pickup_status: string;
   pickup_time: string | null;
   delivery_date: string;
+  fiscal_status?: string;
+  pickup_request_id?: string;
   meal: {
     id: string;
     name: string;
