@@ -326,7 +326,7 @@ export function MealsManagement() {
                     </Select>
                   </div>
 
-                  <div>
+                   <div>
                     <Label>Dostupnost u smenama</Label>
                     <div className="flex gap-4 mt-2">
                       {SHIFTS.map(shift => (
@@ -349,6 +349,36 @@ export function MealsManagement() {
                       ))}
                     </div>
                   </div>
+
+                  {availableTags.length > 0 && (
+                    <div>
+                      <Label>Dostupnost prema organizaciji</Label>
+                      <div className="flex flex-wrap gap-4 mt-2">
+                        {availableTags.map(tag => (
+                          <div key={tag} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`add-tag-${tag}`} 
+                              checked={mealForm.allowed_tags.includes(tag)} 
+                              onCheckedChange={checked => {
+                                if (checked) {
+                                  setMealForm({ ...mealForm, allowed_tags: [...mealForm.allowed_tags, tag] });
+                                } else {
+                                  setMealForm({ ...mealForm, allowed_tags: mealForm.allowed_tags.filter(t => t !== tag) });
+                                }
+                              }} 
+                            />
+                            <label htmlFor={`add-tag-${tag}`} className="text-sm font-medium">
+                              {tag}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Ako nijedna organizacija nije odabrana, obrok je dostupan svima.
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <Label>Slika obroka</Label>
