@@ -1,60 +1,100 @@
 
 
-## Plan: Ispravka race condition-a za prikaz organizacione jedinice
+## Plan: Dostupnost obroka prema TAG-u (organizaciji)
 
-### Problem
+### Pregled
 
-Postoji vremenski nesklad (race condition) između ucitavanja profila i ucitavanja `tag_selection_visible` podesavanja u `AuthContext.tsx`. Redosled dogadjaja:
+Dodati mogucnost da se svaki obrok ogranici na odredjene organizacije (tagove). Ako obrok nema nijedan tag, vidljiv je svima. Ako ima odabrane tagove, vidljiv je samo zaposlenima sa tim tagom.
 
-1. Sesija se uspostavi, profil se ucita
-2. `requiresIdSetup` se izracuna sa `tagSelectionVisible = false` (podrazumevana vrednost)
-3. Tek NAKON toga `fetchTagSetting` zavrsi i postavi `tagSelectionVisible = true`
-4. U tom trenutku, korisnik vec vidi samo ID unos bez opcije za organizaciju
+### Izmene
 
-Takodje, u `ProfileView.tsx`, `useAppSettings` hook moze vratiti prazne podatke dok se ucitava, pa se radio button-i ne prikazuju.
+#### 1. Baza podataka - migracija
 
-### Resenje
+Dodati novu kolonu `allowed_tags` (TEXT ARRAY, nullable, default NULL) u tabelu `meals`.
 
-#### 1. `src/contexts/AuthContext.tsx`
+Azurirati `meals_secure` view da filtrira obroke prema tagu korisnika:
+- Ako `allowed_tags` je NULL ili prazan niz - obrok je vidljiv svima
+- Ako `allowed_tags` sadrzi vrednosti - obrok je vidljiv samo korisnicima ciji tag se nalazi u nizu
 
-- Dodati `tagSettingLoaded` state koji prati da li je setting ucitan
-- Ukljuciti `tagSettingLoaded` u `loading` stanje - korisnik nece videti dashboard dok se setting ne ucita
-- Ovo sprecava da se `requiresIdSetup` izracuna pre nego sto znamo da li je tag obavezan
+```sql
+ALTER TABLE meals ADD COLUMN allowed_tags TEXT[] DEFAULT NULL;
 
-```text
-TRENUTNO:
-  session uspostavljena -> profil ucitan -> requiresIdSetup = false (tag setting jos nije ucitan)
-  -> korisnik vidi samo ID unos
-  -> tag setting ucitan (prekasno)
-
-NOVO:
-  session uspostavljena -> profil ucitan + tag setting ucitan (paralelno)
-  -> tek onda se loading zavrsava
-  -> requiresIdSetup = true (ako tag treba)
-  -> korisnik vidi ID unos + organizacija
+-- Azurirati view
+CREATE OR REPLACE VIEW meals_secure AS
+SELECT id, name, description, price,
+  CASE WHEN is_admin_user(auth.uid()) THEN purchase_price ELSE NULL END AS purchase_price,
+  category, code, status, shifts, allergens, image_url, is_available,
+  nutritional_info, created_at, updated_at, allowed_tags
+FROM meals
+WHERE (
+  allowed_tags IS NULL
+  OR array_length(allowed_tags, 1) IS NULL
+  OR allowed_tags && ARRAY(
+    SELECT tag FROM profiles WHERE user_id = auth.uid() AND tag IS NOT NULL
+  )
+);
 ```
 
-#### 2. `src/components/employee/ProfileView.tsx`
+#### 2. Frontend - Admin UI (`MealsManagement.tsx`)
 
-- Dodati proveru `settingsLoading` - dok se podesavanja ucitavaju, prikazati loading indikator u tag sekciji
-- Ovo sprecava da se radio button-i sakriju dok se podaci ucitavaju
+Ispod sekcije "Dostupnost u smenama", dodati novu sekciju "Dostupnost prema organizaciji" sa istim dizajnom (checkbox-ovi).
+
+Tagovi se ucitavaju iz baze (distinct tagovi iz `profiles` tabele). Svaki tag se prikazuje kao checkbox. Ako nijedan nije odabran - obrok je dostupan svima (prikazati napomenu).
+
+Izmene u oba panela - kreiranje i izmena obroka:
+
+```text
+Dostupnost u smenama
+✅ Prva Smena  ✅ Druga Smena  ✅ Treća Smena
+
+Dostupnost prema organizaciji
+☐ Hogo  ☐ Proizvodnja
+ℹ️ Ako nijedna organizacija nije odabrana, obrok je dostupan svima.
+```
+
+#### 3. Frontend - Form state i logika
+
+| Fajl | Izmena |
+|------|--------|
+| `src/components/admin/MealsManagement.tsx` | Dodati `allowed_tags: string[]` u `MealFormState`; dodati checkbox sekciju u oba panela (add/edit); proslediti `allowed_tags` u `createMeal` i `updateMeal`; dodati fetch distinct tagova iz `profiles` |
+
+#### 4. Employee filtriranje (automatski)
+
+`meals_secure` view ce automatski filtrirati obroke na osnovu korisnikovog taga. Employee `OrderMealDialog` vec koristi `meals` tabelu preko `menu_meals` join-a - ovo treba proveriti da li ce RLS politika na `meals` tabeli automatski filtrirati. Posto employees koriste `meals` direktno (preko join-a u menijima), treba azurirati RLS politiku "Users can view active available meals" da ukljuci proveru `allowed_tags`.
+
+```sql
+-- Azurirati RLS politiku za employees
+DROP POLICY "Users can view active available meals" ON meals;
+CREATE POLICY "Users can view active available meals" ON meals
+  FOR SELECT USING (
+    is_available = true
+    AND status = 'aktivan'
+    AND (
+      allowed_tags IS NULL
+      OR array_length(allowed_tags, 1) IS NULL
+      OR allowed_tags && ARRAY(
+        SELECT tag FROM profiles WHERE user_id = auth.uid() AND tag IS NOT NULL
+      )
+    )
+  );
+```
+
+#### 5. Kiosk edge funkcija
+
+`kiosk-show-meal` koristi service role pa nece biti pogodjena RLS-om - bez izmena.
 
 ### Fajlovi za izmenu
 
 | Fajl | Izmena |
 |------|--------|
-| `src/contexts/AuthContext.tsx` | Dodati `tagSettingLoaded` state; ukljuciti ga u loading uslov |
-| `src/components/employee/ProfileView.tsx` | Dodati loading stanje za tag sekciju dok se settings ucitavaju |
+| Nova migracija | `allowed_tags` kolona + azuriran view + azurirana RLS politika |
+| `src/components/admin/MealsManagement.tsx` | Checkbox sekcija za tagove u oba panela; fetch distinct tagova; prosledjivanje u create/update |
+| `src/integrations/supabase/types.ts` | Regenerisace se automatski sa novom kolonom |
 
 ### Tehnicki detalji
 
-U `AuthContext.tsx`:
-- Novi state: `tagSettingLoaded` (default `false`)
-- U `fetchTagSetting` uvefu, postaviti `tagSettingLoaded = true` na kraju (i u slucaju greske)
-- Promeniti loading uslov: `loading: loading || processingAuth || (!!session && !tagSettingLoaded)`
-- Ovo garantuje da se `requiresIdSetup` ne evaluira dok ne znamo vrednost `tagSelectionVisible`
-
-U `ProfileView.tsx`:
-- Proveriti `settingsLoading` pre renderovanja tag sekcije
-- Ako `settingsLoading = true`, prikazati mali spinner umesto prazne sekcije
+- Tagovi se ucitavaju jednom pri mount-u komponente: `SELECT DISTINCT tag FROM profiles WHERE tag IS NOT NULL`
+- `allowed_tags` je TEXT[] - isti tip kao `allergens` i `shifts`, dosledan sa ostatkom scheme
+- Null/prazan niz znaci "dostupno svima" - backward compatible, svi postojeci obroci ostaju vidljivi svim korisnicima
+- RLS politika koristi `&&` (overlap) operator za proveru da li se tag korisnika nalazi u nizu dozvoljenih tagova
 
