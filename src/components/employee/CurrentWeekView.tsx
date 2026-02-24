@@ -14,7 +14,7 @@ interface CurrentWeekViewProps {
   onRefresh?: () => void;
 }
 
-export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
+export function CurrentWeekView({ orders, loading, onRefresh }: CurrentWeekViewProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'sr' ? sr : enUS;
   
