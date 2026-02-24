@@ -87,6 +87,20 @@ export function MealsManagement() {
     setImageFile(null);
   };
 
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tag')
+        .not('tag', 'is', null);
+      if (data) {
+        const uniqueTags = [...new Set(data.map(p => p.tag).filter(Boolean))] as string[];
+        setAvailableTags(uniqueTags.sort());
+      }
+    };
+    fetchTags();
+  }, []);
+
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
       toast({
