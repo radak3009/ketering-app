@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.kiosk-get-kitchen-status]
 verify_jwt = false
+
+[functions.fiscalize-meal]
+verify_jwt = false
+
+[functions.receipt-link]
+verify_jwt = false
