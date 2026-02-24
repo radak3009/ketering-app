@@ -485,36 +485,36 @@ export function MealsManagement() {
                     </TableHead>
                     <TableHead className="w-[180px]">
                       <div className="space-y-1">
-                        <span className="font-semibold text-xs">Smene</span>
+                        <span className="font-semibold text-xs">Organizacija</span>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="outline" className="h-7 text-xs w-full justify-start font-normal">
-                              {mealFilters.shifts.length === 0 ? "Sve smene" : mealFilters.shifts.join(', ')}
+                              {mealFilters.allowed_tags.length === 0 ? "Sve organizacije" : mealFilters.allowed_tags.join(', ')}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-48 p-2 bg-popover border" align="start">
-                            {SHIFTS.map(shift => (
-                              <div key={shift} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                            {availableTags.map(tag => (
+                              <div key={tag} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
                                 <Checkbox
-                                  id={`filter-shift-${shift}`}
-                                  checked={mealFilters.shifts.includes(shift)}
+                                  id={`filter-tag-${tag}`}
+                                  checked={mealFilters.allowed_tags.includes(tag)}
                                   onCheckedChange={(checked) => {
                                     if (checked) {
-                                      setMealFilters(prev => ({ ...prev, shifts: [...prev.shifts, shift] }));
+                                      setMealFilters(prev => ({ ...prev, allowed_tags: [...prev.allowed_tags, tag] }));
                                     } else {
-                                      setMealFilters(prev => ({ ...prev, shifts: prev.shifts.filter(s => s !== shift) }));
+                                      setMealFilters(prev => ({ ...prev, allowed_tags: prev.allowed_tags.filter(t => t !== tag) }));
                                     }
                                   }}
                                 />
-                                <Label htmlFor={`filter-shift-${shift}`} className="text-sm capitalize cursor-pointer">{shift}</Label>
+                                <Label htmlFor={`filter-tag-${tag}`} className="text-sm cursor-pointer">{tag}</Label>
                               </div>
                             ))}
-                            {mealFilters.shifts.length > 0 && (
+                            {mealFilters.allowed_tags.length > 0 && (
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
                                 className="w-full mt-2 text-xs"
-                                onClick={() => setMealFilters(prev => ({...prev, shifts: []}))}
+                                onClick={() => setMealFilters(prev => ({...prev, allowed_tags: []}))}
                               >
                                 Resetuj filter
                               </Button>
