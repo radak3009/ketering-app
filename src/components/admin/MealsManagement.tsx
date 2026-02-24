@@ -35,6 +35,7 @@ interface MealFormState {
   shifts: string[];
   allergens: string[];
   image_url: string;
+  allowed_tags: string[];
 }
 
 interface MealFilters {
