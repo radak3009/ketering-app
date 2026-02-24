@@ -450,46 +450,76 @@ export type Database = {
           company_id: string | null
           created_at: string
           employee_identifier: string
+          fiscal_error: string | null
+          fiscal_external_id: string | null
+          fiscal_status: string
+          fiscalized_at: string | null
           id: string
+          invoice_number: string | null
           meal_name_snapshot: string | null
           note: string | null
+          octopos_weborder_id: number | null
           order_id: string | null
           order_item_id: string | null
           pickup_date: string
           profile_id: string | null
+          receipt_file_path: string | null
+          receipt_text_bottom: string | null
+          receipt_text_top: string | null
           served_at: string | null
           served_by: string | null
           status: string
+          verification_url: string | null
         }
         Insert: {
           company_id?: string | null
           created_at?: string
           employee_identifier: string
+          fiscal_error?: string | null
+          fiscal_external_id?: string | null
+          fiscal_status?: string
+          fiscalized_at?: string | null
           id?: string
+          invoice_number?: string | null
           meal_name_snapshot?: string | null
           note?: string | null
+          octopos_weborder_id?: number | null
           order_id?: string | null
           order_item_id?: string | null
           pickup_date: string
           profile_id?: string | null
+          receipt_file_path?: string | null
+          receipt_text_bottom?: string | null
+          receipt_text_top?: string | null
           served_at?: string | null
           served_by?: string | null
           status?: string
+          verification_url?: string | null
         }
         Update: {
           company_id?: string | null
           created_at?: string
           employee_identifier?: string
+          fiscal_error?: string | null
+          fiscal_external_id?: string | null
+          fiscal_status?: string
+          fiscalized_at?: string | null
           id?: string
+          invoice_number?: string | null
           meal_name_snapshot?: string | null
           note?: string | null
+          octopos_weborder_id?: number | null
           order_id?: string | null
           order_item_id?: string | null
           pickup_date?: string
           profile_id?: string | null
+          receipt_file_path?: string | null
+          receipt_text_bottom?: string | null
+          receipt_text_top?: string | null
           served_at?: string | null
           served_by?: string | null
           status?: string
+          verification_url?: string | null
         }
         Relationships: [
           {
