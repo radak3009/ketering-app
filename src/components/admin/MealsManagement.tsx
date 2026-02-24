@@ -56,7 +56,8 @@ const initialMealForm: MealFormState = {
   status: "aktivan",
   shifts: [],
   allergens: [],
-  image_url: ""
+  image_url: "",
+  allowed_tags: []
 };
 
 export function MealsManagement() {
