@@ -13,8 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2 } from "lucide-react";
-// Info is imported above
+import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
