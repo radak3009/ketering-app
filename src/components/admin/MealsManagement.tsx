@@ -221,9 +221,12 @@ export function MealsManagement() {
     const matchesShifts = mealFilters.shifts.length === 0 || 
       mealFilters.shifts.some(shift => meal.shifts?.includes(shift));
     const matchesStatus = mealFilters.status === 'all' || meal.status === mealFilters.status;
+    const matchesTags = mealFilters.allowed_tags.length === 0 ||
+      (meal.allowed_tags && mealFilters.allowed_tags.some(tag => meal.allowed_tags?.includes(tag))) ||
+      (!meal.allowed_tags && mealFilters.allowed_tags.length === 0);
     
     return matchesCode && matchesName && matchesDescription && 
-           matchesAllergens && matchesShifts && matchesStatus;
+           matchesAllergens && matchesShifts && matchesStatus && matchesTags;
   });
 
   return (
