@@ -72,7 +72,7 @@ export function CurrentWeekView({ orders, loading, onRefresh }: CurrentWeekViewP
                   ) : (
                     <div className="space-y-3 mt-3">
                       {order.items.map((item) => (
-                        <MealCard key={item.id} item={item} />
+                        <MealCard key={item.id} item={item} onRefresh={onRefresh} />
                       ))}
                     </div>
                   )}
