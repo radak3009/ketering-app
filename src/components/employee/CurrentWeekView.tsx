@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 interface CurrentWeekViewProps {
   orders: WeekOrder[];
   loading: boolean;
+  onRefresh?: () => void;
 }
 
 export function CurrentWeekView({ orders, loading }: CurrentWeekViewProps) {
