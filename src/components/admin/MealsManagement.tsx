@@ -44,6 +44,7 @@ interface MealFilters {
   allergens: string;
   shifts: string[];
   status: string;
+  allowed_tags: string[];
 }
 
 const initialMealForm: MealFormState = {
