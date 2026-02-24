@@ -329,6 +329,11 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 )}
               </div>
 
+              {/* Separator between ID and Organization */}
+              {(settingsLoading || tagSelectionVisible) && (
+                <Separator className="my-2" />
+              )}
+
               {/* Tag / Organization selection */}
               {settingsLoading ? (
                 <div className="space-y-3">
