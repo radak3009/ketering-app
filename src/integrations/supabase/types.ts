@@ -180,6 +180,7 @@ export type Database = {
       meals: {
         Row: {
           allergens: string[] | null
+          allowed_tags: string[] | null
           category: string
           code: string | null
           created_at: string
@@ -197,6 +198,7 @@ export type Database = {
         }
         Insert: {
           allergens?: string[] | null
+          allowed_tags?: string[] | null
           category: string
           code?: string | null
           created_at?: string
@@ -214,6 +216,7 @@ export type Database = {
         }
         Update: {
           allergens?: string[] | null
+          allowed_tags?: string[] | null
           category?: string
           code?: string | null
           created_at?: string
@@ -654,6 +657,7 @@ export type Database = {
       meals_secure: {
         Row: {
           allergens: string[] | null
+          allowed_tags: string[] | null
           category: string | null
           code: string | null
           created_at: string | null
@@ -671,6 +675,7 @@ export type Database = {
         }
         Insert: {
           allergens?: string[] | null
+          allowed_tags?: string[] | null
           category?: string | null
           code?: string | null
           created_at?: string | null
@@ -688,6 +693,7 @@ export type Database = {
         }
         Update: {
           allergens?: string[] | null
+          allowed_tags?: string[] | null
           category?: string | null
           code?: string | null
           created_at?: string | null

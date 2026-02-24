@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2 } from "lucide-react";
+import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
@@ -32,6 +34,7 @@ interface MealFormState {
   shifts: string[];
   allergens: string[];
   image_url: string;
+  allowed_tags: string[];
 }
 
 interface MealFilters {
@@ -52,7 +55,8 @@ const initialMealForm: MealFormState = {
   status: "aktivan",
   shifts: [],
   allergens: [],
-  image_url: ""
+  image_url: "",
+  allowed_tags: []
 };
 
 export function MealsManagement() {
@@ -60,6 +64,7 @@ export function MealsManagement() {
   const { meals, loading, createMeal, updateMeal, deleteMeal } = useMeals();
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
   const [creatingMeal, setCreatingMeal] = useState(false);
   const [updatingMeal, setUpdatingMeal] = useState(false);
@@ -80,6 +85,20 @@ export function MealsManagement() {
     setMealForm(initialMealForm);
     setImageFile(null);
   };
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tag')
+        .not('tag', 'is', null);
+      if (data) {
+        const uniqueTags = [...new Set(data.map(p => p.tag).filter(Boolean))] as string[];
+        setAvailableTags(uniqueTags.sort());
+      }
+    };
+    fetchTags();
+  }, []);
 
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
@@ -122,7 +141,8 @@ export function MealsManagement() {
         image_url: imageUrl || null,
         is_available: true,
         allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
-        nutritional_info: null
+        nutritional_info: null,
+        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null
       });
       
       resetMealForm();
@@ -173,7 +193,8 @@ export function MealsManagement() {
         status: selectedMeal.status,
         shifts: selectedMeal.shifts,
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
-        image_url: imageUrl || null
+        image_url: imageUrl || null,
+        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null
       });
 
       setSelectedMeal({ ...selectedMeal, image_url: imageUrl });
@@ -304,7 +325,7 @@ export function MealsManagement() {
                     </Select>
                   </div>
 
-                  <div>
+                   <div>
                     <Label>Dostupnost u smenama</Label>
                     <div className="flex gap-4 mt-2">
                       {SHIFTS.map(shift => (
@@ -327,6 +348,36 @@ export function MealsManagement() {
                       ))}
                     </div>
                   </div>
+
+                  {availableTags.length > 0 && (
+                    <div>
+                      <Label>Dostupnost prema organizaciji</Label>
+                      <div className="flex flex-wrap gap-4 mt-2">
+                        {availableTags.map(tag => (
+                          <div key={tag} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`add-tag-${tag}`} 
+                              checked={mealForm.allowed_tags.includes(tag)} 
+                              onCheckedChange={checked => {
+                                if (checked) {
+                                  setMealForm({ ...mealForm, allowed_tags: [...mealForm.allowed_tags, tag] });
+                                } else {
+                                  setMealForm({ ...mealForm, allowed_tags: mealForm.allowed_tags.filter(t => t !== tag) });
+                                }
+                              }} 
+                            />
+                            <label htmlFor={`add-tag-${tag}`} className="text-sm font-medium">
+                              {tag}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Ako nijedna organizacija nije odabrana, obrok je dostupan svima.
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <Label>Slika obroka</Label>
@@ -665,6 +716,37 @@ export function MealsManagement() {
                   ))}
                 </div>
               </div>
+
+              {availableTags.length > 0 && (
+                <div>
+                  <Label>Dostupnost prema organizaciji</Label>
+                  <div className="flex flex-wrap gap-4 mt-2">
+                    {availableTags.map(tag => (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`edit-tag-${tag}`} 
+                          checked={selectedMeal.allowed_tags?.includes(tag) || false} 
+                          onCheckedChange={checked => {
+                            const tags = selectedMeal.allowed_tags || [];
+                            if (checked) {
+                              setSelectedMeal({ ...selectedMeal, allowed_tags: [...tags, tag] });
+                            } else {
+                              setSelectedMeal({ ...selectedMeal, allowed_tags: tags.filter((t: string) => t !== tag) });
+                            }
+                          }} 
+                        />
+                        <label htmlFor={`edit-tag-${tag}`} className="text-sm font-medium">
+                          {tag}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Info className="h-3 w-3" />
+                    Ako nijedna organizacija nije odabrana, obrok je dostupan svima.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <Label>Slika obroka</Label>
