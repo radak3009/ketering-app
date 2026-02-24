@@ -749,6 +749,7 @@ export function MealsManagement() {
                 </div>
               )}
 
+              <div>
                 <Label>Slika obroka</Label>
                 <div className="flex gap-2 mt-2">
                   <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-1">
