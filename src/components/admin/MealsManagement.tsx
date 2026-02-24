@@ -65,6 +65,7 @@ export function MealsManagement() {
   const { meals, loading, createMeal, updateMeal, deleteMeal } = useMeals();
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isAddMealOpen, setIsAddMealOpen] = useState(false);
   const [creatingMeal, setCreatingMeal] = useState(false);
   const [updatingMeal, setUpdatingMeal] = useState(false);
