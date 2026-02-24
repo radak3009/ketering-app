@@ -586,7 +586,18 @@ export function MealsManagement() {
                           ) : '-'}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {meal.shifts?.join(', ') || '-'}
+                          {meal.allowed_tags && meal.allowed_tags.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {meal.allowed_tags.slice(0, 2).map((tag, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">{tag}</Badge>
+                              ))}
+                              {meal.allowed_tags.length > 2 && (
+                                <Badge variant="outline" className="text-xs">+{meal.allowed_tags.length - 2}</Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Sve</span>
+                          )}
                         </TableCell>
                         <TableCell className="font-medium">
                           {meal.purchase_price ? `${meal.purchase_price} RSD` : '-'}
