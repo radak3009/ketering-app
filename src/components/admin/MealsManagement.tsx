@@ -718,7 +718,37 @@ export function MealsManagement() {
                 </div>
               </div>
 
-              <div>
+              {availableTags.length > 0 && (
+                <div>
+                  <Label>Dostupnost prema organizaciji</Label>
+                  <div className="flex flex-wrap gap-4 mt-2">
+                    {availableTags.map(tag => (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`edit-tag-${tag}`} 
+                          checked={selectedMeal.allowed_tags?.includes(tag) || false} 
+                          onCheckedChange={checked => {
+                            const tags = selectedMeal.allowed_tags || [];
+                            if (checked) {
+                              setSelectedMeal({ ...selectedMeal, allowed_tags: [...tags, tag] });
+                            } else {
+                              setSelectedMeal({ ...selectedMeal, allowed_tags: tags.filter((t: string) => t !== tag) });
+                            }
+                          }} 
+                        />
+                        <label htmlFor={`edit-tag-${tag}`} className="text-sm font-medium">
+                          {tag}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Info className="h-3 w-3" />
+                    Ako nijedna organizacija nije odabrana, obrok je dostupan svima.
+                  </p>
+                </div>
+              )}
+
                 <Label>Slika obroka</Label>
                 <div className="flex gap-2 mt-2">
                   <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="flex-1">
