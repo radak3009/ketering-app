@@ -79,7 +79,8 @@ export function MealsManagement() {
     description: '',
     allergens: '',
     shifts: [],
-    status: 'all'
+    status: 'all',
+    allowed_tags: []
   });
 
   const resetMealForm = () => {
