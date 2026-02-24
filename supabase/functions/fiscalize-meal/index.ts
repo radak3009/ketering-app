@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Set pending status
+    // 3. Set pending status (preserve retry count)
     await supabase
       .from("pickup_requests")
       .update({ fiscal_status: "pending", fiscal_external_id: externalId, fiscal_error: null })
