@@ -1,99 +1,84 @@
 
 
-## Plan: PDF fiskalni racun sa QR kodom i cleanup-om footer-a
+## Plan: Receipt Download Fix — Remove URL from PDF + Server-Side Download
 
-### Pregled
+### Problem 1: VerificationUrl text printed in PDF
+Lines 120-132 of `fiscalize-meal/index.ts` draw the `verificationUrl` as plain text below the QR code.
 
-Zameniti TXT generisanje u `fiscalize-meal` edge funkciji sa PDF generisanjem koriscenjem `pdf-lib`. Dodati cleanup logiku za uklanjanje Octopos footer-a ("SALES COMPANY DATA", ASCII art). Generisati QR kod za VerificationUrl i embedovati ga u PDF. Koristiti font sa podrskom za cirilicu (DejaVu Sans Mono, fetch sa CDN-a).
-
----
-
-### Tehnicka resenja
-
-**PDF biblioteka**: `pdf-lib` (dostupna via `esm.sh`, radi u Deno)
-
-**QR kod**: `qrcode` npm biblioteka via `esm.sh` - generise QR kao PNG data URL, pa se embedduje u PDF kao slika
-
-**Font sa cirilicom**: DejaVu Sans Mono TTF, fetch sa javnog CDN-a (`cdn.jsdelivr.net`) pri svakom pozivu. pdf-lib ga embeduje u PDF. Font je ~300KB i kesira se u memoriji tokom zivota edge function instance.
+### Problem 2: Signed URL blocked by ad blockers
+UI fetches a signed URL from `receipt-link` and opens it via `window.open()`. Chrome extensions block these Supabase storage signed URLs.
 
 ---
 
-### A. Izmene u `supabase/functions/fiscalize-meal/index.ts`
+### A. Remove VerificationUrl text from PDF (`fiscalize-meal/index.ts`)
 
-#### 1. Novi importi
+Delete lines 120-132 in `generateReceiptPdf()` — the block that draws `verificationUrl` as text below the QR code. The QR code itself (which encodes the URL) remains.
 
-```typescript
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
-import QRCode from "https://esm.sh/qrcode@1.5.4";
-```
+Also update the page height calculation to remove `urlTextHeight`:
+- Line 82: remove `const urlTextHeight = verificationUrl ? lineHeight * 2 : 0;`
+- Line 83: remove `urlTextHeight` from `totalHeight` calculation
 
-#### 2. Helper funkcije
-
-Dodati `stripUnwantedFooter` pored postojeceg `normalizeText`:
-
-```typescript
-function stripUnwantedFooter(textBottom: string): string {
-  const lines = normalizeText(textBottom).split("\n");
-  const idx = lines.findIndex(l => l.trim() === "SALES COMPANY DATA");
-  const trimmed = idx >= 0 ? lines.slice(0, idx) : lines;
-  const filtered = trimmed.filter(l => !l.includes("@"));
-  while (filtered.length && filtered[filtered.length - 1].trim() === "") filtered.pop();
-  return filtered.join("\n");
-}
-```
-
-#### 3. PDF generisanje (zamena za TXT)
-
-Umesto generisanja `receiptContent` stringa i upload-a kao TXT:
-
-```text
-1. Kreiraj PDFDocument
-2. Fetch DejaVu Sans Mono TTF sa CDN-a
-3. Embeduj font u PDF
-4. Dodaj stranicu (sirina ~226pt = ~80mm termalni slip)
-5. Renderuj cleanTop liniju po liniju monospaced fontom (8pt)
-6. Renderuj cleanBottom (ociscen od footer-a)
-7. Dodaj razdelnu liniju
-8. Dodaj "INVOICE: {invoiceNumber}"
-9. Generisi QR kod kao PNG putem qrcode.toDataURL()
-10. Embeduj QR PNG u PDF (100x100pt)
-11. Opciono dodaj plain text verification URL ispod QR-a
-12. Sacuvaj PDF kao Uint8Array
-```
-
-#### 4. Storage upload
-
-```typescript
-storagePath = `${profile.user_id}/${pickupId}.pdf`  // .pdf umesto .txt
-contentType: "application/pdf"
-```
-
-#### 5. Fallback logika
-
-Ako PDF generisanje ne uspe (font fetch error, pdf-lib greska), loguj gresku ali i dalje sacuvaj fiskalne podatke u DB. Fiskalizacija ne sme biti blokirana zbog PDF-a.
+| Line range | Change |
+|---|---|
+| 80-83 | Remove `urlTextHeight` from height calc |
+| 120-132 | Remove `drawText(verificationUrl, ...)` block |
 
 ---
 
-### B. Fajlovi za izmenu
+### B. New Edge Function: `receipt-download`
 
-| Fajl | Akcija |
-|------|--------|
-| `supabase/functions/fiscalize-meal/index.ts` | Glavne izmene: importi, stripUnwantedFooter, PDF generisanje, .pdf path |
+Create `supabase/functions/receipt-download/index.ts`:
 
-### C. Fajlovi koji se NE menjaju
+1. Accept `GET ?pickupId=...`
+2. Extract JWT from `Authorization` header, verify user via `auth.getUser(token)`
+3. Fetch `pickup_requests` row by `pickupId` using service role client
+4. Verify ownership: `pickup.profile_id` → `profiles.user_id` must match `auth.uid()`
+5. Check `fiscal_status === 'fiscalized'` and `receipt_file_path` exists
+6. Download PDF from Storage using service role: `storage.from('receipts').download(path)`
+7. Return PDF bytes with headers:
+   - `Content-Type: application/pdf`
+   - `Content-Disposition: inline; filename="racun-{invoiceNumber}.pdf"`
+   - `Cache-Control: no-store`
+   - CORS headers
 
-| Fajl | Razlog |
-|------|--------|
-| `supabase/functions/receipt-link/index.ts` | Vec vraca signed URL za bilo koji fajl iz `receipt_file_path` - radi i za PDF |
-| `src/components/employee/MealCard.tsx` | `window.open(url, '_blank')` radi i za PDF - browser ga prikazuje nativno |
-| Baza podataka | Nema promena schema-e |
+Also add admin bypass: if user has admin role, skip ownership check.
 
-### D. Rizici i mitigacija
+Add to `supabase/config.toml`:
+```toml
+[functions.receipt-download]
+verify_jwt = false
+```
+(JWT validated manually in code)
 
-| Rizik | Mitigacija |
-|-------|-----------|
-| Font fetch moze biti spor/nedostupan | Fallback: sacuvaj fiskalne podatke bez PDF-a, loguj gresku |
-| pdf-lib ili qrcode verzija ne radi u Deno | Testirani su u Deno okruzenju; koristimo esm.sh koji transpiluje za Deno |
-| Veliki PDF | Slip je mali (1 stranica, ~50KB sa QR-om), nema rizika |
-| Stari .txt fajlovi u bucket-u | `receipt-link` koristi `receipt_file_path` iz DB-a - stari fajlovi i dalje rade |
+---
+
+### C. UI Change: MealCard `handleDownloadReceipt` (`src/components/employee/MealCard.tsx`)
+
+Replace the current flow (fetch signed URL → window.open) with:
+
+1. `fetch` to `receipt-download?pickupId=...` with `Authorization: Bearer <token>`
+2. Get response as `blob`
+3. Create `URL.createObjectURL(blob)`
+4. `window.open(objectUrl, '_blank')`
+5. Revoke object URL after timeout
+
+This avoids ad-blocker issues since the URL is a local blob, not an external storage URL.
+
+---
+
+### Files to change
+
+| File | Action |
+|---|---|
+| `supabase/functions/fiscalize-meal/index.ts` | Remove verificationUrl text rendering from PDF |
+| `supabase/functions/receipt-download/index.ts` | **New** — server-side PDF download endpoint |
+| `supabase/config.toml` | Add `receipt-download` config |
+| `src/components/employee/MealCard.tsx` | Change download handler to use `receipt-download` + blob |
+
+### Files NOT changed
+
+| File | Reason |
+|---|---|
+| `supabase/functions/receipt-link/index.ts` | Keep as-is (may be used elsewhere); UI no longer calls it for download |
+| Database schema | No changes needed |
 
