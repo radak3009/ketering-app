@@ -82,9 +82,8 @@ async function generateReceiptPdf(
 
   // Calculate page height
   const textBlockHeight = allLines.length * lineHeight;
-  const qrBlockHeight = qrImageBytes ? qrSize + 30 : 0; // QR + label
-  const urlTextHeight = verificationUrl ? lineHeight * 2 : 0;
-  const totalHeight = margin + textBlockHeight + qrBlockHeight + urlTextHeight + margin + 20;
+  const qrBlockHeight = qrImageBytes ? qrSize + 20 : 0; // QR only, no URL text
+  const totalHeight = margin + textBlockHeight + qrBlockHeight + margin + 20;
 
   const page = pdfDoc.addPage([pageWidth, totalHeight]);
   let y = totalHeight - margin;
@@ -117,19 +116,6 @@ async function generateReceiptPdf(
       height: qrSize,
     });
 
-    // Add verification URL text below QR
-    if (verificationUrl) {
-      y -= lineHeight + 4;
-      const urlFontSize = 5;
-      page.drawText(verificationUrl, {
-        x: margin,
-        y,
-        size: urlFontSize,
-        font,
-        color: rgb(0.3, 0.3, 0.3),
-        maxWidth: textWidth,
-      });
-    }
   }
 
   return await pdfDoc.save();
