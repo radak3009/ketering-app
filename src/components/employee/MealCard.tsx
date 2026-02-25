@@ -33,21 +33,23 @@ export function MealCard({ item, canDelete = false, onDelete, onRefresh }: MealC
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/receipt-link?pickupId=${item.pickup_request_id}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/receipt-download?pickupId=${item.pickup_request_id}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
           },
         }
       );
 
-      const result = await response.json();
-      if (result.url) {
-        window.open(result.url, '_blank');
-      } else {
+      if (!response.ok) {
         toast.error('Račun nije dostupan');
+        return;
       }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
     } catch (err) {
       console.error('Receipt download error:', err);
       toast.error('Greška pri preuzimanju računa');
