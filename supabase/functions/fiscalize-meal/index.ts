@@ -259,11 +259,24 @@ Deno.serve(async (req) => {
       .update({ fiscal_status: "pending", fiscal_external_id: externalId, fiscal_error: null })
       .eq("id", pickupId);
 
-    // 4. Call Octopos API
+    // 4. Fetch profile for tag-based product code and storage path
+    let profile: { user_id: string; tag: string | null } | null = null;
+    if (existing.profile_id) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("user_id, tag")
+        .eq("id", existing.profile_id)
+        .maybeSingle();
+      profile = profileData;
+    }
+
+    // 5. Call Octopos API
     const octoposUrl = Deno.env.get("OCTOPOS_BASE_URL") || "https://sandbox.octopos.rs/api";
     const octoposToken = Deno.env.get("OCTOPOS_TOKEN")!;
     const companyTaxNumber = Deno.env.get("OCTOPOS_COMPANY_TAX_NUMBER") || "101612478";
-    const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+    const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+    const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+    const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
     const paymentTypeId = parseInt(Deno.env.get("OCTOPOS_FISCAL_PAYMENT_TYPE_ID") || "4");
 
     const octoposPayload = {
@@ -330,17 +343,10 @@ Deno.serve(async (req) => {
     const invoiceNumber = data.InvoiceNumber || "";
     const verificationUrl = data.VerificationUrl || "";
 
-    // Determine storage path
+    // Determine storage path (reuse profile fetched earlier)
     let storagePath = `unknown/${pickupId}.pdf`;
-    if (existing.profile_id) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("id", existing.profile_id)
-        .maybeSingle();
-      if (profile?.user_id) {
-        storagePath = `${profile.user_id}/${pickupId}.pdf`;
-      }
+    if (profile?.user_id) {
+      storagePath = `${profile.user_id}/${pickupId}.pdf`;
     }
 
     // Generate PDF receipt with QR code
