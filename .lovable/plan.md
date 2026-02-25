@@ -1,84 +1,65 @@
 
 
-## Plan: Receipt Download Fix — Remove URL from PDF + Server-Side Download
+## Plan: Tag-based Octopos Product Code Selection
 
-### Problem 1: VerificationUrl text printed in PDF
-Lines 120-132 of `fiscalize-meal/index.ts` draw the `verificationUrl` as plain text below the QR code.
+### Pregled
 
-### Problem 2: Signed URL blocked by ad blockers
-UI fetches a signed URL from `receipt-link` and opens it via `window.open()`. Chrome extensions block these Supabase storage signed URLs.
+Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
 
 ---
 
-### A. Remove VerificationUrl text from PDF (`fiscalize-meal/index.ts`)
+### Tehnicko resenje
 
-Delete lines 120-132 in `generateReceiptPdf()` — the block that draws `verificationUrl` as text below the QR code. The QR code itself (which encodes the URL) remains.
-
-Also update the page height calculation to remove `urlTextHeight`:
-- Line 82: remove `const urlTextHeight = verificationUrl ? lineHeight * 2 : 0;`
-- Line 83: remove `urlTextHeight` from `totalHeight` calculation
-
-| Line range | Change |
-|---|---|
-| 80-83 | Remove `urlTextHeight` from height calc |
-| 120-132 | Remove `drawText(verificationUrl, ...)` block |
-
----
-
-### B. New Edge Function: `receipt-download`
-
-Create `supabase/functions/receipt-download/index.ts`:
-
-1. Accept `GET ?pickupId=...`
-2. Extract JWT from `Authorization` header, verify user via `auth.getUser(token)`
-3. Fetch `pickup_requests` row by `pickupId` using service role client
-4. Verify ownership: `pickup.profile_id` → `profiles.user_id` must match `auth.uid()`
-5. Check `fiscal_status === 'fiscalized'` and `receipt_file_path` exists
-6. Download PDF from Storage using service role: `storage.from('receipts').download(path)`
-7. Return PDF bytes with headers:
-   - `Content-Type: application/pdf`
-   - `Content-Disposition: inline; filename="racun-{invoiceNumber}.pdf"`
-   - `Cache-Control: no-store`
-   - CORS headers
-
-Also add admin bypass: if user has admin role, skip ownership check.
-
-Add to `supabase/config.toml`:
-```toml
-[functions.receipt-download]
-verify_jwt = false
+U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
+```typescript
+const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
 ```
-(JWT validated manually in code)
 
----
+Potrebno je:
+1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
+2. Na osnovu taga odabrati product code
 
-### C. UI Change: MealCard `handleDownloadReceipt` (`src/components/employee/MealCard.tsx`)
+### Izmene u `supabase/functions/fiscalize-meal/index.ts`
 
-Replace the current flow (fetch signed URL → window.open) with:
+#### 1. Prosiriti profile select (linija 336-340)
 
-1. `fetch` to `receipt-download?pickupId=...` with `Authorization: Bearer <token>`
-2. Get response as `blob`
-3. Create `URL.createObjectURL(blob)`
-4. `window.open(objectUrl, '_blank')`
-5. Revoke object URL after timeout
+Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
 
-This avoids ad-blocker issues since the URL is a local blob, not an external storage URL.
+```typescript
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("user_id, tag")
+  .eq("id", existing.profile_id)
+  .maybeSingle();
+```
 
----
+#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
 
-### Files to change
+```typescript
+const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+```
 
-| File | Action |
-|---|---|
-| `supabase/functions/fiscalize-meal/index.ts` | Remove verificationUrl text rendering from PDF |
-| `supabase/functions/receipt-download/index.ts` | **New** — server-side PDF download endpoint |
-| `supabase/config.toml` | Add `receipt-download` config |
-| `src/components/employee/MealCard.tsx` | Change download handler to use `receipt-download` + blob |
+#### 3. Ukloniti dupliran profile upit (linije 335-344)
 
-### Files NOT changed
+Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
 
-| File | Reason |
-|---|---|
-| `supabase/functions/receipt-link/index.ts` | Keep as-is (may be used elsewhere); UI no longer calls it for download |
-| Database schema | No changes needed |
+### Novi secret
+
+| Secret | Vrednost |
+|--------|----------|
+| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+
+### Fajlovi za izmenu
+
+| Fajl | Akcija |
+|------|--------|
+| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
+
+### Bez promena
+
+- Baza podataka — nema schema promena
+- UI — nema promena
+- Ostale edge funkcije — bez promena
 
