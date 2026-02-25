@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
-import QRCode from "https://esm.sh/qrcode@1.5.4";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
+import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,10 +27,14 @@ let cachedFontBytes: Uint8Array | null = null;
 
 async function fetchCyrillicFont(): Promise<Uint8Array> {
   if (cachedFontBytes) return cachedFontBytes;
-  const fontUrl = "https://cdn.jsdelivr.net/gh/dejavu-fonts/dejavu-fonts@master/ttf/DejaVuSansMono.ttf";
-  const resp = await fetch(fontUrl);
+  
+  // Use npm CDN (most reliable for Supabase Edge Runtime)
+  const url = "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSansMono.ttf";
+  console.log("Fetching font from npm CDN...");
+  const resp = await fetch(url);
   if (!resp.ok) throw new Error(`Font fetch failed: ${resp.status}`);
   cachedFontBytes = new Uint8Array(await resp.arrayBuffer());
+  console.log("Font loaded, size:", cachedFontBytes.length);
   return cachedFontBytes;
 }
 
@@ -40,6 +45,7 @@ async function generateReceiptPdf(
   verificationUrl: string,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
   const fontBytes = await fetchCyrillicFont();
   const font = await pdfDoc.embedFont(fontBytes, { subset: false });
 
@@ -57,23 +63,18 @@ async function generateReceiptPdf(
   if (invoiceNumber) allLines.push(`INVOICE: ${invoiceNumber}`);
   allLines.push("");
 
-  // Generate QR code as PNG data URL
+  // Generate QR code as PNG buffer
   let qrImageBytes: Uint8Array | null = null;
   const qrSize = 100;
   if (verificationUrl) {
     try {
-      const dataUrl: string = await QRCode.toDataURL(verificationUrl, {
+      const pngBuffer: Buffer = await QRCode.toBuffer(verificationUrl, {
         width: qrSize * 2,
         margin: 1,
         errorCorrectionLevel: "M",
+        type: "png",
       });
-      const base64 = dataUrl.split(",")[1];
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      qrImageBytes = bytes;
+      qrImageBytes = new Uint8Array(pngBuffer);
     } catch (e) {
       console.error("QR generation error:", e);
     }
@@ -140,7 +141,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pickupId, price, kioskToken } = await req.json();
+    const { pickupId, price, kioskToken, regeneratePdf } = await req.json();
 
     // Auth: accept either kiosk token or JWT
     const employeeToken = Deno.env.get("KIOSK_TOKEN_EMPLOYEE");
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
     // 1. Idempotency check
     const { data: existing, error: fetchErr } = await supabase
       .from("pickup_requests")
-      .select("id, invoice_number, verification_url, fiscal_status, receipt_file_path, profile_id, order_item_id")
+      .select("id, invoice_number, verification_url, fiscal_status, receipt_file_path, profile_id, order_item_id, receipt_text_top, receipt_text_bottom")
       .eq("id", pickupId)
       .maybeSingle();
 
@@ -182,6 +183,57 @@ Deno.serve(async (req) => {
         JSON.stringify({ status: "error", error: "Pickup request nije pronađen" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Regenerate PDF mode: already fiscalized but missing PDF file
+    if (regeneratePdf && existing.fiscal_status === "fiscalized" && existing.receipt_text_top) {
+      const cleanTop = normalizeText(existing.receipt_text_top);
+      const cleanBottom = stripUnwantedFooter(existing.receipt_text_bottom);
+      const invoiceNumber = existing.invoice_number || "";
+      const verificationUrl = existing.verification_url || "";
+
+      let storagePath = `unknown/${pickupId}.pdf`;
+      if (existing.profile_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("id", existing.profile_id)
+          .maybeSingle();
+        if (profile?.user_id) {
+          storagePath = `${profile.user_id}/${pickupId}.pdf`;
+        }
+      }
+
+      try {
+        const pdfBytes = await generateReceiptPdf(cleanTop, cleanBottom, invoiceNumber, verificationUrl);
+        const { error: uploadErr } = await supabase.storage
+          .from("receipts")
+          .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+        if (uploadErr) {
+          console.error("PDF re-upload error:", uploadErr);
+          return new Response(
+            JSON.stringify({ status: "error", error: "PDF upload failed" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        await supabase
+          .from("pickup_requests")
+          .update({ receipt_file_path: storagePath })
+          .eq("id", pickupId);
+
+        return new Response(
+          JSON.stringify({ status: "fiscalized", pickupId, invoice_number: invoiceNumber, verification_url: verificationUrl, pdf_regenerated: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (pdfErr) {
+        console.error("PDF regeneration error:", pdfErr);
+        return new Response(
+          JSON.stringify({ status: "error", error: `PDF generation failed: ${pdfErr.message}` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Already fiscalized - return existing data
