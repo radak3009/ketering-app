@@ -5,6 +5,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizeText(input: string | null | undefined): string {
+  if (!input) return "";
+  return input.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trimEnd();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -161,16 +166,21 @@ Deno.serve(async (req) => {
 
     // 6. Success - save fiscal data
     const data = result.Data;
-    const receiptContent = [
-      data.TextTop || "",
-      data.TextBottom || "",
+    const textTop = normalizeText(data.TextTop);
+    const textBottom = normalizeText(data.TextBottom);
+    const receiptBody = [
+      textTop,
+      textBottom,
       "",
+      "----------------------------------------",
       "VERIFICATION:",
       data.VerificationUrl || "",
+      "",
       "INVOICE:",
       data.InvoiceNumber || "",
       "",
     ].join("\n");
+    const receiptContent = "\uFEFF" + receiptBody;
 
     // Determine storage path using profile's user_id
     let storagePath = `unknown/${pickupId}.txt`;
@@ -189,7 +199,7 @@ Deno.serve(async (req) => {
     const { error: uploadErr } = await supabase.storage
       .from("receipts")
       .upload(storagePath, new TextEncoder().encode(receiptContent), {
-        contentType: "text/plain",
+        contentType: "text/plain; charset=utf-8",
         upsert: true,
       });
 
