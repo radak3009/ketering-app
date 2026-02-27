@@ -88,17 +88,21 @@ async function generateReceiptPdf(
   const page = pdfDoc.addPage([pageWidth, totalHeight]);
   let y = totalHeight - margin;
 
-  // Render text lines
+  // Render text lines – center block on page, keep left-align inside
+  const maxLineWidth = Math.max(
+    ...allLines.filter(l => l.trim()).map(l => font.widthOfTextAtSize(l, fontSize))
+  );
+  const startX = Math.max(0, (pageWidth - maxLineWidth) / 2);
+
   for (const line of allLines) {
     y -= lineHeight;
     if (line.trim()) {
       page.drawText(line, {
-        x: margin,
+        x: startX,
         y,
         size: fontSize,
         font,
         color: rgb(0, 0, 0),
-        maxWidth: textWidth,
       });
     }
   }
