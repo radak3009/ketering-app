@@ -139,6 +139,45 @@ export function MealsManagement() {
     return groupName;
   }, []);
 
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
+
+  const handleDeleteGroup = useCallback(async (groupName: string) => {
+    setDeletingGroup(true);
+    try {
+      // Remove meal_group from all meals using this group
+      await supabase
+        .from('meals')
+        .update({ meal_group: null } as any)
+        .eq('meal_group', groupName);
+
+      // Delete from meal_groups table
+      await (supabase as any)
+        .from('meal_groups')
+        .delete()
+        .eq('name', groupName);
+
+      setCustomGroups(prev => prev.filter(g => g !== groupName));
+      await Promise.all([refetch(), fetchMealGroups()]);
+
+      // Clear selection if deleted group was selected
+      if (mealForm.meal_group === groupName) {
+        setMealForm(prev => ({ ...prev, meal_group: '' }));
+      }
+      if (selectedMeal?.meal_group === groupName) {
+        setSelectedMeal((prev: any) => prev ? { ...prev, meal_group: '' } : prev);
+      }
+
+      toast({ title: "Uspešno", description: `Grupa "${groupName}" je obrisana` });
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      toast({ title: "Greška", description: "Grupa nije obrisana", variant: "destructive" });
+    } finally {
+      setDeletingGroup(false);
+      setGroupToDelete(null);
+    }
+  }, [refetch, fetchMealGroups, mealForm.meal_group, selectedMeal, toast]);
+
   useEffect(() => {
     const fetchTagsAndGroups = async () => {
       const { data } = await supabase
