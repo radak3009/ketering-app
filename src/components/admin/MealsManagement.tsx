@@ -83,8 +83,15 @@ export function MealsManagement() {
     allergens: '',
     shifts: [],
     status: 'all',
-    allowed_tags: []
+    allowed_tags: [],
+    meal_group: 'all'
   });
+  const [newGroupInput, setNewGroupInput] = useState('');
+  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
+  const [editNewGroupInput, setEditNewGroupInput] = useState('');
+  const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
+
+  const availableGroups = [...new Set(meals.map(m => m.meal_group).filter(Boolean))] as string[];
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
