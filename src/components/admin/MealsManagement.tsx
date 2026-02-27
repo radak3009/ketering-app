@@ -109,19 +109,56 @@ export function MealsManagement() {
     setImageFile(null);
   };
 
+  const fetchMealGroups = useCallback(async () => {
+    const { data, error } = await (supabase as any)
+      .from('meal_groups')
+      .select('name')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    const dbGroups = (data || [])
+      .map((item: { name: string }) => normalizeGroupName(item.name))
+      .filter(Boolean);
+
+    setPersistedGroups(dbGroups);
+  }, []);
+
+  const persistMealGroup = useCallback(async (rawGroupName: string) => {
+    const groupName = normalizeGroupName(rawGroupName);
+    if (!groupName) return '';
+
+    const { error } = await (supabase as any)
+      .from('meal_groups')
+      .upsert({ name: groupName }, { onConflict: 'name' });
+
+    if (error) throw error;
+
+    setCustomGroups(prev => (prev.includes(groupName) ? prev : [...prev, groupName]));
+    return groupName;
+  }, []);
+
   useEffect(() => {
-    const fetchTags = async () => {
+    const fetchTagsAndGroups = async () => {
       const { data } = await supabase
         .from('profiles')
         .select('tag')
         .not('tag', 'is', null);
+
       if (data) {
         const uniqueTags = [...new Set(data.map(p => p.tag).filter(Boolean))] as string[];
         setAvailableTags(uniqueTags.sort());
       }
+
+      try {
+        await fetchMealGroups();
+      } catch (error) {
+        console.error('Error fetching meal groups:', error);
+      }
     };
-    fetchTags();
-  }, []);
+
+    fetchTagsAndGroups();
+  }, [fetchMealGroups]);
 
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
