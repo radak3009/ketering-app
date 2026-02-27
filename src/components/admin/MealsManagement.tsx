@@ -59,7 +59,8 @@ const initialMealForm: MealFormState = {
   shifts: [],
   allergens: [],
   image_url: "",
-  allowed_tags: []
+  allowed_tags: [],
+  meal_group: ""
 };
 
 export function MealsManagement() {
