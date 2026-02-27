@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,6 @@ interface MealFormState {
   allergens: string[];
   image_url: string;
   allowed_tags: string[];
-  meal_group: string;
 }
 
 interface MealFilters {
@@ -46,7 +45,6 @@ interface MealFilters {
   shifts: string[];
   status: string;
   allowed_tags: string[];
-  meal_group: string;
 }
 
 const initialMealForm: MealFormState = {
@@ -59,13 +57,12 @@ const initialMealForm: MealFormState = {
   shifts: [],
   allergens: [],
   image_url: "",
-  allowed_tags: [],
-  meal_group: ""
+  allowed_tags: []
 };
 
 export function MealsManagement() {
   const { toast } = useToast();
-  const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
+  const { meals, loading, createMeal, updateMeal, deleteMeal } = useMeals();
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -83,82 +80,27 @@ export function MealsManagement() {
     allergens: '',
     shifts: [],
     status: 'all',
-    allowed_tags: [],
-    meal_group: 'all'
+    allowed_tags: []
   });
-  const [newGroupInput, setNewGroupInput] = useState('');
-  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
-  const [editNewGroupInput, setEditNewGroupInput] = useState('');
-  const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
-  const [persistedGroups, setPersistedGroups] = useState<string[]>([]);
-  const [customGroups, setCustomGroups] = useState<string[]>([]);
-
-  const normalizeGroupName = (value: string | null | undefined) => value?.trim() || '';
-
-  const availableGroups = useMemo(
-    () => [...new Set([
-      ...persistedGroups,
-      ...meals.map(m => normalizeGroupName(m.meal_group)).filter(Boolean),
-      ...customGroups
-    ])].sort((a, b) => a.localeCompare(b, 'sr', { sensitivity: 'base' })),
-    [persistedGroups, meals, customGroups]
-  );
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
     setImageFile(null);
   };
 
-  const fetchMealGroups = useCallback(async () => {
-    const { data, error } = await (supabase as any)
-      .from('meal_groups')
-      .select('name')
-      .order('name', { ascending: true });
-
-    if (error) throw error;
-
-    const dbGroups = (data || [])
-      .map((item: { name: string }) => normalizeGroupName(item.name))
-      .filter(Boolean);
-
-    setPersistedGroups(dbGroups);
-  }, []);
-
-  const persistMealGroup = useCallback(async (rawGroupName: string) => {
-    const groupName = normalizeGroupName(rawGroupName);
-    if (!groupName) return '';
-
-    const { error } = await (supabase as any)
-      .from('meal_groups')
-      .upsert({ name: groupName }, { onConflict: 'name' });
-
-    if (error) throw error;
-
-    setCustomGroups(prev => (prev.includes(groupName) ? prev : [...prev, groupName]));
-    return groupName;
-  }, []);
-
   useEffect(() => {
-    const fetchTagsAndGroups = async () => {
+    const fetchTags = async () => {
       const { data } = await supabase
         .from('profiles')
         .select('tag')
         .not('tag', 'is', null);
-
       if (data) {
         const uniqueTags = [...new Set(data.map(p => p.tag).filter(Boolean))] as string[];
         setAvailableTags(uniqueTags.sort());
       }
-
-      try {
-        await fetchMealGroups();
-      } catch (error) {
-        console.error('Error fetching meal groups:', error);
-      }
     };
-
-    fetchTagsAndGroups();
-  }, [fetchMealGroups]);
+    fetchTags();
+  }, []);
 
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
@@ -189,11 +131,6 @@ export function MealsManagement() {
         imageUrl = uploaded;
       }
 
-      const normalizedGroup = normalizeGroupName(mealForm.meal_group);
-      if (normalizedGroup) {
-        await persistMealGroup(normalizedGroup);
-      }
-
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
@@ -207,11 +144,8 @@ export function MealsManagement() {
         is_available: true,
         allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
         nutritional_info: null,
-        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null,
-        meal_group: normalizedGroup || null
+        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null
       });
-
-      await Promise.all([refetch(), fetchMealGroups()]);
       
       resetMealForm();
       setIsAddMealOpen(false);
@@ -252,11 +186,6 @@ export function MealsManagement() {
         imageUrl = uploaded;
       }
 
-      const normalizedGroup = normalizeGroupName(selectedMeal.meal_group);
-      if (normalizedGroup) {
-        await persistMealGroup(normalizedGroup);
-      }
-
       await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
@@ -267,12 +196,10 @@ export function MealsManagement() {
         shifts: selectedMeal.shifts,
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
         image_url: imageUrl || null,
-        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null,
-        meal_group: normalizedGroup || null
+        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null
       });
 
-      await Promise.all([refetch(), fetchMealGroups()]);
-      setSelectedMeal({ ...selectedMeal, image_url: imageUrl, meal_group: normalizedGroup });
+      setSelectedMeal({ ...selectedMeal, image_url: imageUrl });
       setImageFile(null);
     } catch (error) {
       console.error('Error updating meal:', error);
@@ -297,11 +224,9 @@ export function MealsManagement() {
     const matchesTags = mealFilters.allowed_tags.length === 0 ||
       (meal.allowed_tags && mealFilters.allowed_tags.some(tag => meal.allowed_tags?.includes(tag))) ||
       (!meal.allowed_tags && mealFilters.allowed_tags.length === 0);
-    const matchesGroup = mealFilters.meal_group === 'all' || 
-      (mealFilters.meal_group === '' ? !meal.meal_group : meal.meal_group === mealFilters.meal_group);
     
     return matchesCode && matchesName && matchesDescription && 
-           matchesAllergens && matchesShifts && matchesStatus && matchesTags && matchesGroup;
+           matchesAllergens && matchesShifts && matchesStatus && matchesTags;
   });
 
   return (
@@ -378,62 +303,6 @@ export function MealsManagement() {
                       onChange={e => setMealForm({ ...mealForm, description: e.target.value })} 
                       placeholder="Kratak opis obroka..." 
                     />
-                  </div>
-                  
-                  <div>
-                    <Label>Grupa</Label>
-                    {showNewGroupInput ? (
-                      <div className="flex gap-2">
-                        <Input 
-                          value={newGroupInput}
-                          onChange={e => setNewGroupInput(e.target.value)}
-                          placeholder="Unesite naziv nove grupe..."
-                          className="flex-1"
-                        />
-                        <Button type="button" size="sm" onClick={async () => {
-                          const g = normalizeGroupName(newGroupInput);
-                          if (!g) return;
-
-                          try {
-                            const savedGroup = await persistMealGroup(g);
-                            await fetchMealGroups();
-                            setMealForm({ ...mealForm, meal_group: savedGroup });
-                            setShowNewGroupInput(false);
-                            setNewGroupInput('');
-                          } catch (error) {
-                            toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
-                          }
-                        }}>OK</Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={() => {
-                          setShowNewGroupInput(false);
-                          setNewGroupInput('');
-                        }}>Otkaži</Button>
-                      </div>
-                    ) : (
-                      <Select 
-                        value={mealForm.meal_group || "__none__"} 
-                        onValueChange={(value) => {
-                          if (value === '__new__') {
-                            setShowNewGroupInput(true);
-                          } else if (value === '__none__') {
-                            setMealForm({ ...mealForm, meal_group: '' });
-                          } else {
-                            setMealForm({ ...mealForm, meal_group: value });
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Odaberite grupu" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">Bez grupe</SelectItem>
-                          {availableGroups.map(g => (
-                            <SelectItem key={g} value={g}>{g}</SelectItem>
-                          ))}
-                          <SelectItem value="__new__">Nova grupa...</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
                   
                   <div>
@@ -592,23 +461,15 @@ export function MealsManagement() {
                         />
                       </div>
                     </TableHead>
-                    <TableHead className="w-[150px]">
+                    <TableHead className="w-[200px]">
                       <div className="space-y-1">
-                        <span className="font-semibold text-xs">Grupa</span>
-                        <Select 
-                          value={mealFilters.meal_group} 
-                          onValueChange={(value) => setMealFilters(prev => ({...prev, meal_group: value}))}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Sve grupe</SelectItem>
-                            {availableGroups.map(g => (
-                              <SelectItem key={g} value={g}>{g}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <span className="font-semibold text-xs">Opis</span>
+                        <Input
+                          placeholder="Pretraži..."
+                          value={mealFilters.description}
+                          onChange={(e) => setMealFilters(prev => ({...prev, description: e.target.value}))}
+                          className="h-7 text-xs"
+                        />
                       </div>
                     </TableHead>
                     <TableHead className="w-[150px]">
@@ -709,12 +570,8 @@ export function MealsManagement() {
                           {meal.code || <span className="text-muted-foreground">-</span>}
                         </TableCell>
                         <TableCell className="font-medium">{meal.name}</TableCell>
-                        <TableCell>
-                          {meal.meal_group ? (
-                            <Badge variant="outline" className="text-xs">{meal.meal_group}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">-</span>
-                          )}
+                        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {meal.description || '-'}
                         </TableCell>
                         <TableCell>
                           {meal.allergens && meal.allergens.length > 0 ? (
@@ -771,7 +628,7 @@ export function MealsManagement() {
       </Card>
 
       {/* Edit Meal Sheet */}
-      <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); setEditShowNewGroupInput(false); setEditNewGroupInput(''); }}>
+      <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Izmeni obrok</SheetTitle>
@@ -826,62 +683,6 @@ export function MealsManagement() {
                 />
               </div>
               
-              <div>
-                <Label>Grupa</Label>
-                {editShowNewGroupInput ? (
-                  <div className="flex gap-2">
-                    <Input 
-                      value={editNewGroupInput}
-                      onChange={e => setEditNewGroupInput(e.target.value)}
-                      placeholder="Unesite naziv nove grupe..."
-                      className="flex-1"
-                    />
-                    <Button type="button" size="sm" onClick={async () => {
-                      const g = normalizeGroupName(editNewGroupInput);
-                      if (!g) return;
-
-                      try {
-                        const savedGroup = await persistMealGroup(g);
-                        await fetchMealGroups();
-                        setSelectedMeal({ ...selectedMeal, meal_group: savedGroup });
-                        setEditShowNewGroupInput(false);
-                        setEditNewGroupInput('');
-                      } catch (error) {
-                        toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
-                      }
-                    }}>OK</Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => {
-                      setEditShowNewGroupInput(false);
-                      setEditNewGroupInput('');
-                    }}>Otkaži</Button>
-                  </div>
-                ) : (
-                  <Select 
-                    value={selectedMeal.meal_group || "__none__"} 
-                    onValueChange={(value) => {
-                      if (value === '__new__') {
-                        setEditShowNewGroupInput(true);
-                      } else if (value === '__none__') {
-                        setSelectedMeal({ ...selectedMeal, meal_group: '' });
-                      } else {
-                        setSelectedMeal({ ...selectedMeal, meal_group: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Odaberite grupu" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Bez grupe</SelectItem>
-                      {availableGroups.map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
-                      ))}
-                      <SelectItem value="__new__">Nova grupa...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
               <div>
                 <Label>Alergeni</Label>
                 <TagInput

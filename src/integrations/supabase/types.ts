@@ -177,27 +177,6 @@ export type Database = {
           },
         ]
       }
-      meal_groups: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       meals: {
         Row: {
           allergens: string[] | null
@@ -209,7 +188,6 @@ export type Database = {
           id: string
           image_url: string | null
           is_available: boolean
-          meal_group: string | null
           name: string
           nutritional_info: Json | null
           price: number
@@ -228,7 +206,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_available?: boolean
-          meal_group?: string | null
           name: string
           nutritional_info?: Json | null
           price: number
@@ -247,7 +224,6 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_available?: boolean
-          meal_group?: string | null
           name?: string
           nutritional_info?: Json | null
           price?: number
@@ -722,7 +698,6 @@ export type Database = {
           id: string | null
           image_url: string | null
           is_available: boolean | null
-          meal_group: string | null
           name: string | null
           nutritional_info: Json | null
           price: number | null
@@ -741,7 +716,6 @@ export type Database = {
           id?: string | null
           image_url?: string | null
           is_available?: boolean | null
-          meal_group?: string | null
           name?: string | null
           nutritional_info?: Json | null
           price?: number | null
@@ -760,7 +734,6 @@ export type Database = {
           id?: string | null
           image_url?: string | null
           is_available?: boolean | null
-          meal_group?: string | null
           name?: string | null
           nutritional_info?: Json | null
           price?: number | null
