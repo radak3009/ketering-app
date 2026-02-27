@@ -390,13 +390,18 @@ export function MealsManagement() {
                           placeholder="Unesite naziv nove grupe..."
                           className="flex-1"
                         />
-                        <Button type="button" size="sm" onClick={() => {
-                          if (newGroupInput.trim()) {
-                            const g = newGroupInput.trim();
-                            setMealForm({ ...mealForm, meal_group: g });
-                            setCustomGroups(prev => prev.includes(g) ? prev : [...prev, g]);
+                        <Button type="button" size="sm" onClick={async () => {
+                          const g = normalizeGroupName(newGroupInput);
+                          if (!g) return;
+
+                          try {
+                            const savedGroup = await persistMealGroup(g);
+                            await fetchMealGroups();
+                            setMealForm({ ...mealForm, meal_group: savedGroup });
                             setShowNewGroupInput(false);
                             setNewGroupInput('');
+                          } catch (error) {
+                            toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
                           }
                         }}>OK</Button>
                         <Button type="button" size="sm" variant="ghost" onClick={() => {
