@@ -65,7 +65,7 @@ const initialMealForm: MealFormState = {
 
 export function MealsManagement() {
   const { toast } = useToast();
-  const { meals, loading, createMeal, updateMeal, deleteMeal } = useMeals();
+  const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -90,9 +90,19 @@ export function MealsManagement() {
   const [showNewGroupInput, setShowNewGroupInput] = useState(false);
   const [editNewGroupInput, setEditNewGroupInput] = useState('');
   const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
+  const [persistedGroups, setPersistedGroups] = useState<string[]>([]);
   const [customGroups, setCustomGroups] = useState<string[]>([]);
 
-  const availableGroups = [...new Set([...meals.map(m => m.meal_group).filter(Boolean), ...customGroups])] as string[];
+  const normalizeGroupName = (value: string | null | undefined) => value?.trim() || '';
+
+  const availableGroups = useMemo(
+    () => [...new Set([
+      ...persistedGroups,
+      ...meals.map(m => normalizeGroupName(m.meal_group)).filter(Boolean),
+      ...customGroups
+    ])].sort((a, b) => a.localeCompare(b, 'sr', { sensitivity: 'base' })),
+    [persistedGroups, meals, customGroups]
+  );
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
