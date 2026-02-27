@@ -592,8 +592,12 @@ export function MealsManagement() {
                           {meal.code || <span className="text-muted-foreground">-</span>}
                         </TableCell>
                         <TableCell className="font-medium">{meal.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
-                          {meal.description || '-'}
+                        <TableCell>
+                          {meal.meal_group ? (
+                            <Badge variant="outline" className="text-xs">{meal.meal_group}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {meal.allergens && meal.allergens.length > 0 ? (
