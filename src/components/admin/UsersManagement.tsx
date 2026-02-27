@@ -195,14 +195,16 @@ export function UsersManagement() {
     }
 
     setUpdatingUser(true);
+    // Capture values before any async operation to prevent stale closures
+    const userToSave = { ...selectedUser };
     try {
-      await updateUser(selectedUser.id, {
-        full_name: selectedUser.full_name,
-        email: selectedUser.email,
-        phone: selectedUser.phone,
-        company_card_id: selectedUser.company_card_id,
-        tag: selectedUser.tag || null,
-        date_of_birth: selectedUser.date_of_birth || null
+      await updateUser(userToSave.id, {
+        full_name: userToSave.full_name,
+        email: userToSave.email,
+        phone: userToSave.phone,
+        company_card_id: userToSave.company_card_id,
+        tag: userToSave.tag && userToSave.tag.trim() !== '' ? userToSave.tag.trim() : null,
+        date_of_birth: userToSave.date_of_birth || null
       });
       setSelectedUser(null);
     } catch (error) {
