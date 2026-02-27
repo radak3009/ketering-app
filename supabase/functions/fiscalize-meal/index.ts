@@ -54,13 +54,17 @@ async function generateReceiptPdf(
   const pageWidth = 226; // ~80mm thermal slip
   const margin = 10;
 
-  // Prepare all text lines
-  const allLines: string[] = [];
-  if (cleanTop) allLines.push(...cleanTop.split("\n"));
-  if (cleanBottom) allLines.push(...cleanBottom.split("\n"));
-  allLines.push("", "----------------------------------------");
-  if (invoiceNumber) allLines.push(`INVOICE: ${invoiceNumber}`);
-  allLines.push("");
+  // Prepare text lines split into top and bottom blocks
+  const topLines: string[] = [];
+  if (cleanTop) topLines.push(...cleanTop.split("\n"));
+
+  const bottomLines: string[] = [];
+  if (cleanBottom) bottomLines.push(...cleanBottom.split("\n"));
+  bottomLines.push("", "----------------------------------------");
+  if (invoiceNumber) bottomLines.push(`INVOICE: ${invoiceNumber}`);
+  bottomLines.push("");
+
+  const allLines = [...topLines, ...bottomLines];
 
   // Generate QR code as PNG buffer
   let qrImageBytes: Uint8Array | null = null;
