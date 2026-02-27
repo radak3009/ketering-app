@@ -13,10 +13,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info } from "lucide-react";
+import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info, X, Check, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { uploadImage } from "@/services/storageService";
 import { validateMealCode } from "@/services/validationService";
 import { SHIFTS, MEAL_STATUSES, type MealStatus } from "@/constants";
@@ -137,6 +138,45 @@ export function MealsManagement() {
     setCustomGroups(prev => (prev.includes(groupName) ? prev : [...prev, groupName]));
     return groupName;
   }, []);
+
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
+
+  const handleDeleteGroup = useCallback(async (groupName: string) => {
+    setDeletingGroup(true);
+    try {
+      // Remove meal_group from all meals using this group
+      await supabase
+        .from('meals')
+        .update({ meal_group: null } as any)
+        .eq('meal_group', groupName);
+
+      // Delete from meal_groups table
+      await (supabase as any)
+        .from('meal_groups')
+        .delete()
+        .eq('name', groupName);
+
+      setCustomGroups(prev => prev.filter(g => g !== groupName));
+      await Promise.all([refetch(), fetchMealGroups()]);
+
+      // Clear selection if deleted group was selected
+      if (mealForm.meal_group === groupName) {
+        setMealForm(prev => ({ ...prev, meal_group: '' }));
+      }
+      if (selectedMeal?.meal_group === groupName) {
+        setSelectedMeal((prev: any) => prev ? { ...prev, meal_group: '' } : prev);
+      }
+
+      toast({ title: "Uspešno", description: `Grupa "${groupName}" je obrisana` });
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      toast({ title: "Greška", description: "Grupa nije obrisana", variant: "destructive" });
+    } finally {
+      setDeletingGroup(false);
+      setGroupToDelete(null);
+    }
+  }, [refetch, fetchMealGroups, mealForm.meal_group, selectedMeal, toast]);
 
   useEffect(() => {
     const fetchTagsAndGroups = async () => {
@@ -410,29 +450,48 @@ export function MealsManagement() {
                         }}>Otkaži</Button>
                       </div>
                     ) : (
-                      <Select 
-                        value={mealForm.meal_group || "__none__"} 
-                        onValueChange={(value) => {
-                          if (value === '__new__') {
-                            setShowNewGroupInput(true);
-                          } else if (value === '__none__') {
-                            setMealForm({ ...mealForm, meal_group: '' });
-                          } else {
-                            setMealForm({ ...mealForm, meal_group: value });
-                          }
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Odaberite grupu" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">Bez grupe</SelectItem>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between font-normal">
+                            {mealForm.meal_group || "Bez grupe"}
+                            <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
+                          <div
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent"
+                            onClick={() => setMealForm({ ...mealForm, meal_group: '' })}
+                          >
+                            {!mealForm.meal_group && <Check className="h-4 w-4" />}
+                            <span className={!mealForm.meal_group ? '' : 'ml-6'}>Bez grupe</span>
+                          </div>
                           {availableGroups.map(g => (
-                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                            <div key={g} className="flex items-center gap-1 px-2 py-1.5 text-sm rounded-sm hover:bg-accent group">
+                              <div
+                                className="flex-1 flex items-center gap-2 cursor-pointer"
+                                onClick={() => setMealForm({ ...mealForm, meal_group: g })}
+                              >
+                                {mealForm.meal_group === g && <Check className="h-4 w-4" />}
+                                <span className={mealForm.meal_group === g ? '' : 'ml-6'}>{g}</span>
+                              </div>
+                              <button
+                                type="button"
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/20 text-destructive transition-opacity"
+                                onClick={(e) => { e.stopPropagation(); setGroupToDelete(g); }}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           ))}
-                          <SelectItem value="__new__">Nova grupa...</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <div
+                            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent text-primary border-t mt-1 pt-1.5"
+                            onClick={() => setShowNewGroupInput(true)}
+                          >
+                            <Plus className="h-4 w-4 ml-6" />
+                            <span>Nova grupa...</span>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     )}
                   </div>
                   
@@ -856,29 +915,48 @@ export function MealsManagement() {
                     }}>Otkaži</Button>
                   </div>
                 ) : (
-                  <Select 
-                    value={selectedMeal.meal_group || "__none__"} 
-                    onValueChange={(value) => {
-                      if (value === '__new__') {
-                        setEditShowNewGroupInput(true);
-                      } else if (value === '__none__') {
-                        setSelectedMeal({ ...selectedMeal, meal_group: '' });
-                      } else {
-                        setSelectedMeal({ ...selectedMeal, meal_group: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Odaberite grupu" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Bez grupe</SelectItem>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between font-normal">
+                        {selectedMeal.meal_group || "Bez grupe"}
+                        <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
+                      <div
+                        className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent"
+                        onClick={() => setSelectedMeal({ ...selectedMeal, meal_group: '' })}
+                      >
+                        {!selectedMeal.meal_group && <Check className="h-4 w-4" />}
+                        <span className={!selectedMeal.meal_group ? '' : 'ml-6'}>Bez grupe</span>
+                      </div>
                       {availableGroups.map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                        <div key={g} className="flex items-center gap-1 px-2 py-1.5 text-sm rounded-sm hover:bg-accent group">
+                          <div
+                            className="flex-1 flex items-center gap-2 cursor-pointer"
+                            onClick={() => setSelectedMeal({ ...selectedMeal, meal_group: g })}
+                          >
+                            {selectedMeal.meal_group === g && <Check className="h-4 w-4" />}
+                            <span className={selectedMeal.meal_group === g ? '' : 'ml-6'}>{g}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/20 text-destructive transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); setGroupToDelete(g); }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       ))}
-                      <SelectItem value="__new__">Nova grupa...</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      <div
+                        className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent text-primary border-t mt-1 pt-1.5"
+                        onClick={() => setEditShowNewGroupInput(true)}
+                      >
+                        <Plus className="h-4 w-4 ml-6" />
+                        <span>Nova grupa...</span>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
 
@@ -1062,6 +1140,18 @@ export function MealsManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ConfirmDialog
+        open={!!groupToDelete}
+        onOpenChange={(open) => { if (!open) setGroupToDelete(null); }}
+        title="Potvrdi brisanje grupe"
+        description={`Da li ste sigurni da želite da obrišete grupu "${groupToDelete}"? Svi obroci koji pripadaju ovoj grupi će ostati bez grupe.`}
+        confirmLabel="Obriši"
+        cancelLabel="Otkaži"
+        variant="destructive"
+        loading={deletingGroup}
+        onConfirm={() => { if (groupToDelete) handleDeleteGroup(groupToDelete); }}
+      />
     </>
   );
 }
