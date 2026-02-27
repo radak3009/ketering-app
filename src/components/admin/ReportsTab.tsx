@@ -85,11 +85,27 @@ export function ReportsTab() {
       if (reportType === 'orders') {
         await fetchOrders(reportDateRange.startDate, reportDateRange.endDate);
         
+        const shiftLabel = (s: string) => s === 'prva' ? 'I' : s === 'druga' ? 'II' : s === 'treća' ? 'III' : s;
+        
         csvContent = '\uFEFF'; // UTF-8 BOM
-        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Status,Ukupan iznos,Napomene\n';
+        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Naziv obroka,Smena,Napomene\n';
         orders.forEach(order => {
           const user = users.find(u => u.user_id === order.user_id);
-          csvContent += `"${order.id}","${user?.full_name || 'N/A'}","${user?.tag || ''}","${order.order_date}","${order.delivery_date || 'N/A'}","${order.status}","${order.total_amount}","${order.notes || ''}"\n`;
+          const userName = user?.full_name || 'N/A';
+          const userTag = user?.tag || '';
+          const orderDate = order.order_date;
+          const deliveryDate = order.delivery_date || 'N/A';
+          const notes = order.notes || '';
+          
+          if (order.order_items && order.order_items.length > 0) {
+            order.order_items.forEach(item => {
+              const mealName = item.meal?.name || '';
+              const shift = shiftLabel(item.shift || '');
+              csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${notes}"\n`;
+            });
+          } else {
+            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","","","${notes}"\n`;
+          }
         });
         filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
       } else if (reportType === 'revenue') {
