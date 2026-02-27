@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/csv-export";
 
 interface Order {
   id: string;
@@ -90,6 +92,29 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const sortedMeals = Object.keys(pivotData).sort((a, b) => a.localeCompare(b, 'sr'));
   
   const showDrillDown = shiftFilter === "all";
+
+  const handleExportCSV = useCallback(() => {
+    const rows: (string | number)[][] = [];
+    // Header
+    rows.push(['Obrok', 'Smena', ...DAYS_OF_WEEK, 'Total']);
+    
+    sortedMeals.forEach(mealName => {
+      const row = pivotData[mealName];
+      // Parent row (total)
+      rows.push([mealName, 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
+      // Shift rows
+      SHIFTS.forEach(shift => {
+        const sr = row.shifts[shift];
+        if (sr && sr.total > 0) {
+          rows.push([mealName, SHIFT_LABELS[shift], ...DAYS_OF_WEEK.map(d => sr.byDay[d]), sr.total]);
+        }
+      });
+    });
+    // Totals row
+    rows.push(['Total', '', ...DAYS_OF_WEEK.map(d => dayTotals[d]), grandTotal]);
+    
+    downloadCSV(rows, `pivot-obroci-${new Date().toISOString().slice(0, 10)}`);
+  }, [pivotData, sortedMeals, dayTotals, grandTotal]);
   
   if (sortedMeals.length === 0) {
     return (
@@ -110,8 +135,16 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Pivot tabela</CardTitle>
-        <CardDescription className="text-xs md:text-sm">Pregled porudžbina po obrocima i danima</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg md:text-xl">Pivot tabela</CardTitle>
+            <CardDescription className="text-xs md:text-sm">Pregled porudžbina po obrocima i danima</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-1.5" />
+            CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
         <div className="min-w-[600px]">

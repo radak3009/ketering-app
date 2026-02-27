@@ -1,6 +1,10 @@
+import { useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download } from "lucide-react";
+import { downloadCSV } from "@/lib/csv-export";
 
 interface OrderWithProfile {
   id: string;
@@ -99,6 +103,16 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
   }
   
   usersArray.sort((a, b) => a.full_name.localeCompare(b.full_name, 'sr'));
+
+  const handleExportCSV = useCallback(() => {
+    const rows: (string | number)[][] = [];
+    rows.push(['ID Kartice', 'Ime i Prezime', ...DAYS_OF_WEEK, 'Total']);
+    usersArray.forEach(user => {
+      rows.push([user.company_card_id, user.full_name, ...DAYS_OF_WEEK.map(d => user.meals[d]), user.total]);
+    });
+    rows.push(['Total', '', ...DAYS_OF_WEEK.map(d => dayTotals[d]), grandTotal]);
+    downloadCSV(rows, `pivot-korisnici-${new Date().toISOString().slice(0, 10)}`);
+  }, [usersArray, dayTotals, grandTotal]);
   
   if (usersArray.length === 0) {
     return (
@@ -119,11 +133,20 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
     );
   }
   
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Pivot tabela - Po korisnicima</CardTitle>
-        <CardDescription className="text-xs md:text-sm">Pregled porudžbina po korisnicima i danima</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg md:text-xl">Pivot tabela - Po korisnicima</CardTitle>
+            <CardDescription className="text-xs md:text-sm">Pregled porudžbina po korisnicima i danima</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-1.5" />
+            CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
         <div className="min-w-[800px]">
