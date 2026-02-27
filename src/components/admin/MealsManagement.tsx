@@ -771,7 +771,7 @@ export function MealsManagement() {
       </Card>
 
       {/* Edit Meal Sheet */}
-      <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); }}>
+      <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); setEditShowNewGroupInput(false); setEditNewGroupInput(''); }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Izmeni obrok</SheetTitle>
