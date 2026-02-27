@@ -135,8 +135,16 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg md:text-xl">Pivot tabela</CardTitle>
-        <CardDescription className="text-xs md:text-sm">Pregled porudžbina po obrocima i danima</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg md:text-xl">Pivot tabela</CardTitle>
+            <CardDescription className="text-xs md:text-sm">Pregled porudžbina po obrocima i danima</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-1.5" />
+            CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
         <div className="min-w-[600px]">
