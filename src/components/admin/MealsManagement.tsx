@@ -207,7 +207,8 @@ export function MealsManagement() {
         shifts: selectedMeal.shifts,
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
         image_url: imageUrl || null,
-        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null
+        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null,
+        meal_group: selectedMeal.meal_group || null
       });
 
       setSelectedMeal({ ...selectedMeal, image_url: imageUrl });
