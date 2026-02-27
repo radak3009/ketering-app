@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
@@ -53,7 +53,6 @@ async function generateReceiptPdf(
   const lineHeight = fontSize * 1.4;
   const pageWidth = 226; // ~80mm thermal slip
   const margin = 10;
-  const textWidth = pageWidth - margin * 2;
 
   // Prepare all text lines
   const allLines: string[] = [];
@@ -89,9 +88,10 @@ async function generateReceiptPdf(
   let y = totalHeight - margin;
 
   // Render text lines – center block on page, keep left-align inside
-  const maxLineWidth = Math.max(
-    ...allLines.filter(l => l.trim()).map(l => font.widthOfTextAtSize(l, fontSize))
-  );
+  const nonEmptyLines = allLines.filter(l => l.trim());
+  const maxLineWidth = nonEmptyLines.length > 0
+    ? Math.max(...nonEmptyLines.map(l => font.widthOfTextAtSize(l, fontSize)))
+    : 0;
   const startX = Math.max(0, (pageWidth - maxLineWidth) / 2);
 
   for (const line of allLines) {
@@ -281,6 +281,7 @@ Deno.serve(async (req) => {
     const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
     const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
     const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+    console.log(`Product code selection: tag="${profile?.tag || 'none'}", code="${productCode}"`);
     const paymentTypeId = parseInt(Deno.env.get("OCTOPOS_FISCAL_PAYMENT_TYPE_ID") || "4");
 
     const octoposPayload = {
