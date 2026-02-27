@@ -252,6 +252,11 @@ export function MealsManagement() {
         imageUrl = uploaded;
       }
 
+      const normalizedGroup = normalizeGroupName(selectedMeal.meal_group);
+      if (normalizedGroup) {
+        await persistMealGroup(normalizedGroup);
+      }
+
       await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
@@ -263,10 +268,11 @@ export function MealsManagement() {
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
         image_url: imageUrl || null,
         allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null,
-        meal_group: selectedMeal.meal_group || null
+        meal_group: normalizedGroup || null
       });
 
-      setSelectedMeal({ ...selectedMeal, image_url: imageUrl });
+      await Promise.all([refetch(), fetchMealGroups()]);
+      setSelectedMeal({ ...selectedMeal, image_url: imageUrl, meal_group: normalizedGroup });
       setImageFile(null);
     } catch (error) {
       console.error('Error updating meal:', error);
