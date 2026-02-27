@@ -154,7 +154,8 @@ export function MealsManagement() {
         is_available: true,
         allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
         nutritional_info: null,
-        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null
+        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null,
+        meal_group: mealForm.meal_group || null
       });
       
       resetMealForm();
