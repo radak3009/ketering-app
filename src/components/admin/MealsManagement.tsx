@@ -90,8 +90,9 @@ export function MealsManagement() {
   const [showNewGroupInput, setShowNewGroupInput] = useState(false);
   const [editNewGroupInput, setEditNewGroupInput] = useState('');
   const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
+  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
-  const availableGroups = [...new Set(meals.map(m => m.meal_group).filter(Boolean))] as string[];
+  const availableGroups = [...new Set([...meals.map(m => m.meal_group).filter(Boolean), ...customGroups])] as string[];
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
@@ -331,7 +332,9 @@ export function MealsManagement() {
                         />
                         <Button type="button" size="sm" onClick={() => {
                           if (newGroupInput.trim()) {
-                            setMealForm({ ...mealForm, meal_group: newGroupInput.trim() });
+                            const g = newGroupInput.trim();
+                            setMealForm({ ...mealForm, meal_group: g });
+                            setCustomGroups(prev => prev.includes(g) ? prev : [...prev, g]);
                             setShowNewGroupInput(false);
                             setNewGroupInput('');
                           }
@@ -770,7 +773,9 @@ export function MealsManagement() {
                     />
                     <Button type="button" size="sm" onClick={() => {
                       if (editNewGroupInput.trim()) {
-                        setSelectedMeal({ ...selectedMeal, meal_group: editNewGroupInput.trim() });
+                        const g = editNewGroupInput.trim();
+                        setSelectedMeal({ ...selectedMeal, meal_group: g });
+                        setCustomGroups(prev => prev.includes(g) ? prev : [...prev, g]);
                         setEditShowNewGroupInput(false);
                         setEditNewGroupInput('');
                       }
