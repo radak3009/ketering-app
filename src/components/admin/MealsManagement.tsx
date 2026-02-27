@@ -332,7 +332,9 @@ export function MealsManagement() {
                         />
                         <Button type="button" size="sm" onClick={() => {
                           if (newGroupInput.trim()) {
-                            setMealForm({ ...mealForm, meal_group: newGroupInput.trim() });
+                            const g = newGroupInput.trim();
+                            setMealForm({ ...mealForm, meal_group: g });
+                            setCustomGroups(prev => prev.includes(g) ? prev : [...prev, g]);
                             setShowNewGroupInput(false);
                             setNewGroupInput('');
                           }
