@@ -103,6 +103,16 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
   }
   
   usersArray.sort((a, b) => a.full_name.localeCompare(b.full_name, 'sr'));
+
+  const handleExportCSV = useCallback(() => {
+    const rows: (string | number)[][] = [];
+    rows.push(['ID Kartice', 'Ime i Prezime', ...DAYS_OF_WEEK, 'Total']);
+    usersArray.forEach(user => {
+      rows.push([user.company_card_id, user.full_name, ...DAYS_OF_WEEK.map(d => user.meals[d]), user.total]);
+    });
+    rows.push(['Total', '', ...DAYS_OF_WEEK.map(d => dayTotals[d]), grandTotal]);
+    downloadCSV(rows, `pivot-korisnici-${new Date().toISOString().slice(0, 10)}`);
+  }, [usersArray, dayTotals, grandTotal]);
   
   if (usersArray.length === 0) {
     return (
@@ -123,7 +133,7 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
     );
   }
   
-  const handleExportCSV = useCallback(() => {
+  const
     const rows: (string | number)[][] = [];
     rows.push(['ID Kartice', 'Ime i Prezime', ...DAYS_OF_WEEK, 'Total']);
     usersArray.forEach(user => {
