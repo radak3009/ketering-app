@@ -88,9 +88,10 @@ async function generateReceiptPdf(
   let y = totalHeight - margin;
 
   // Render text lines – center block on page, keep left-align inside
-  const maxLineWidth = Math.max(
-    ...allLines.filter(l => l.trim()).map(l => font.widthOfTextAtSize(l, fontSize))
-  );
+  const nonEmptyLines = allLines.filter(l => l.trim());
+  const maxLineWidth = nonEmptyLines.length > 0
+    ? Math.max(...nonEmptyLines.map(l => font.widthOfTextAtSize(l, fontSize)))
+    : 0;
   const startX = Math.max(0, (pageWidth - maxLineWidth) / 2);
 
   for (const line of allLines) {
