@@ -475,15 +475,23 @@ export function MealsManagement() {
                         />
                       </div>
                     </TableHead>
-                    <TableHead className="w-[200px]">
+                    <TableHead className="w-[150px]">
                       <div className="space-y-1">
-                        <span className="font-semibold text-xs">Opis</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={mealFilters.description}
-                          onChange={(e) => setMealFilters(prev => ({...prev, description: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
+                        <span className="font-semibold text-xs">Grupa</span>
+                        <Select 
+                          value={mealFilters.meal_group} 
+                          onValueChange={(value) => setMealFilters(prev => ({...prev, meal_group: value}))}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Sve grupe</SelectItem>
+                            {availableGroups.map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </TableHead>
                     <TableHead className="w-[150px]">
