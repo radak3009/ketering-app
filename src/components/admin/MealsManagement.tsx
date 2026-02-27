@@ -35,6 +35,7 @@ interface MealFormState {
   allergens: string[];
   image_url: string;
   allowed_tags: string[];
+  meal_group: string;
 }
 
 interface MealFilters {
@@ -45,6 +46,7 @@ interface MealFilters {
   shifts: string[];
   status: string;
   allowed_tags: string[];
+  meal_group: string;
 }
 
 const initialMealForm: MealFormState = {
@@ -57,7 +59,8 @@ const initialMealForm: MealFormState = {
   shifts: [],
   allergens: [],
   image_url: "",
-  allowed_tags: []
+  allowed_tags: [],
+  meal_group: ""
 };
 
 export function MealsManagement() {
@@ -80,8 +83,15 @@ export function MealsManagement() {
     allergens: '',
     shifts: [],
     status: 'all',
-    allowed_tags: []
+    allowed_tags: [],
+    meal_group: 'all'
   });
+  const [newGroupInput, setNewGroupInput] = useState('');
+  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
+  const [editNewGroupInput, setEditNewGroupInput] = useState('');
+  const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
+
+  const availableGroups = [...new Set(meals.map(m => m.meal_group).filter(Boolean))] as string[];
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
@@ -144,7 +154,8 @@ export function MealsManagement() {
         is_available: true,
         allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
         nutritional_info: null,
-        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null
+        allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null,
+        meal_group: mealForm.meal_group || null
       });
       
       resetMealForm();
@@ -196,7 +207,8 @@ export function MealsManagement() {
         shifts: selectedMeal.shifts,
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
         image_url: imageUrl || null,
-        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null
+        allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null,
+        meal_group: selectedMeal.meal_group || null
       });
 
       setSelectedMeal({ ...selectedMeal, image_url: imageUrl });
@@ -224,9 +236,11 @@ export function MealsManagement() {
     const matchesTags = mealFilters.allowed_tags.length === 0 ||
       (meal.allowed_tags && mealFilters.allowed_tags.some(tag => meal.allowed_tags?.includes(tag))) ||
       (!meal.allowed_tags && mealFilters.allowed_tags.length === 0);
+    const matchesGroup = mealFilters.meal_group === 'all' || 
+      (mealFilters.meal_group === '' ? !meal.meal_group : meal.meal_group === mealFilters.meal_group);
     
     return matchesCode && matchesName && matchesDescription && 
-           matchesAllergens && matchesShifts && matchesStatus && matchesTags;
+           matchesAllergens && matchesShifts && matchesStatus && matchesTags && matchesGroup;
   });
 
   return (
@@ -303,6 +317,55 @@ export function MealsManagement() {
                       onChange={e => setMealForm({ ...mealForm, description: e.target.value })} 
                       placeholder="Kratak opis obroka..." 
                     />
+                  </div>
+                  
+                  <div>
+                    <Label>Grupa</Label>
+                    {showNewGroupInput ? (
+                      <div className="flex gap-2">
+                        <Input 
+                          value={newGroupInput}
+                          onChange={e => setNewGroupInput(e.target.value)}
+                          placeholder="Unesite naziv nove grupe..."
+                          className="flex-1"
+                        />
+                        <Button type="button" size="sm" onClick={() => {
+                          if (newGroupInput.trim()) {
+                            setMealForm({ ...mealForm, meal_group: newGroupInput.trim() });
+                            setShowNewGroupInput(false);
+                            setNewGroupInput('');
+                          }
+                        }}>OK</Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => {
+                          setShowNewGroupInput(false);
+                          setNewGroupInput('');
+                        }}>Otkaži</Button>
+                      </div>
+                    ) : (
+                      <Select 
+                        value={mealForm.meal_group || "__none__"} 
+                        onValueChange={(value) => {
+                          if (value === '__new__') {
+                            setShowNewGroupInput(true);
+                          } else if (value === '__none__') {
+                            setMealForm({ ...mealForm, meal_group: '' });
+                          } else {
+                            setMealForm({ ...mealForm, meal_group: value });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Odaberite grupu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Bez grupe</SelectItem>
+                          {availableGroups.map(g => (
+                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                          ))}
+                          <SelectItem value="__new__">Nova grupa...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   
                   <div>
@@ -461,15 +524,23 @@ export function MealsManagement() {
                         />
                       </div>
                     </TableHead>
-                    <TableHead className="w-[200px]">
+                    <TableHead className="w-[150px]">
                       <div className="space-y-1">
-                        <span className="font-semibold text-xs">Opis</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={mealFilters.description}
-                          onChange={(e) => setMealFilters(prev => ({...prev, description: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
+                        <span className="font-semibold text-xs">Grupa</span>
+                        <Select 
+                          value={mealFilters.meal_group} 
+                          onValueChange={(value) => setMealFilters(prev => ({...prev, meal_group: value}))}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Sve grupe</SelectItem>
+                            {availableGroups.map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </TableHead>
                     <TableHead className="w-[150px]">
@@ -570,8 +641,12 @@ export function MealsManagement() {
                           {meal.code || <span className="text-muted-foreground">-</span>}
                         </TableCell>
                         <TableCell className="font-medium">{meal.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
-                          {meal.description || '-'}
+                        <TableCell>
+                          {meal.meal_group ? (
+                            <Badge variant="outline" className="text-xs">{meal.meal_group}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {meal.allergens && meal.allergens.length > 0 ? (
@@ -683,6 +758,55 @@ export function MealsManagement() {
                 />
               </div>
               
+              <div>
+                <Label>Grupa</Label>
+                {editShowNewGroupInput ? (
+                  <div className="flex gap-2">
+                    <Input 
+                      value={editNewGroupInput}
+                      onChange={e => setEditNewGroupInput(e.target.value)}
+                      placeholder="Unesite naziv nove grupe..."
+                      className="flex-1"
+                    />
+                    <Button type="button" size="sm" onClick={() => {
+                      if (editNewGroupInput.trim()) {
+                        setSelectedMeal({ ...selectedMeal, meal_group: editNewGroupInput.trim() });
+                        setEditShowNewGroupInput(false);
+                        setEditNewGroupInput('');
+                      }
+                    }}>OK</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => {
+                      setEditShowNewGroupInput(false);
+                      setEditNewGroupInput('');
+                    }}>Otkaži</Button>
+                  </div>
+                ) : (
+                  <Select 
+                    value={selectedMeal.meal_group || "__none__"} 
+                    onValueChange={(value) => {
+                      if (value === '__new__') {
+                        setEditShowNewGroupInput(true);
+                      } else if (value === '__none__') {
+                        setSelectedMeal({ ...selectedMeal, meal_group: '' });
+                      } else {
+                        setSelectedMeal({ ...selectedMeal, meal_group: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Odaberite grupu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Bez grupe</SelectItem>
+                      {availableGroups.map(g => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                      <SelectItem value="__new__">Nova grupa...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
               <div>
                 <Label>Alergeni</Label>
                 <TagInput
