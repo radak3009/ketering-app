@@ -759,6 +759,55 @@ export function MealsManagement() {
               </div>
               
               <div>
+                <Label>Grupa</Label>
+                {editShowNewGroupInput ? (
+                  <div className="flex gap-2">
+                    <Input 
+                      value={editNewGroupInput}
+                      onChange={e => setEditNewGroupInput(e.target.value)}
+                      placeholder="Unesite naziv nove grupe..."
+                      className="flex-1"
+                    />
+                    <Button type="button" size="sm" onClick={() => {
+                      if (editNewGroupInput.trim()) {
+                        setSelectedMeal({ ...selectedMeal, meal_group: editNewGroupInput.trim() });
+                        setEditShowNewGroupInput(false);
+                        setEditNewGroupInput('');
+                      }
+                    }}>OK</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => {
+                      setEditShowNewGroupInput(false);
+                      setEditNewGroupInput('');
+                    }}>Otkaži</Button>
+                  </div>
+                ) : (
+                  <Select 
+                    value={selectedMeal.meal_group || "__none__"} 
+                    onValueChange={(value) => {
+                      if (value === '__new__') {
+                        setEditShowNewGroupInput(true);
+                      } else if (value === '__none__') {
+                        setSelectedMeal({ ...selectedMeal, meal_group: '' });
+                      } else {
+                        setSelectedMeal({ ...selectedMeal, meal_group: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Odaberite grupu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Bez grupe</SelectItem>
+                      {availableGroups.map(g => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                      <SelectItem value="__new__">Nova grupa...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div>
                 <Label>Alergeni</Label>
                 <TagInput
                   value={selectedMeal.allergens || []}
