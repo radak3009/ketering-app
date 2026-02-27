@@ -50,6 +50,7 @@ export function useMeals() {
       if (error) throw error;
 
       setMeals(prev => [data, ...prev]);
+      await fetchMeals();
       handleSuccess({ category: 'create', entity: 'obrok' });
       return data;
     } catch (error) {
@@ -70,6 +71,7 @@ export function useMeals() {
       if (error) throw error;
 
       setMeals(prev => prev.map(meal => meal.id === id ? data : meal));
+      await fetchMeals();
       handleSuccess({ category: 'update', entity: 'obrok' });
       return data;
     } catch (error) {
@@ -88,6 +90,7 @@ export function useMeals() {
       if (error) throw error;
 
       setMeals(prev => prev.filter(meal => meal.id !== id));
+      await fetchMeals();
       handleSuccess({ category: 'delete', entity: 'obrok' });
     } catch (error) {
       handleError({ category: 'delete', entity: 'obrok', error });

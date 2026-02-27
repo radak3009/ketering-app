@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +65,7 @@ const initialMealForm: MealFormState = {
 
 export function MealsManagement() {
   const { toast } = useToast();
-  const { meals, loading, createMeal, updateMeal, deleteMeal } = useMeals();
+  const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -90,28 +90,75 @@ export function MealsManagement() {
   const [showNewGroupInput, setShowNewGroupInput] = useState(false);
   const [editNewGroupInput, setEditNewGroupInput] = useState('');
   const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
+  const [persistedGroups, setPersistedGroups] = useState<string[]>([]);
   const [customGroups, setCustomGroups] = useState<string[]>([]);
 
-  const availableGroups = [...new Set([...meals.map(m => m.meal_group).filter(Boolean), ...customGroups])] as string[];
+  const normalizeGroupName = (value: string | null | undefined) => value?.trim() || '';
+
+  const availableGroups = useMemo(
+    () => [...new Set([
+      ...persistedGroups,
+      ...meals.map(m => normalizeGroupName(m.meal_group)).filter(Boolean),
+      ...customGroups
+    ])].sort((a, b) => a.localeCompare(b, 'sr', { sensitivity: 'base' })),
+    [persistedGroups, meals, customGroups]
+  );
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
     setImageFile(null);
   };
 
+  const fetchMealGroups = useCallback(async () => {
+    const { data, error } = await (supabase as any)
+      .from('meal_groups')
+      .select('name')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    const dbGroups = (data || [])
+      .map((item: { name: string }) => normalizeGroupName(item.name))
+      .filter(Boolean);
+
+    setPersistedGroups(dbGroups);
+  }, []);
+
+  const persistMealGroup = useCallback(async (rawGroupName: string) => {
+    const groupName = normalizeGroupName(rawGroupName);
+    if (!groupName) return '';
+
+    const { error } = await (supabase as any)
+      .from('meal_groups')
+      .upsert({ name: groupName }, { onConflict: 'name' });
+
+    if (error) throw error;
+
+    setCustomGroups(prev => (prev.includes(groupName) ? prev : [...prev, groupName]));
+    return groupName;
+  }, []);
+
   useEffect(() => {
-    const fetchTags = async () => {
+    const fetchTagsAndGroups = async () => {
       const { data } = await supabase
         .from('profiles')
         .select('tag')
         .not('tag', 'is', null);
+
       if (data) {
         const uniqueTags = [...new Set(data.map(p => p.tag).filter(Boolean))] as string[];
         setAvailableTags(uniqueTags.sort());
       }
+
+      try {
+        await fetchMealGroups();
+      } catch (error) {
+        console.error('Error fetching meal groups:', error);
+      }
     };
-    fetchTags();
-  }, []);
+
+    fetchTagsAndGroups();
+  }, [fetchMealGroups]);
 
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
@@ -142,6 +189,11 @@ export function MealsManagement() {
         imageUrl = uploaded;
       }
 
+      const normalizedGroup = normalizeGroupName(mealForm.meal_group);
+      if (normalizedGroup) {
+        await persistMealGroup(normalizedGroup);
+      }
+
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
@@ -156,8 +208,10 @@ export function MealsManagement() {
         allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
         nutritional_info: null,
         allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null,
-        meal_group: mealForm.meal_group || null
+        meal_group: normalizedGroup || null
       });
+
+      await Promise.all([refetch(), fetchMealGroups()]);
       
       resetMealForm();
       setIsAddMealOpen(false);
@@ -198,6 +252,11 @@ export function MealsManagement() {
         imageUrl = uploaded;
       }
 
+      const normalizedGroup = normalizeGroupName(selectedMeal.meal_group);
+      if (normalizedGroup) {
+        await persistMealGroup(normalizedGroup);
+      }
+
       await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
@@ -209,10 +268,11 @@ export function MealsManagement() {
         allergens: selectedMeal.allergens?.length > 0 ? selectedMeal.allergens : null,
         image_url: imageUrl || null,
         allowed_tags: selectedMeal.allowed_tags?.length > 0 ? selectedMeal.allowed_tags : null,
-        meal_group: selectedMeal.meal_group || null
+        meal_group: normalizedGroup || null
       });
 
-      setSelectedMeal({ ...selectedMeal, image_url: imageUrl });
+      await Promise.all([refetch(), fetchMealGroups()]);
+      setSelectedMeal({ ...selectedMeal, image_url: imageUrl, meal_group: normalizedGroup });
       setImageFile(null);
     } catch (error) {
       console.error('Error updating meal:', error);
@@ -330,13 +390,18 @@ export function MealsManagement() {
                           placeholder="Unesite naziv nove grupe..."
                           className="flex-1"
                         />
-                        <Button type="button" size="sm" onClick={() => {
-                          if (newGroupInput.trim()) {
-                            const g = newGroupInput.trim();
-                            setMealForm({ ...mealForm, meal_group: g });
-                            setCustomGroups(prev => prev.includes(g) ? prev : [...prev, g]);
+                        <Button type="button" size="sm" onClick={async () => {
+                          const g = normalizeGroupName(newGroupInput);
+                          if (!g) return;
+
+                          try {
+                            const savedGroup = await persistMealGroup(g);
+                            await fetchMealGroups();
+                            setMealForm({ ...mealForm, meal_group: savedGroup });
                             setShowNewGroupInput(false);
                             setNewGroupInput('');
+                          } catch (error) {
+                            toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
                           }
                         }}>OK</Button>
                         <Button type="button" size="sm" variant="ghost" onClick={() => {
@@ -706,7 +771,7 @@ export function MealsManagement() {
       </Card>
 
       {/* Edit Meal Sheet */}
-      <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); }}>
+      <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); setEditShowNewGroupInput(false); setEditNewGroupInput(''); }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Izmeni obrok</SheetTitle>
@@ -771,13 +836,18 @@ export function MealsManagement() {
                       placeholder="Unesite naziv nove grupe..."
                       className="flex-1"
                     />
-                    <Button type="button" size="sm" onClick={() => {
-                      if (editNewGroupInput.trim()) {
-                        const g = editNewGroupInput.trim();
-                        setSelectedMeal({ ...selectedMeal, meal_group: g });
-                        setCustomGroups(prev => prev.includes(g) ? prev : [...prev, g]);
+                    <Button type="button" size="sm" onClick={async () => {
+                      const g = normalizeGroupName(editNewGroupInput);
+                      if (!g) return;
+
+                      try {
+                        const savedGroup = await persistMealGroup(g);
+                        await fetchMealGroups();
+                        setSelectedMeal({ ...selectedMeal, meal_group: savedGroup });
                         setEditShowNewGroupInput(false);
                         setEditNewGroupInput('');
+                      } catch (error) {
+                        toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
                       }
                     }}>OK</Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => {
