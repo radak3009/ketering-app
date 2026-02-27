@@ -92,6 +92,29 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const sortedMeals = Object.keys(pivotData).sort((a, b) => a.localeCompare(b, 'sr'));
   
   const showDrillDown = shiftFilter === "all";
+
+  const handleExportCSV = useCallback(() => {
+    const rows: (string | number)[][] = [];
+    // Header
+    rows.push(['Obrok', 'Smena', ...DAYS_OF_WEEK, 'Total']);
+    
+    sortedMeals.forEach(mealName => {
+      const row = pivotData[mealName];
+      // Parent row (total)
+      rows.push([mealName, 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
+      // Shift rows
+      SHIFTS.forEach(shift => {
+        const sr = row.shifts[shift];
+        if (sr && sr.total > 0) {
+          rows.push([mealName, SHIFT_LABELS[shift], ...DAYS_OF_WEEK.map(d => sr.byDay[d]), sr.total]);
+        }
+      });
+    });
+    // Totals row
+    rows.push(['Total', '', ...DAYS_OF_WEEK.map(d => dayTotals[d]), grandTotal]);
+    
+    downloadCSV(rows, `pivot-obroci-${new Date().toISOString().slice(0, 10)}`);
+  }, [pivotData, sortedMeals, dayTotals, grandTotal]);
   
   if (sortedMeals.length === 0) {
     return (
