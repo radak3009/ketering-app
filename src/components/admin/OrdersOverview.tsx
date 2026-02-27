@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, Filter, ChevronDown, Tag as TagIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
@@ -19,11 +20,17 @@ interface OrdersOverviewProps {
   setOrderDateRange: (range: { startDate: string; endDate: string }) => void;
 }
 
+const SHIFT_OPTIONS = [
+  { value: "all", label: "Sve" },
+  { value: "prva", label: "I" },
+  { value: "druga", label: "II" },
+  { value: "treća", label: "III" },
+] as const;
+
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
   const { users } = useUsers();
   
-  // Memoize date range values to prevent unnecessary re-renders
   const startDate = orderDateRange?.startDate || '';
   const endDate = orderDateRange?.endDate || '';
   
@@ -36,6 +43,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const [userCardFilter, setUserCardFilter] = useState("");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [pivotView, setPivotView] = useState<"meals" | "users">("meals");
+  const [shiftFilter, setShiftFilter] = useState<string>("all");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
 
@@ -49,13 +57,22 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   }, [users]);
 
   // Filter orders by tag
-  const filteredOrders = useMemo(() => {
+  const tagFilteredOrders = useMemo(() => {
     if (tagFilter.length === 0) return orders;
     return orders.filter(order => {
       const user = users.find(u => u.user_id === order.user_id);
       return user?.tag && tagFilter.includes(user.tag);
     });
   }, [orders, users, tagFilter]);
+
+  // Filter orders by shift
+  const filteredOrders = useMemo(() => {
+    if (shiftFilter === "all") return tagFilteredOrders;
+    return tagFilteredOrders.map(order => ({
+      ...order,
+      order_items: order.order_items?.filter(item => item.shift === shiftFilter)
+    })).filter(order => (order.order_items?.length ?? 0) > 0);
+  }, [tagFilteredOrders, shiftFilter]);
 
   const handleDateRangeFilter = () => {
     const hasStartDate = orderDateRange.startDate && orderDateRange.startDate.trim() !== '';
@@ -123,22 +140,40 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
             <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
             
-            {/* View Toggle */}
-            <div className="flex gap-2">
-              <Button 
-                variant={pivotView === "meals" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setPivotView("meals")}
-              >
-                Po obrocima
-              </Button>
-              <Button 
-                variant={pivotView === "users" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setPivotView("users")}
-              >
-                Po korisnicima
-              </Button>
+            {/* View Toggle + Shift Filter */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <div className="flex gap-2">
+                <Button 
+                  variant={pivotView === "meals" ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setPivotView("meals")}
+                >
+                  Po obrocima
+                </Button>
+                <Button 
+                  variant={pivotView === "users" ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setPivotView("users")}
+                >
+                  Po korisnicima
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
+                <ToggleGroup
+                  type="single"
+                  value={shiftFilter}
+                  onValueChange={(val) => val && setShiftFilter(val)}
+                  size="sm"
+                >
+                  {SHIFT_OPTIONS.map(opt => (
+                    <ToggleGroupItem key={opt.value} value={opt.value} className="text-xs px-3">
+                      {opt.label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
             </div>
             
             {/* Filters Row */}
@@ -248,11 +283,12 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               Nema porudžbina za izabrani period
             </p>
           ) : pivotView === "meals" ? (
-            <OrderPivotTable orders={filteredOrders} />
+            <OrderPivotTable orders={filteredOrders} shiftFilter={shiftFilter} />
           ) : (
             <UserOrderPivotTable 
               orders={filteredOrders} 
               userCardFilter={userCardFilter}
+              shiftFilter={shiftFilter}
             />
           )}
         </CardContent>

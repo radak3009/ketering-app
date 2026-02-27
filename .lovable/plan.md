@@ -1,70 +1,65 @@
 
 
-## Plan: Dodavanje dimenzije "Smena" u Pregled porudžbina
+## Plan: Tag-based Octopos Product Code Selection
 
 ### Pregled
-Tri izmene: globalni filter smene u `OrdersOverview`, drill-down po smenama u `OrderPivotTable`, i prikaz smene u ćelijama `UserOrderPivotTable`.
+
+Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
 
 ---
 
-### 1. `OrdersOverview.tsx` — Globalni filter smene
+### Tehnicko resenje
 
-- Dodati state: `const [shiftFilter, setShiftFilter] = useState<string>("all")`
-- Mapiranje vrednosti: `"all"` | `"prva"` | `"druga"` | `"treća"` → UI labele: `Sve` | `I` | `II` | `III`
-- Dodati `ToggleGroup` ili dugmad ispod "Po obrocima / Po korisnicima" toggle-a sa labelom "Smena:"
-- Pre prosleđivanja `filteredOrders` u pivot komponente, dodatno filtrirati:
-  - Ako `shiftFilter !== "all"`, filtrirati `order.order_items` da zadrže samo stavke sa odgovarajućom smenom
-  - Proslediti `shiftFilter` kao prop u obe pivot komponente
+U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
+```typescript
+const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+```
 
-### 2. `OrderPivotTable.tsx` — Hijerarhijski drill-down po smenama
+Potrebno je:
+1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
+2. Na osnovu taga odabrati product code
 
-- Dodati prop `shiftFilter: string` (vrednost `"all"` | `"prva"` | `"druga"` | `"treća"`)
-- Proširiti `Order` interfejs da `order_items` uključi `shift: string`
-- Promeniti `PivotData` strukturu:
-  ```typescript
-  interface MealPivotRow {
-    byDay: { [dayName: string]: number };
-    total: number;
-    shifts: {
-      [shift: string]: { byDay: { [dayName: string]: number }; total: number };
-    };
-  }
-  ```
-- Prilikom obrade `order_items`, pored ukupnog zbira, akumulirati i po `item.shift`
-- Dodati state `expandedMeals: Set<string>` za collapse/expand
-- UI: Parent red ima `ChevronRight`/`ChevronDown` ikonu; klik toggleuje expanded stanje
-- Kada je expanded, ispod parent reda renderovati 3 child reda (`I smena`, `II smena`, `III smena`) sa indent-om i manjim fontom
-- Kada je `shiftFilter !== "all"`, parent red prikazuje samo vrednosti te smene; child redovi se ne prikazuju (ili prikazuju samo tu jednu smenu)
-- Shift labele: `prva` → `I smena`, `druga` → `II smena`, `treća` → `III smena`
+### Izmene u `supabase/functions/fiscalize-meal/index.ts`
 
-### 3. `UserOrderPivotTable.tsx` — Obrok + smena u ćeliji
+#### 1. Prosiriti profile select (linija 336-340)
 
-- Dodati prop `shiftFilter: string`
-- Proširiti `OrderWithProfile` interfejs: `order_items` treba da ima `shift: string`
-- U obradi, uz `mealName`, uzeti i `shift` iz `firstItem`
-- Format ćelije: `"NazivObroka (I)"` umesto samo `"NazivObroka"`
-- Mapiranje smene: `prva` → `I`, `druga` → `II`, `treća` → `III`
-- Kada je aktivan `shiftFilter`, filtrirati stavke pre obrade (prikazati samo tu smenu)
-- Ako korisnik ima više stavki za isti dan (različite smene), spojiti ih sa `", "` separator
+Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
 
-### 4. `OrdersOverview.tsx` — Prosleđivanje filtriranih podataka
+```typescript
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("user_id, tag")
+  .eq("id", existing.profile_id)
+  .maybeSingle();
+```
 
-- Pre prosleđivanja `filteredOrders`, mapirati orders tako da `order_items` budu filtrirani po smeni:
-  ```typescript
-  const shiftFilteredOrders = useMemo(() => {
-    if (shiftFilter === "all") return filteredOrders;
-    return filteredOrders.map(order => ({
-      ...order,
-      order_items: order.order_items?.filter(item => item.shift === shiftFilter)
-    })).filter(order => order.order_items?.length > 0);
-  }, [filteredOrders, shiftFilter]);
-  ```
-- Proslediti `shiftFilter` u `OrderPivotTable` i `UserOrderPivotTable`
+#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
 
-### Fajlovi koji se menjaju
-1. `src/components/admin/OrdersOverview.tsx` — filter state + UI + filtriranje + props
-2. `src/components/admin/OrderPivotTable.tsx` — drill-down struktura
-3. `src/components/admin/UserOrderPivotTable.tsx` — format ćelija sa smenom
+```typescript
+const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+```
 
-Nema potrebe za bazom podataka — `shift` već postoji u `order_items` i već se fetch-uje.
+#### 3. Ukloniti dupliran profile upit (linije 335-344)
+
+Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
+
+### Novi secret
+
+| Secret | Vrednost |
+|--------|----------|
+| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+
+### Fajlovi za izmenu
+
+| Fajl | Akcija |
+|------|--------|
+| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
+
+### Bez promena
+
+- Baza podataka — nema schema promena
+- UI — nema promena
+- Ostale edge funkcije — bez promena
 
