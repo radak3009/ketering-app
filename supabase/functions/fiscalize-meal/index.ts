@@ -53,7 +53,6 @@ async function generateReceiptPdf(
   const lineHeight = fontSize * 1.4;
   const pageWidth = 226; // ~80mm thermal slip
   const margin = 10;
-  const textWidth = pageWidth - margin * 2;
 
   // Prepare all text lines
   const allLines: string[] = [];
