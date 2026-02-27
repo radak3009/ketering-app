@@ -1140,6 +1140,18 @@ export function MealsManagement() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ConfirmDialog
+        open={!!groupToDelete}
+        onOpenChange={(open) => { if (!open) setGroupToDelete(null); }}
+        title="Potvrdi brisanje grupe"
+        description={`Da li ste sigurni da želite da obrišete grupu "${groupToDelete}"? Svi obroci koji pripadaju ovoj grupi će ostati bez grupe.`}
+        confirmLabel="Obriši"
+        cancelLabel="Otkaži"
+        variant="destructive"
+        loading={deletingGroup}
+        onConfirm={() => { if (groupToDelete) handleDeleteGroup(groupToDelete); }}
+      />
     </>
   );
 }
