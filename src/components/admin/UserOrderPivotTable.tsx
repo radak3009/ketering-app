@@ -13,12 +13,9 @@ interface OrderWithProfile {
   };
   order_items?: Array<{
     meal_id: string;
-    meal?: {
-      name: string;
-    };
-    meals?: {
-      name: string;
-    };
+    meal?: { name: string };
+    meals?: { name: string };
+    shift?: string;
     quantity: number;
   }>;
 }
@@ -26,42 +23,40 @@ interface OrderWithProfile {
 interface UserOrderPivotTableProps {
   orders: OrderWithProfile[];
   userCardFilter?: string;
+  shiftFilter: string;
 }
 
 interface UserPivotData {
   company_card_id: string;
   full_name: string;
-  meals: {
-    [dayName: string]: string;
-  };
+  meals: { [dayName: string]: string };
   total: number;
 }
 
 const DAYS_OF_WEEK = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
 
-export function UserOrderPivotTable({ orders, userCardFilter = '' }: UserOrderPivotTableProps) {
-  // Transform orders into user pivot table format
+const SHIFT_ROMAN: Record<string, string> = {
+  'prva': 'I',
+  'druga': 'II',
+  'treća': 'III',
+};
+
+export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }: UserOrderPivotTableProps) {
   const userDataMap: { [userId: string]: UserPivotData } = {};
   const dayTotals: { [dayName: string]: number } = {};
   
-  // Initialize day totals
-  DAYS_OF_WEEK.forEach(day => {
-    dayTotals[day] = 0;
-  });
+  DAYS_OF_WEEK.forEach(day => { dayTotals[day] = 0; });
   
-  // Process each order
   orders.forEach(order => {
     const profile = order.profile;
     if (!profile) return;
     
     const userId = order.user_id;
     const date = new Date(order.delivery_date);
-    const dayIndex = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    // Adjust to match our array (0 = Monday)
+    const dayIndex = date.getDay();
     const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1;
     const dayName = DAYS_OF_WEEK[adjustedIndex];
     
-    // Initialize user row if it doesn't exist
     if (!userDataMap[userId]) {
       userDataMap[userId] = {
         company_card_id: profile.company_card_id || '-',
@@ -69,25 +64,31 @@ export function UserOrderPivotTable({ orders, userCardFilter = '' }: UserOrderPi
         meals: {},
         total: 0
       };
-      DAYS_OF_WEEK.forEach(day => {
-        userDataMap[userId].meals[day] = '-';
-      });
+      DAYS_OF_WEEK.forEach(day => { userDataMap[userId].meals[day] = '-'; });
     }
     
-    // Get meal name from first order item (user can only have one meal per day)
-    const firstItem = order.order_items?.[0];
-    if (firstItem) {
-      const mealName = firstItem.meal?.name || firstItem.meals?.name || '-';
-      userDataMap[userId].meals[dayName] = mealName;
-      userDataMap[userId].total += 1;
-      dayTotals[dayName] += 1;
+    // Collect all items for this day
+    const itemLabels: string[] = [];
+    order.order_items?.forEach(item => {
+      const mealName = item.meal?.name || item.meals?.name || '-';
+      const shiftLabel = SHIFT_ROMAN[item.shift || 'prva'] || item.shift || '';
+      itemLabels.push(`${mealName} (${shiftLabel})`);
+    });
+    
+    if (itemLabels.length > 0) {
+      const existing = userDataMap[userId].meals[dayName];
+      if (existing && existing !== '-') {
+        userDataMap[userId].meals[dayName] = existing + ', ' + itemLabels.join(', ');
+      } else {
+        userDataMap[userId].meals[dayName] = itemLabels.join(', ');
+      }
+      userDataMap[userId].total += itemLabels.length;
+      dayTotals[dayName] += itemLabels.length;
     }
   });
   
-  // Calculate grand total
   const grandTotal = Object.values(dayTotals).reduce((sum, val) => sum + val, 0);
   
-  // Convert to array and filter by company_card_id if filter is provided
   let usersArray = Object.values(userDataMap);
   
   if (userCardFilter.trim()) {
@@ -97,7 +98,6 @@ export function UserOrderPivotTable({ orders, userCardFilter = '' }: UserOrderPi
     );
   }
   
-  // Sort by full name
   usersArray.sort((a, b) => a.full_name.localeCompare(b.full_name, 'sr'));
   
   if (usersArray.length === 0) {
@@ -157,10 +157,10 @@ export function UserOrderPivotTable({ orders, userCardFilter = '' }: UserOrderPi
                     return (
                       <TableCell 
                         key={day} 
-                        className={`text-center text-xs md:text-sm p-2 md:p-4 max-w-[120px] truncate ${hasMeal ? 'font-medium' : 'text-muted-foreground'}`}
+                        className={`text-center text-xs md:text-sm p-2 md:p-4 max-w-[150px] ${hasMeal ? 'font-medium' : 'text-muted-foreground'}`}
                         title={mealName}
                       >
-                        {mealName}
+                        <span className="block truncate">{mealName}</span>
                       </TableCell>
                     );
                   })}
