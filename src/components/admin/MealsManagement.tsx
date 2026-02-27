@@ -90,8 +90,9 @@ export function MealsManagement() {
   const [showNewGroupInput, setShowNewGroupInput] = useState(false);
   const [editNewGroupInput, setEditNewGroupInput] = useState('');
   const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
+  const [customGroups, setCustomGroups] = useState<string[]>([]);
 
-  const availableGroups = [...new Set(meals.map(m => m.meal_group).filter(Boolean))] as string[];
+  const availableGroups = [...new Set([...meals.map(m => m.meal_group).filter(Boolean), ...customGroups])] as string[];
 
   const resetMealForm = () => {
     setMealForm(initialMealForm);
