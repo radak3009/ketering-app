@@ -281,6 +281,7 @@ Deno.serve(async (req) => {
     const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
     const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
     const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+    console.log(`Product code selection: tag="${profile?.tag || 'none'}", code="${productCode}"`);
     const paymentTypeId = parseInt(Deno.env.get("OCTOPOS_FISCAL_PAYMENT_TYPE_ID") || "4");
 
     const octoposPayload = {
