@@ -98,32 +98,30 @@ async function generateReceiptPdf(
     : 0;
   const startX = Math.max(0, (pageWidth - maxLineWidth) / 2);
 
-  for (const line of allLines) {
+  // Phase 1: Render topLines
+  for (const line of topLines) {
     y -= lineHeight;
     if (line.trim()) {
-      page.drawText(line, {
-        x: startX,
-        y,
-        size: fontSize,
-        font,
-        color: rgb(0, 0, 0),
-      });
+      page.drawText(line, { x: startX, y, size: fontSize, font, color: rgb(0, 0, 0) });
     }
   }
 
-  // Embed QR code
+  // Phase 2: Embed QR code between top and bottom
   if (qrImageBytes) {
     y -= 10;
     const qrImage = await pdfDoc.embedPng(qrImageBytes);
     const qrX = (pageWidth - qrSize) / 2;
     y -= qrSize;
-    page.drawImage(qrImage, {
-      x: qrX,
-      y,
-      width: qrSize,
-      height: qrSize,
-    });
+    page.drawImage(qrImage, { x: qrX, y, width: qrSize, height: qrSize });
+    y -= 5;
+  }
 
+  // Phase 3: Render bottomLines
+  for (const line of bottomLines) {
+    y -= lineHeight;
+    if (line.trim()) {
+      page.drawText(line, { x: startX, y, size: fontSize, font, color: rgb(0, 0, 0) });
+    }
   }
 
   return await pdfDoc.save();
