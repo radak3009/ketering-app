@@ -1,65 +1,41 @@
 
 
-## Plan: Tag-based Octopos Product Code Selection
+## Plan: Dodavanje atributa 'Grupa' na obroke
 
-### Pregled
+### 1. Migracija baze
+- Dodati kolonu `meal_group TEXT` u tabelu `meals`
+- Azurirati `meals_secure` view da ukljuci `meal_group`
 
-Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
+### 2. Izmene u `MealsManagement.tsx`
 
----
+#### Tabela
+- **Sakriti** kolonu "Opis" (header, filter, body cell)
+- **Dodati** kolonu "Grupa" odmah posle "Naziv obroka" — prikazuje Badge ili "-"
+- Dodati filter za grupu (Select sa dinamickim opcijama iz postojecih obroka)
 
-### Tehnicko resenje
+#### MealFormState + initialMealForm
+- Dodati `meal_group: string` (default `""`)
 
-U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
-```typescript
-const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-```
+#### Forma za dodavanje obroka (Sheet "Dodaj novi obrok")
+- Dodati polje "Grupa" **ispod polja "Opis" (linija 306) a iznad polja "Alergeni" (linija 308)**
+- Implementacija: Select sa opcijama:
+  - Postojece grupe (unique iz `meals` niza)
+  - "Nova grupa..." opcija koja prikazuje Input za unos
+  - "Bez grupe" opcija
 
-Potrebno je:
-1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
-2. Na osnovu taga odabrati product code
+#### Forma za uredjivanje obroka (Edit Sheet)
+- Dodati isto polje "Grupa" na istoj poziciji
 
-### Izmene u `supabase/functions/fiscalize-meal/index.ts`
+#### handleCreateMeal / handleUpdateMeal
+- Ukljuciti `meal_group` u payload
 
-#### 1. Prosiriti profile select (linija 336-340)
-
-Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
-
-```typescript
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("user_id, tag")
-  .eq("id", existing.profile_id)
-  .maybeSingle();
-```
-
-#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
-
-```typescript
-const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
-const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
-```
-
-#### 3. Ukloniti dupliran profile upit (linije 335-344)
-
-Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
-
-### Novi secret
-
-| Secret | Vrednost |
-|--------|----------|
-| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+#### filteredMeals logika
+- Dodati `matchesGroup` proveru
 
 ### Fajlovi za izmenu
 
 | Fajl | Akcija |
 |------|--------|
-| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
-
-### Bez promena
-
-- Baza podataka — nema schema promena
-- UI — nema promena
-- Ostale edge funkcije — bez promena
+| DB migracija | `ALTER TABLE meals ADD COLUMN meal_group text` + azurirati `meals_secure` view |
+| `src/components/admin/MealsManagement.tsx` | Svi UI/logika opisani gore |
 
