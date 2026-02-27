@@ -236,9 +236,11 @@ export function MealsManagement() {
     const matchesTags = mealFilters.allowed_tags.length === 0 ||
       (meal.allowed_tags && mealFilters.allowed_tags.some(tag => meal.allowed_tags?.includes(tag))) ||
       (!meal.allowed_tags && mealFilters.allowed_tags.length === 0);
+    const matchesGroup = mealFilters.meal_group === 'all' || 
+      (mealFilters.meal_group === '' ? !meal.meal_group : meal.meal_group === mealFilters.meal_group);
     
     return matchesCode && matchesName && matchesDescription && 
-           matchesAllergens && matchesShifts && matchesStatus && matchesTags;
+           matchesAllergens && matchesShifts && matchesStatus && matchesTags && matchesGroup;
   });
 
   return (
