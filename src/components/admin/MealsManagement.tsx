@@ -189,6 +189,11 @@ export function MealsManagement() {
         imageUrl = uploaded;
       }
 
+      const normalizedGroup = normalizeGroupName(mealForm.meal_group);
+      if (normalizedGroup) {
+        await persistMealGroup(normalizedGroup);
+      }
+
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
@@ -203,8 +208,10 @@ export function MealsManagement() {
         allergens: mealForm.allergens.length > 0 ? mealForm.allergens : null,
         nutritional_info: null,
         allowed_tags: mealForm.allowed_tags.length > 0 ? mealForm.allowed_tags : null,
-        meal_group: mealForm.meal_group || null
+        meal_group: normalizedGroup || null
       });
+
+      await Promise.all([refetch(), fetchMealGroups()]);
       
       resetMealForm();
       setIsAddMealOpen(false);
