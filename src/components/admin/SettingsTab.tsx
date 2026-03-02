@@ -324,6 +324,8 @@ export function SettingsTab() {
           })}
         </CardContent>
       </Card>
+
+      <AppVersionBadge />
     </div>
   );
 }

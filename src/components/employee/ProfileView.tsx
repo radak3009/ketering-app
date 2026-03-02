@@ -528,6 +528,8 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
               <NotificationSettings />
             </>
           )}
+
+          <AppVersionBadge />
         </div>
       </CardContent>
     </Card>
