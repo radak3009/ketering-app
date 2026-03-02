@@ -756,12 +756,21 @@ export function UsersManagement() {
                     <TableHead className="w-[110px]">
                       <div className="space-y-1">
                         <span className="font-semibold text-xs">Tag</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={userFilters.tag}
-                          onChange={(e) => setUserFilters(prev => ({...prev, tag: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
+                        <Select 
+                          value={userFilters.tag} 
+                          onValueChange={(value) => setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value}))}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Svi</SelectItem>
+                            <SelectItem value="__none__">Bez taga</SelectItem>
+                            {existingTags.map(tag => (
+                              <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </TableHead>
                     <TableHead className="w-[120px]">
