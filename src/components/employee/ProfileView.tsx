@@ -427,6 +427,23 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
             </div>
           )}
 
+          {/* Organization / Tag - read-only when already set, hidden in setup mode */}
+          {!isIdSetupMode && (
+            <div className="space-y-2">
+              <Label>{t('profile.organization', 'Organizacija')}</Label>
+              <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                {currentTag || (
+                  <span className="text-muted-foreground">{t('profile.noOrganization', 'Nije definisano')}</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {currentTag 
+                  ? t('profile.organizationReadOnlyHelp', 'Organizacija je trajno dodeljena. Kontaktirajte administratora za promenu.')
+                  : t('profile.organizationHelp', 'Kontaktirajte administratora za dodelu organizacije.')}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>{t('profile.dateOfBirth')}</Label>
             <EnhancedDatePicker
