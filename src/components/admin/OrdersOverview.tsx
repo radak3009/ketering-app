@@ -80,6 +80,10 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Pagination state for list view
+  const [listPage, setListPage] = useState(1);
+  const [listPageSize, setListPageSize] = useState(20);
+
   // Get unique tags from users
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
