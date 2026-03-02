@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { sr } from "date-fns/locale";
@@ -33,7 +34,6 @@ export interface AdminOrderDialogProps {
     mealId: string;
     mealPrice: number;
   }) => Promise<void>;
-  // Edit mode
   editData?: {
     orderItemId: string;
     userId: string;
@@ -57,6 +57,8 @@ export function AdminOrderDialog({
   const [shift, setShift] = useState("prva");
   const [mealId, setMealId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
+  const [mealOpen, setMealOpen] = useState(false);
 
   const isEdit = !!editData;
 
@@ -89,6 +91,7 @@ export function AdminOrderDialog({
     [users]
   );
 
+  const selectedUser = employees.find((u) => u.user_id === userId);
   const selectedMeal = meals.find((m) => m.id === mealId);
 
   const canSubmit = userId && deliveryDate && shift && mealId;
@@ -122,6 +125,26 @@ export function AdminOrderDialog({
     }
   };
 
+  const userFilterFn = (value: string, search: string) => {
+    const user = employees.find((u) => u.user_id === value);
+    if (!user) return 0;
+    const s = search.toLowerCase();
+    const haystack = [
+      user.company_card_id || "",
+      user.full_name || "",
+      user.email || "",
+    ].join(" ").toLowerCase();
+    return haystack.includes(s) ? 1 : 0;
+  };
+
+  const mealFilterFn = (value: string, search: string) => {
+    const meal = activeMeals.find((m) => m.id === value);
+    if (!meal) return 0;
+    const s = search.toLowerCase();
+    const haystack = [meal.code || "", meal.name || ""].join(" ").toLowerCase();
+    return haystack.includes(s) ? 1 : 0;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -135,22 +158,56 @@ export function AdminOrderDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* User */}
+          {/* User - searchable */}
           <div className="space-y-1.5">
             <Label>Korisnik</Label>
-            <Select value={userId} onValueChange={setUserId} disabled={isEdit}>
-              <SelectTrigger>
-                <SelectValue placeholder="Izaberite korisnika" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {employees.map((u) => (
-                  <SelectItem key={u.user_id} value={u.user_id}>
-                    {u.full_name || u.email || "Nepoznat"}{" "}
-                    {u.company_card_id ? `(${u.company_card_id})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={userOpen} onOpenChange={setUserOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={userOpen}
+                  disabled={isEdit}
+                  className={cn(
+                    "w-full justify-between font-normal",
+                    !userId && "text-muted-foreground"
+                  )}
+                >
+                  {selectedUser
+                    ? `${selectedUser.full_name || selectedUser.email || "Nepoznat"}${selectedUser.company_card_id ? ` (${selectedUser.company_card_id})` : ""}`
+                    : "Izaberite korisnika"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command filter={userFilterFn}>
+                  <CommandInput placeholder="Pretraži po ID, imenu..." />
+                  <CommandList>
+                    <CommandEmpty>Nema rezultata.</CommandEmpty>
+                    <CommandGroup>
+                      {employees.map((u) => (
+                        <CommandItem
+                          key={u.user_id}
+                          value={u.user_id}
+                          onSelect={(val) => {
+                            setUserId(val);
+                            setUserOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn("mr-2 h-4 w-4", userId === u.user_id ? "opacity-100" : "opacity-0")}
+                          />
+                          <span className="truncate">
+                            {u.full_name || u.email || "Nepoznat"}
+                            {u.company_card_id ? ` (${u.company_card_id})` : ""}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Date */}
@@ -201,21 +258,54 @@ export function AdminOrderDialog({
             </Select>
           </div>
 
-          {/* Meal */}
+          {/* Meal - searchable */}
           <div className="space-y-1.5">
             <Label>Obrok</Label>
-            <Select value={mealId} onValueChange={setMealId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Izaberite obrok" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {activeMeals.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name} — {Number(m.price).toFixed(2)} RSD
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={mealOpen} onOpenChange={setMealOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={mealOpen}
+                  className={cn(
+                    "w-full justify-between font-normal",
+                    !mealId && "text-muted-foreground"
+                  )}
+                >
+                  {selectedMeal
+                    ? `${selectedMeal.code ? `[${selectedMeal.code}] ` : ""}${selectedMeal.name} — ${Number(selectedMeal.price).toFixed(2)} RSD`
+                    : "Izaberite obrok"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command filter={mealFilterFn}>
+                  <CommandInput placeholder="Pretraži po šifri, nazivu..." />
+                  <CommandList>
+                    <CommandEmpty>Nema rezultata.</CommandEmpty>
+                    <CommandGroup>
+                      {activeMeals.map((m) => (
+                        <CommandItem
+                          key={m.id}
+                          value={m.id}
+                          onSelect={(val) => {
+                            setMealId(val);
+                            setMealOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn("mr-2 h-4 w-4", mealId === m.id ? "opacity-100" : "opacity-0")}
+                          />
+                          <span className="truncate">
+                            {m.code ? `[${m.code}] ` : ""}{m.name} — {Number(m.price).toFixed(2)} RSD
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
