@@ -17,6 +17,7 @@ import { Loader2, User as UserIcon, Lock, Eye, EyeOff, AlertTriangle, CheckCircl
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { NotificationSettings } from './NotificationSettings';
+import { AppVersionBadge } from '@/components/AppVersionBadge';
 
 interface ProfileViewProps {
   user: User | null;
@@ -527,6 +528,8 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
               <NotificationSettings />
             </>
           )}
+
+          <AppVersionBadge />
         </div>
       </CardContent>
     </Card>
