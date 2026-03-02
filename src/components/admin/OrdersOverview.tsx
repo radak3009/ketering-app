@@ -452,7 +452,9 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                           </TableCell>
                         </TableRow>
                       ) : (
-                        flatOrderItems.map((item) => (
+                        flatOrderItems
+                          .slice((listPage - 1) * listPageSize, listPage * listPageSize)
+                          .map((item) => (
                           <TableRow key={item.orderItemId}>
                             <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
                             <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
@@ -487,6 +489,15 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                     </TableBody>
                   </Table>
                 </div>
+                {flatOrderItems.length > 0 && (
+                  <TablePagination
+                    currentPage={listPage}
+                    totalItems={flatOrderItems.length}
+                    pageSize={listPageSize}
+                    onPageChange={setListPage}
+                    onPageSizeChange={(size) => { setListPageSize(size); setListPage(1); }}
+                  />
+                )}
               </CardContent>
             </Card>
           )}
