@@ -96,6 +96,10 @@ export function UsersManagement() {
   const [bulkTagValue, setBulkTagValue] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
+  // Pagination state
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState(20);
+
   // State for custom tag input
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
   const [showBulkCustomTagInput, setShowBulkCustomTagInput] = useState(false);
