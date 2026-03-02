@@ -303,8 +303,8 @@ export function UsersManagement() {
       (user.full_name && user.full_name.toLowerCase().includes(userFilters.fullName.toLowerCase()));
     const matchesEmail = !userFilters.email || 
       (user.email && user.email.toLowerCase().includes(userFilters.email.toLowerCase()));
-    const matchesTag = !userFilters.tag || 
-      (user.tag && user.tag.toLowerCase().includes(userFilters.tag.toLowerCase()));
+    const matchesTag = userFilters.tag === '' || 
+      (userFilters.tag === '__none__' ? (!user.tag || user.tag.trim() === '') : user.tag === userFilters.tag);
     const matchesPhone = !userFilters.phone || 
       (user.phone && user.phone.includes(userFilters.phone));
     const matchesDob = !userFilters.dateOfBirth || 
