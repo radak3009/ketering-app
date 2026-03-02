@@ -276,14 +276,28 @@ Deno.serve(async (req) => {
       profile = profileData;
     }
 
-    // 5. Call Octopos API
+    // 5. Determine product code based on employee tag
+    const employeeTag = profile?.tag || null;
+    if (employeeTag !== "Proizvodnja" && employeeTag !== "Hogo") {
+      console.log(`Skipping fiscalization: unsupported tag="${employeeTag || 'none'}"`);
+      await supabase
+        .from("pickup_requests")
+        .update({ fiscal_status: "skipped", fiscal_error: `Tag "${employeeTag || 'none'}" ne podleže fiskalizaciji` })
+        .eq("id", pickupId);
+
+      return new Response(
+        JSON.stringify({ status: "skipped", reason: `Tag "${employeeTag || 'none'}" ne podleže fiskalizaciji`, pickupId }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const octoposUrl = Deno.env.get("OCTOPOS_BASE_URL") || "https://sandbox.octopos.rs/api";
     const octoposToken = Deno.env.get("OCTOPOS_TOKEN")!;
     const companyTaxNumber = Deno.env.get("OCTOPOS_COMPANY_TAX_NUMBER") || "101612478";
-    const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-    const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
-    const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
-    console.log(`Product code selection: tag="${profile?.tag || 'none'}", code="${productCode}"`);
+    const proizvodjaProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+    const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || proizvodjaProductCode;
+    const productCode = employeeTag === "Hogo" ? hogoProductCode : proizvodjaProductCode;
+    console.log(`Product code selection: tag="${employeeTag}", code="${productCode}"`);
     const paymentTypeId = parseInt(Deno.env.get("OCTOPOS_FISCAL_PAYMENT_TYPE_ID") || "4");
 
     const octoposPayload = {
