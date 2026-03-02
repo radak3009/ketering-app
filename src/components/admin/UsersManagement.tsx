@@ -831,7 +831,9 @@ export function UsersManagement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map(user => (
+                    filteredUsers
+                      .slice((usersPage - 1) * usersPageSize, usersPage * usersPageSize)
+                      .map(user => (
                       <TableRow 
                         key={user.id}
                         className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
@@ -891,6 +893,15 @@ export function UsersManagement() {
                 </TableBody>
               </Table>
             </div>
+            {filteredUsers.length > 0 && (
+              <TablePagination
+                currentPage={usersPage}
+                totalItems={filteredUsers.length}
+                pageSize={usersPageSize}
+                onPageChange={setUsersPage}
+                onPageSizeChange={(size) => { setUsersPageSize(size); setUsersPage(1); }}
+              />
+            )}
           )}
         </CardContent>
       </Card>
