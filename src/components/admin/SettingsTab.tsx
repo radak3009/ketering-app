@@ -251,7 +251,7 @@ export function SettingsTab() {
           <p className="text-sm text-muted-foreground">
             {t('settings.tagSelectionVisibleDesc', 'Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije')}
           </p>
-          {(['Proizvodnja', 'Hogo'] as const).map((tag) => {
+          {allTags.map((tag) => {
             const tagVisibility = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
             const isVisible = tagVisibility[tag] === true;
             return (
