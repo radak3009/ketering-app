@@ -323,6 +323,30 @@ export function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+      <ScrollToTopButton />
     </div>
+  );
+}
+
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <Button
+      size="icon"
+      className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg"
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Povratak na vrh"
+    >
+      <ArrowUp className="h-5 w-5" />
+    </Button>
   );
 }
