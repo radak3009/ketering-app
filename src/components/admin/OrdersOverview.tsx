@@ -266,6 +266,23 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   Lista
                 </Button>
               </div>
+              {pivotView === "list" && flatOrderItems.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => {
+                  const header = ["Korisnik", "ID Kartice", "Datum dostave", "Obrok", "Smena"];
+                  const rows: (string | number)[][] = [header, ...flatOrderItems.map(item => [
+                    item.userName,
+                    item.cardId,
+                    item.deliveryDate,
+                    item.mealName,
+                    SHIFT_ROMAN[item.shift] || item.shift,
+                  ])];
+                  downloadCSV(rows, `porudzbine-lista_${format(new Date(), 'yyyy-MM-dd')}`);
+                  toast({ title: "CSV izvezen", description: `Izvezeno ${flatOrderItems.length} stavki` });
+                }}>
+                  <Download className="h-4 w-4 mr-1.5" />
+                  CSV
+                </Button>
+              )}
               
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
