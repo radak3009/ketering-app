@@ -714,194 +714,196 @@ export function UsersManagement() {
           {loading ? (
             <div className="text-center py-8">Učitavanje...</div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox
-                        checked={isAllSelected}
-                        onCheckedChange={(checked) => handleSelectAll(checked === true)}
-                        aria-label="Izaberi sve"
-                      />
-                    </TableHead>
-                    <TableHead className="w-[100px]">
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">ID</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={userFilters.id}
-                          onChange={(e) => setUserFilters(prev => ({...prev, id: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">Ime i prezime</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={userFilters.fullName}
-                          onChange={(e) => setUserFilters(prev => ({...prev, fullName: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">Email</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={userFilters.email}
-                          onChange={(e) => setUserFilters(prev => ({...prev, email: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[110px]">
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">Tag</span>
-                        <Select 
-                          value={userFilters.tag} 
-                          onValueChange={(value) => setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value}))}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Svi</SelectItem>
-                            <SelectItem value="__none__">Bez taga</SelectItem>
-                            {existingTags.map(tag => (
-                              <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[120px]">
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">Telefon</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={userFilters.phone}
-                          onChange={(e) => setUserFilters(prev => ({...prev, phone: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[120px]">
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">Datum rođenja</span>
-                        <Input
-                          placeholder="Pretraži..."
-                          value={userFilters.dateOfBirth}
-                          onChange={(e) => setUserFilters(prev => ({...prev, dateOfBirth: e.target.value}))}
-                          className="h-7 text-xs"
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[120px]">
-                      <div className="space-y-1">
-                        <span className="font-semibold text-xs">Uloga</span>
-                        <Select 
-                          value={userFilters.role} 
-                          onValueChange={(value) => setUserFilters(prev => ({...prev, role: value}))}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Svi</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="employee">Zaposleni</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[60px]">
-                      <span className="font-semibold text-xs">Akcije</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.length === 0 ? (
+            <>
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                        Nema korisnika koji odgovaraju filterima
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredUsers
-                      .slice((usersPage - 1) * usersPageSize, usersPage * usersPageSize)
-                      .map(user => (
-                      <TableRow 
-                        key={user.id}
-                        className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
-                        onClick={() => setSelectedUser({...user})}
-                      >
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={selectedUserIds.has(user.id)}
-                            onCheckedChange={(checked) => handleSelectUser(user.id, checked === true)}
-                            aria-label={`Izaberi ${user.full_name}`}
+                      <TableHead className="w-[40px]">
+                        <Checkbox
+                          checked={isAllSelected}
+                          onCheckedChange={(checked) => handleSelectAll(checked === true)}
+                          aria-label="Izaberi sve"
+                        />
+                      </TableHead>
+                      <TableHead className="w-[100px]">
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">ID</span>
+                          <Input
+                            placeholder="Pretraži..."
+                            value={userFilters.id}
+                            onChange={(e) => setUserFilters(prev => ({...prev, id: e.target.value}))}
+                            className="h-7 text-xs"
                           />
-                        </TableCell>
-                        <TableCell className="font-mono text-xs font-medium">
-                          {user.company_card_id || <span className="text-muted-foreground">-</span>}
-                        </TableCell>
-                        <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
-                        <TableCell className="text-sm">
-                          {user.tag ? (
-                            <Badge 
-                              variant="secondary" 
-                              className="cursor-pointer hover:bg-secondary/80 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setUserFilters(prev => ({ ...prev, tag: user.tag || '' }));
-                              }}
-                            >
-                              {user.tag}
-                            </Badge>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell className="text-sm">{user.phone || '-'}</TableCell>
-                        <TableCell className="text-sm">
-                          {user.date_of_birth ? format(new Date(user.date_of_birth), 'dd.MM.yyyy') : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
-                            {user.role === 'admin' ? 'Admin' : 'Zaposleni'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInviteDialogUser(user);
-                            }}
-                            title="Pošalji pozivnicu"
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">Ime i prezime</span>
+                          <Input
+                            placeholder="Pretraži..."
+                            value={userFilters.fullName}
+                            onChange={(e) => setUserFilters(prev => ({...prev, fullName: e.target.value}))}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">Email</span>
+                          <Input
+                            placeholder="Pretraži..."
+                            value={userFilters.email}
+                            onChange={(e) => setUserFilters(prev => ({...prev, email: e.target.value}))}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[110px]">
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">Tag</span>
+                          <Select 
+                            value={userFilters.tag} 
+                            onValueChange={(value) => setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value}))}
                           >
-                            <Mail className="h-4 w-4" />
-                          </Button>
+                            <SelectTrigger className="h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Svi</SelectItem>
+                              <SelectItem value="__none__">Bez taga</SelectItem>
+                              {existingTags.map(tag => (
+                                <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[120px]">
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">Telefon</span>
+                          <Input
+                            placeholder="Pretraži..."
+                            value={userFilters.phone}
+                            onChange={(e) => setUserFilters(prev => ({...prev, phone: e.target.value}))}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[120px]">
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">Datum rođenja</span>
+                          <Input
+                            placeholder="Pretraži..."
+                            value={userFilters.dateOfBirth}
+                            onChange={(e) => setUserFilters(prev => ({...prev, dateOfBirth: e.target.value}))}
+                            className="h-7 text-xs"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[120px]">
+                        <div className="space-y-1">
+                          <span className="font-semibold text-xs">Uloga</span>
+                          <Select 
+                            value={userFilters.role} 
+                            onValueChange={(value) => setUserFilters(prev => ({...prev, role: value}))}
+                          >
+                            <SelectTrigger className="h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Svi</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="employee">Zaposleni</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[60px]">
+                        <span className="font-semibold text-xs">Akcije</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                          Nema korisnika koji odgovaraju filterima
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            {filteredUsers.length > 0 && (
-              <TablePagination
-                currentPage={usersPage}
-                totalItems={filteredUsers.length}
-                pageSize={usersPageSize}
-                onPageChange={setUsersPage}
-                onPageSizeChange={(size) => { setUsersPageSize(size); setUsersPage(1); }}
-              />
-            )}
+                    ) : (
+                      filteredUsers
+                        .slice((usersPage - 1) * usersPageSize, usersPage * usersPageSize)
+                        .map(user => (
+                        <TableRow 
+                          key={user.id}
+                          className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
+                          onClick={() => setSelectedUser({...user})}
+                        >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedUserIds.has(user.id)}
+                              onCheckedChange={(checked) => handleSelectUser(user.id, checked === true)}
+                              aria-label={`Izaberi ${user.full_name}`}
+                            />
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-medium">
+                            {user.company_card_id || <span className="text-muted-foreground">-</span>}
+                          </TableCell>
+                          <TableCell className="font-medium">{user.full_name || '-'}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{user.email}</TableCell>
+                          <TableCell className="text-sm">
+                            {user.tag ? (
+                              <Badge 
+                                variant="secondary" 
+                                className="cursor-pointer hover:bg-secondary/80 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUserFilters(prev => ({ ...prev, tag: user.tag || '' }));
+                                }}
+                              >
+                                {user.tag}
+                              </Badge>
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell className="text-sm">{user.phone || '-'}</TableCell>
+                          <TableCell className="text-sm">
+                            {user.date_of_birth ? format(new Date(user.date_of_birth), 'dd.MM.yyyy') : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
+                              {user.role === 'admin' ? 'Admin' : 'Zaposleni'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInviteDialogUser(user);
+                              }}
+                              title="Pošalji pozivnicu"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              {filteredUsers.length > 0 && (
+                <TablePagination
+                  currentPage={usersPage}
+                  totalItems={filteredUsers.length}
+                  pageSize={usersPageSize}
+                  onPageChange={setUsersPage}
+                  onPageSizeChange={(size) => { setUsersPageSize(size); setUsersPage(1); }}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>
