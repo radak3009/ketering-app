@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock, Users, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
+import { AppVersionBadge } from "@/components/AppVersionBadge";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
