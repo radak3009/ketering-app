@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
