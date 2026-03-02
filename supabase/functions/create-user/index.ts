@@ -99,6 +99,10 @@ Deno.serve(async (req) => {
       throw new Error('Email je obavezan');
     }
 
+    if (!company_card_id || company_card_id.trim() === '') {
+      throw new Error('ID zaposlenog je obavezan');
+    }
+
     console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, role, hasPassword: !!password });
 
     // Check if email already exists
