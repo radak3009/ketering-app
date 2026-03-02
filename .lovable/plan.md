@@ -1,54 +1,65 @@
 
 
-## Plan: Admin Order Management (Create, Edit, Delete)
+## Plan: Tag-based Octopos Product Code Selection
 
-### Overview
-Add a complete order management workflow for admins on the Orders tab, allowing them to create orders on behalf of employees, edit existing orders, and delete any order — without the Friday 17:00 restriction.
+### Pregled
 
-### Database Changes
-**New RLS policy needed**: Admins currently cannot INSERT orders for other users or DELETE orders/order_items. Need to add:
-- `orders`: Admin INSERT policy (admin can create orders for any user)
-- `orders`: Admin DELETE policy
-- `order_items`: Admin INSERT policy (bypass the user_id ownership check)
-- `order_items`: Admin UPDATE policy (for editing shift/meal)
-- `order_items`: Admin DELETE policy
+Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
 
-### Frontend Changes
+---
 
-#### 1. New Component: `AdminOrderDialog.tsx`
-A dialog for creating/editing orders with fields:
-- **Korisnik** (User): Select dropdown listing all employees (from `useUsers`)
-- **Datum dostave** (Delivery date): Date picker — any date allowed, no restrictions
-- **Smena** (Shift): Select — prva/druga/treća
-- **Obrok** (Meal): Select from all active meals (from `useMeals`), not restricted to menu
+### Tehnicko resenje
 
-For **edit mode**: pre-populate fields from existing order item, allow changing shift and meal.
+U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
+```typescript
+const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+```
 
-#### 2. Modify `OrdersOverview.tsx`
-- Add "Nova porudžbina" button in top-right of card header
-- Add edit/delete action buttons per order item in both pivot table views (or via a detail sheet)
+Potrebno je:
+1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
+2. Na osnovu taga odabrati product code
 
-#### 3. Modify `UserOrderPivotTable.tsx` and/or `OrderPivotTable.tsx`
-- Add edit (pencil) and delete (trash) icons per order item cell
-- Edit opens `AdminOrderDialog` in edit mode
-- Delete shows confirmation dialog, then removes the order item
+### Izmene u `supabase/functions/fiscalize-meal/index.ts`
 
-#### 4. Extend `useOrders.ts`
-Add functions:
-- `createAdminOrder(userId, deliveryDate, shift, mealId)` — creates order + order_item
-- `updateOrderItem(orderItemId, updates)` — updates shift/meal
-- `deleteOrderItem(orderItemId)` — deletes an order item (cleanup_empty_orders trigger handles empty orders)
+#### 1. Prosiriti profile select (linija 336-340)
 
-### Flow
-1. Admin clicks "Nova porudžbina" → Dialog opens
-2. Selects employee, date, shift, meal → Saves
-3. System creates/reuses order for that user+date, inserts order_item
-4. For edit: Admin clicks edit icon on any order item → Dialog opens pre-filled → Save updates
-5. For delete: Admin clicks delete icon → Confirmation → Deletes order item
+Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
 
-### Technical Details
-- The `cleanup_empty_orders` trigger already handles deleting empty orders when last item is removed
-- Meal price is fetched from `meals` table to set `unit_price`/`total_price`
-- No date/time restrictions for admin (unlike employee's Friday 17:00 cutoff)
-- All meals shown (not just menu-assigned ones), giving admin full flexibility
+```typescript
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("user_id, tag")
+  .eq("id", existing.profile_id)
+  .maybeSingle();
+```
+
+#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
+
+```typescript
+const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+```
+
+#### 3. Ukloniti dupliran profile upit (linije 335-344)
+
+Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
+
+### Novi secret
+
+| Secret | Vrednost |
+|--------|----------|
+| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+
+### Fajlovi za izmenu
+
+| Fajl | Akcija |
+|------|--------|
+| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
+
+### Bez promena
+
+- Baza podataka — nema schema promena
+- UI — nema promena
+- Ostale edge funkcije — bez promena
 

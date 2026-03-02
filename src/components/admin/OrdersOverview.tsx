@@ -7,12 +7,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Search, Filter, ChevronDown, Tag as TagIcon } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
+import { useMeals } from "@/hooks/useMeals";
+import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { OrderPivotTable } from "./OrderPivotTable";
 import { UserOrderPivotTable } from "./UserOrderPivotTable";
+import { AdminOrderDialog } from "./AdminOrderDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { format } from "date-fns";
 
 interface OrdersOverviewProps {
@@ -27,9 +33,16 @@ const SHIFT_OPTIONS = [
   { value: "treća", label: "III" },
 ] as const;
 
+const SHIFT_ROMAN: Record<string, string> = {
+  prva: "I",
+  druga: "II",
+  treća: "III",
+};
+
 export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOverviewProps) {
   const { toast } = useToast();
   const { users } = useUsers();
+  const { meals } = useMeals();
   
   const startDate = orderDateRange?.startDate || '';
   const endDate = orderDateRange?.endDate || '';
@@ -38,14 +51,32 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
     startDate || undefined,
     endDate || undefined
   );
+
+  const { createAdminOrder, updateOrderItem, deleteOrderItem } = useAdminOrders(() => {
+    fetchOrders(orderDateRange.startDate || undefined, orderDateRange.endDate || undefined);
+  });
   
   const [orderSearch, setOrderSearch] = useState("");
   const [userCardFilter, setUserCardFilter] = useState("");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
-  const [pivotView, setPivotView] = useState<"meals" | "users">("meals");
+  const [pivotView, setPivotView] = useState<"meals" | "users" | "list">("meals");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
+
+  // Admin order dialog state
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
+  const [editData, setEditData] = useState<{
+    orderItemId: string;
+    userId: string;
+    deliveryDate: string;
+    shift: string;
+    mealId: string;
+  } | null>(null);
+
+  // Delete confirm state
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Get unique tags from users
   const availableTags = useMemo(() => {
@@ -73,6 +104,45 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
       order_items: order.order_items?.filter(item => item.shift === shiftFilter)
     })).filter(order => (order.order_items?.length ?? 0) > 0);
   }, [tagFilteredOrders, shiftFilter]);
+
+  // Flat list of order items for list view
+  const flatOrderItems = useMemo(() => {
+    const items: Array<{
+      orderItemId: string;
+      userId: string;
+      userName: string;
+      cardId: string;
+      deliveryDate: string;
+      mealName: string;
+      mealId: string;
+      shift: string;
+      quantity: number;
+    }> = [];
+
+    filteredOrders.forEach(order => {
+      const user = users.find(u => u.user_id === order.user_id);
+      order.order_items?.forEach(oi => {
+        items.push({
+          orderItemId: oi.id,
+          userId: order.user_id,
+          userName: user?.full_name || order.profile?.full_name || "Nepoznat",
+          cardId: user?.company_card_id || order.profile?.company_card_id || "-",
+          deliveryDate: order.delivery_date || "",
+          mealName: (oi as any).meal?.name || "Nepoznat",
+          mealId: oi.meal_id,
+          shift: oi.shift || "prva",
+          quantity: oi.quantity,
+        });
+      });
+    });
+
+    // Filter by card if set
+    if (userCardFilter.trim()) {
+      const f = userCardFilter.toLowerCase().trim();
+      return items.filter(i => i.cardId.toLowerCase().includes(f));
+    }
+    return items.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate) || a.userName.localeCompare(b.userName, "sr"));
+  }, [filteredOrders, users, userCardFilter]);
 
   const handleDateRangeFilter = () => {
     const hasStartDate = orderDateRange.startDate && orderDateRange.startDate.trim() !== '';
@@ -132,13 +202,43 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
     setDailyMealOrders(mealOrders);
   };
 
+  const handleEditItem = (item: typeof flatOrderItems[0]) => {
+    setEditData({
+      orderItemId: item.orderItemId,
+      userId: item.userId,
+      deliveryDate: item.deliveryDate,
+      shift: item.shift,
+      mealId: item.mealId,
+    });
+    setOrderDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteItemId) return;
+    setDeleteLoading(true);
+    try {
+      await deleteOrderItem(deleteItemId);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteItemId(null);
+    }
+  };
+
   return (
     <>
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
-            <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
-            <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nova porudžbina
+              </Button>
+            </div>
             
             {/* View Toggle + Shift Filter */}
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -156,6 +256,13 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   onClick={() => setPivotView("users")}
                 >
                   Po korisnicima
+                </Button>
+                <Button 
+                  variant={pivotView === "list" ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setPivotView("list")}
+                >
+                  Lista
                 </Button>
               </div>
               
@@ -191,7 +298,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                 </Button>
               </div>
               
-              {pivotView === "users" && (
+              {(pivotView === "users" || pivotView === "list") && (
                 <div className="flex gap-2">
                   <Input 
                     placeholder="Filter po ID kartice..." 
@@ -284,12 +391,71 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             </p>
           ) : pivotView === "meals" ? (
             <OrderPivotTable orders={filteredOrders} shiftFilter={shiftFilter} />
-          ) : (
+          ) : pivotView === "users" ? (
             <UserOrderPivotTable 
               orders={filteredOrders} 
               userCardFilter={userCardFilter}
               shiftFilter={shiftFilter}
             />
+          ) : (
+            /* List view with edit/delete */
+            <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+              <div className="min-w-[600px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs md:text-sm">Korisnik</TableHead>
+                      <TableHead className="text-xs md:text-sm">ID Kartice</TableHead>
+                      <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
+                      <TableHead className="text-xs md:text-sm">Obrok</TableHead>
+                      <TableHead className="text-xs md:text-sm">Smena</TableHead>
+                      <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {flatOrderItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          Nema stavki za prikaz
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      flatOrderItems.map((item) => (
+                        <TableRow key={item.orderItemId}>
+                          <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
+                          <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
+                          <TableCell className="text-xs md:text-sm">{item.deliveryDate}</TableCell>
+                          <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
+                          <TableCell className="text-xs md:text-sm">
+                            <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => setDeleteItemId(item.orderItemId)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -327,6 +493,38 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Admin Order Dialog */}
+      <AdminOrderDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        users={users}
+        meals={meals}
+        editData={editData}
+        onSubmit={async (data) => {
+          await createAdminOrder(data);
+        }}
+        onUpdate={async (data) => {
+          await updateOrderItem({
+            orderItemId: data.orderItemId,
+            shift: data.shift,
+            mealId: data.mealId,
+            mealPrice: data.mealPrice,
+          });
+        }}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteItemId}
+        onOpenChange={(open) => { if (!open) setDeleteItemId(null); }}
+        title="Obriši stavku porudžbine"
+        description="Da li ste sigurni da želite da obrišete ovu stavku? Ova akcija se ne može poništiti."
+        confirmLabel="Obriši"
+        variant="destructive"
+        loading={deleteLoading}
+        onConfirm={handleDeleteConfirm}
+      />
     </>
   );
 }
