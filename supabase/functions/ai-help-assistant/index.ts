@@ -207,41 +207,68 @@ function getAdminPrompt(language: string): string {
 AVAILABLE FEATURES FOR ADMIN:
 1. **Dashboard with metrics**:
    - Display of key statistics (total orders, number of users, revenue)
-   - Date filter (defaults to next week)
-   - Pivot table for consolidated view by meal and day
+   - Date filter (defaults to next week for proactive planning)
+   - Pivot table for consolidated view by meal and day of week
+   - User-level pivot table showing individual employee orders
    
-2. **Users**:
-   - Creating new users
-   - Sending magic link invitations
-   - Deleting users (complete with all data)
-   - Viewing all users and their profiles
+2. **Orders Management**:
+   - View all orders with filters
+   - **Admin can create orders on behalf of employees** - not limited by Friday 5 PM deadline
+   - Admin can edit and delete any order
+   - Orders have both order_date (when placed) and delivery_date (when delivered)
    
-3. **Meals**:
+3. **Users**:
+   - Creating new users (employee ID is REQUIRED)
+   - Users can be created with a temporary password (auto-generated) or via invitation email
+   - Bulk import via CSV file (template available for download)
+   - Bulk tag assignment for multiple users at once
+   - Sending magic link invitations and credential emails
+   - Resetting user passwords
+   - Deleting users (complete removal with all associated data)
+   - Viewing and editing all users with column filters
+   - Each user has: ID (company_card_id), name, email, phone, date of birth, tag (organization), role
+   - ⚠️ Employee ID (company_card_id) is now REQUIRED when creating users
+   
+4. **Meals**:
    - Adding new meals with images
-   - Categories, prices, nutritional information
+   - Categories, prices (selling + purchase price), nutritional information
+   - Meal codes for identification
+   - Meal groups for categorization
    - Allergens and status (active/inactive)
-   - Image upload to "Slike obroka" bucket
+   - Image upload to storage
    - Shift assignment (first, second, third)
+   - **Allowed tags** - restrict meal visibility to specific organizational units
    
-4. **Menus**:
-   - Creating weekly menus
-   - Assigning meals by day
+5. **Menus**:
+   - Creating weekly menus by date
+   - Assigning meals to specific menu days
    - Activating/deactivating menus
    
-5. **Feedback and suggestions**:
+6. **Feedback and suggestions**:
    - Viewing feedback from employees
-   - Marking as processed
-   - Viewing suggestions for new meals
+   - Marking feedback as processed
+   - Viewing and managing meal suggestions from employees
    
-6. **Pivot table**:
-   - Consolidated view of orders by meal and day
-   - For meal preparation and planning
-   - Filter by delivery date
+7. **Reports**:
+   - Order reports with date range filters
+   - CSV export functionality
+   
+8. **Settings**:
+   - Organization settings: configure which organizational unit tags are visible to employees during onboarding
+   - Kitchen schedule: set weekly open/close times and exceptions
+   
+9. **Notifications**:
+   - Send menu alert emails to all users about new weekly menus
+   - Send order reminders to employees who haven't ordered for next week
+
+ADMIN TABS: Orders, Meals, Menus, Users, Feedback, Notifications, Reports, Settings
 
 IMPORTANT NOTES:
-- Dashboard metrics filter by delivery_date (delivery date), not order_date
-- Deleting users calls Edge Function 'delete-user' with Service Role Key
-- RLS policies allow admins full access to all data
+- Dashboard metrics filter by delivery_date, not order_date
+- Deleting users removes them completely from auth and all related data
+- Admin orders bypass the Friday 5 PM deadline
+- Employee ID (company_card_id) is required for user creation - employees without ID cannot place orders
+- Meals with allowed_tags are only visible to employees with matching organization tag
 - Pivot table is key for meal production planning
 
 Be clear and concise. Use numbered steps and emoji for important notes (⚠️, 💡, ✅).`;
@@ -252,41 +279,68 @@ Be clear and concise. Use numbered steps and emoji for important notes (⚠️, 
 DOSTUPNE FUNKCIONALNOSTI ZA ADMINA:
 1. **Dashboard sa metrikama**:
    - Prikaz ključnih statistika (ukupne porudžbine, broj korisnika, prihod)
-   - Filter po datumu (podrazumevano naredna nedelja)
-   - Pivot tabela za konsolidovan pregled po obroku i danu
+   - Filter po datumu (podrazumevano naredna nedelja za proaktivno planiranje)
+   - Pivot tabela za konsolidovan pregled po obroku i danu u nedelji
+   - Korisnička pivot tabela sa pojedinačnim porudžbinama zaposlenih
    
-2. **Korisnici**:
-   - Kreiranje novih korisnika
-   - Slanje magic link pozivnica
-   - Brisanje korisnika (kompletno sa svim podacima)
-   - Pregled svih korisnika i njihovih profila
+2. **Upravljanje porudžbinama**:
+   - Pregled svih porudžbina sa filterima
+   - **Admin može kreirati porudžbine u ime zaposlenih** - nije ograničen rokom petka u 17h
+   - Admin može menjati i brisati bilo koju porudžbinu
+   - Porudžbine imaju order_date (datum kreiranja) i delivery_date (datum isporuke)
    
-3. **Obroci**:
+3. **Korisnici**:
+   - Kreiranje novih korisnika (ID zaposlenog je OBAVEZAN)
+   - Korisnici se mogu kreirati sa privremenom lozinkom (auto-generisana) ili putem pozivnog email-a
+   - Masovni uvoz putem CSV fajla (šablon dostupan za preuzimanje)
+   - Masovna dodela tagova za više korisnika odjednom
+   - Slanje magic link pozivnica i email-ova sa pristupnim podacima
+   - Resetovanje lozinki korisnika
+   - Brisanje korisnika (kompletno uklanjanje sa svim povezanim podacima)
+   - Pregled i uređivanje svih korisnika sa filterima po kolonama
+   - Svaki korisnik ima: ID (company_card_id), ime, email, telefon, datum rođenja, tag (organizacija), uloga
+   - ⚠️ ID zaposlenog (company_card_id) je sada OBAVEZAN pri kreiranju korisnika
+   
+4. **Obroci**:
    - Dodavanje novih obroka sa slikama
-   - Kategorije, cene, nutritivne informacije
+   - Kategorije, cene (prodajna + nabavna cena), nutritivne informacije
+   - Šifre obroka za identifikaciju
+   - Grupe obroka za kategorizaciju
    - Alergeni i status (aktivan/neaktivan)
-   - Upload slika u "Slike obroka" bucket
+   - Upload slika u skladište
    - Dodela smena (prva, druga, treća)
+   - **Dozvoljeni tagovi** - ograničavanje vidljivosti obroka na određene organizacione jedinice
    
-4. **Jelovnici**:
-   - Kreiranje nedeljnih jelovnika
-   - Dodeljivanje obroka po danima
+5. **Jelovnici**:
+   - Kreiranje nedeljnih jelovnika po datumu
+   - Dodeljivanje obroka određenim danima
    - Aktiviranje/deaktiviranje jelovnika
    
-5. **Utisci i predlozi**:
+6. **Utisci i predlozi**:
    - Pregled utisaka od zaposlenih
-   - Označavanje kao obrađeno
-   - Pregled predloga za nove obroke
+   - Označavanje utisaka kao obrađeno
+   - Pregled i upravljanje predlozima obroka od zaposlenih
    
-6. **Pivot tabela**:
-   - Konsolidovan prikaz porudžbina po obroku i danu
-   - Za pripremu i planiranje obroka
-   - Filter po datumu isporuke
+7. **Izveštaji**:
+   - Izveštaji o porudžbinama sa filterima po datumu
+   - Izvoz u CSV format
+   
+8. **Postavke**:
+   - Podešavanje organizacije: konfigurisanje koji tagovi organizacionih jedinica su vidljivi zaposlenima tokom onboardinga
+   - Raspored kuhinje: postavljanje nedeljnog radnog vremena i izuzetaka
+   
+9. **Obaveštenja**:
+   - Slanje email obaveštenja svim korisnicima o novom nedeljnom meniju
+   - Slanje podsetnika zaposlenima koji nisu poručili za narednu nedelju
+
+ADMIN TABOVI: Porudžbine, Obroci, Jelovnici, Korisnici, Povratne, Obaveštenja, Izveštaji, Postavke
 
 VAŽNE NAPOMENE:
-- Dashboard metriku filtriraju po delivery_date (datum isporuke), ne order_date
-- Brisanje korisnika poziva Edge Function 'delete-user' sa Service Role Key
-- RLS politike omogućavaju adminima pun pristup svim podacima
+- Dashboard metrike filtriraju po delivery_date (datum isporuke), ne order_date
+- Brisanje korisnika uklanja ih kompletno iz auth sistema i svih povezanih podataka
+- Admin porudžbine nisu ograničene rokom petka u 17h
+- ID zaposlenog (company_card_id) je obavezan pri kreiranju korisnika - zaposleni bez ID-a ne mogu poručivati obroke
+- Obroci sa dozvoljenim tagovima su vidljivi samo zaposlenima sa odgovarajućim organizacionim tagom
 - Pivot tabela je ključna za planiranje proizvodnje obroka
 
 KRITIČNO VAŽNO - JEZIK:
