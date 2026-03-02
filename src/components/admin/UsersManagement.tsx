@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
 import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download, Tag, CheckSquare, Loader2 } from "lucide-react";
 import { SendInvitationDialog } from './SendInvitationDialog';
+import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
