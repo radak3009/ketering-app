@@ -1,4 +1,10 @@
 {
+  "pwa": {
+    "updateAvailable": "Ažuriranje dostupno",
+    "updateBody": "Nova verzija je spremna. Ponovo učitajte da biste ažurirali.",
+    "reloadNow": "Učitaj ponovo",
+    "later": "Kasnije"
+  },
   "common": {
     "signOut": "Odjavi se",
     "logout": "Odjava",

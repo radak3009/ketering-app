@@ -1,46 +1,65 @@
 
 
-## Plan: PWA Update UX Flow
+## Plan: Tag-based Octopos Product Code Selection
 
-The current setup uses `vite-plugin-pwa` with `registerType: "autoUpdate"` and `injectRegister: "script-defer"`, which auto-updates silently. We need to switch to manual `prompt` mode so users see an "Update available" notification.
+### Pregled
 
-### Changes
+Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
 
-#### 1. `vite.config.ts` — Switch to prompt registration
-- Change `registerType` from `"autoUpdate"` to `"prompt"`
-- Change `injectRegister` to `false` (we handle registration ourselves)
-- Add `skipWaiting` and `clientsClaim` message handler injection via `workbox.skipWaiting: false` and `workbox.clientsClaim: false` (we control these manually)
+---
 
-#### 2. New file: `src/lib/pwa-update.ts` — SW registration + update detection module
-- Register SW using the VitePWA-generated path (`/sw.js`)
-- Listen for `registration.updatefound` and `statechange` on installing worker
-- Check `registration.waiting` on startup (already-waiting SW)
-- Guard against first install (skip prompt if `registration.active` is null)
-- Expose a callback `onUpdateAvailable` and a `skipWaitingAndReload()` function
-- Add `controllerchange` listener with `hasRefreshed` guard to prevent reload loops
-- Post `{ type: 'SKIP_WAITING' }` message to waiting SW on user action
-- Console log lifecycle events
+### Tehnicko resenje
 
-#### 3. New file: `src/components/UpdatePrompt.tsx` — UI component
-- Uses `useState` to track `updateAvailable` and `dismissed`
-- Renders a fixed bottom-right toast-style card (matches app design with shadcn Card)
-- Title: "Ažuriranje dostupno" / Body: "Nova verzija je spremna. Ponovo učitajte da biste ažurirali."
-- Buttons: "Učitaj ponovo" (primary) and "Kasnije" (ghost/secondary)
-- "Kasnije" sets `dismissed = true` for the session
-- "Učitaj ponovo" calls `skipWaitingAndReload()`
+U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
+```typescript
+const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+```
 
-#### 4. `src/App.tsx` — Mount `<UpdatePrompt />`
-- Import and render `<UpdatePrompt />` alongside `<Toaster />` and `<Sonner />`
+Potrebno je:
+1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
+2. Na osnovu taga odabrati product code
 
-#### 5. SW message handler
-- Since VitePWA generates the SW, we configure it via the plugin's `workbox` options or by using `injectManifest` strategy. However, the simpler approach: VitePWA with `registerType: "prompt"` and `injectRegister: false` already supports this pattern — we use `registerSW` from `virtual:pwa-register` which handles the `SKIP_WAITING` message internally via Workbox's built-in `messageSkipWaiting`.
+### Izmene u `supabase/functions/fiscalize-meal/index.ts`
 
-**Revised approach**: Use VitePWA's built-in `virtual:pwa-register` module which already handles all the SW lifecycle (skip_waiting message, controller change reload). This avoids custom SW code entirely.
+#### 1. Prosiriti profile select (linija 336-340)
 
-#### Final file list:
-1. **`vite.config.ts`** — `registerType: "prompt"`, `injectRegister: false`
-2. **`src/vite-env.d.ts`** — Add `virtual:pwa-register` type reference
-3. **`src/components/UpdatePrompt.tsx`** — UI + registration using `registerSW` from `virtual:pwa-register`
-4. **`src/App.tsx`** — Add `<UpdatePrompt />`
-5. **`src/i18n/locales/sr.json`** + **`en.json`** — Add `pwa.updateAvailable`, `pwa.updateBody`, `pwa.reloadNow`, `pwa.later` keys
+Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
+
+```typescript
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("user_id, tag")
+  .eq("id", existing.profile_id)
+  .maybeSingle();
+```
+
+#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
+
+```typescript
+const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+```
+
+#### 3. Ukloniti dupliran profile upit (linije 335-344)
+
+Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
+
+### Novi secret
+
+| Secret | Vrednost |
+|--------|----------|
+| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+
+### Fajlovi za izmenu
+
+| Fajl | Akcija |
+|------|--------|
+| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
+
+### Bez promena
+
+- Baza podataka — nema schema promena
+- UI — nema promena
+- Ostale edge funkcije — bez promena
 

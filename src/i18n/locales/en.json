@@ -1,4 +1,10 @@
 {
+  "pwa": {
+    "updateAvailable": "Update available",
+    "updateBody": "A new version is ready. Reload now to update.",
+    "reloadNow": "Reload now",
+    "later": "Later"
+  },
   "common": {
     "signOut": "Sign out",
     "logout": "Logout",
