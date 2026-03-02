@@ -23,7 +23,7 @@ interface NextWeekViewProps {
   profileIncomplete?: boolean;
 }
 
-export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOrderDeleted, totalMenuDays }: NextWeekViewProps) {
+export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOrderDeleted, totalMenuDays, profileIncomplete = false }: NextWeekViewProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const locale = i18n.language === 'sr' ? sr : enUS;
