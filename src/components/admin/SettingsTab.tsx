@@ -17,7 +17,22 @@ export function SettingsTab() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { getSetting, updateSetting, isUpdating } = useAppSettings();
-  // tag_selection_visible is now a per-tag object: { "Proizvodnja": true, "Hogo": false }
+  const [allTags, setAllTags] = useState<string[]>([]);
+
+  // Fetch all unique tags from profiles
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tag')
+        .not('tag', 'is', null)
+        .neq('tag', '');
+      const unique = [...new Set((data || []).map(p => p.tag).filter(Boolean))] as string[];
+      unique.sort();
+      setAllTags(unique);
+    };
+    fetchTags();
+  }, []);
 
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
