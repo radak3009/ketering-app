@@ -31,6 +31,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <UpdatePrompt />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
