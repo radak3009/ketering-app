@@ -1,9 +1,9 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings, ArrowUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useMeals } from "@/hooks/useMeals";
@@ -323,6 +323,30 @@ export function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+      <ScrollToTopButton />
     </div>
+  );
+}
+
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <Button
+      size="icon"
+      className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg"
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      aria-label="Povratak na vrh"
+    >
+      <ArrowUp className="h-5 w-5" />
+    </Button>
   );
 }
