@@ -714,7 +714,7 @@ export function UsersManagement() {
           {loading ? (
             <div className="text-center py-8">Učitavanje...</div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
+            <>
               <Table>
                 <TableHeader>
                   <TableRow>
