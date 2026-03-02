@@ -137,10 +137,11 @@ export function ReportsTab() {
         filename = `korisnici_${format(new Date(), 'yyyy-MM-dd')}.csv`;
       } else if (reportType === 'meals') {
         csvContent = '\uFEFF';
-        csvContent += 'ID,Naziv,Kategorija,Cena (RSD),Status,Dostupnost,Smene,Datum kreiranja\n';
+        csvContent += 'Šifra,Naziv,Grupa,Nabavna cena (RSD),Cena (RSD),Status,Organizacija,Smene,Datum kreiranja\n';
         meals.forEach(meal => {
           const shiftsStr = meal.shifts?.join(', ') || '';
-          csvContent += `"${meal.id}","${meal.name}","${meal.category}","${meal.price}","${meal.status}","${meal.is_available ? 'Da' : 'Ne'}","${shiftsStr}","${meal.created_at}"\n`;
+          const allowedTagsStr = meal.allowed_tags?.join(', ') || '';
+          csvContent += `"${meal.code || ''}","${meal.name}","${meal.meal_group || ''}","${meal.purchase_price ?? ''}","${meal.price}","${meal.status}","${allowedTagsStr}","${shiftsStr}","${meal.created_at}"\n`;
         });
         filename = `obroci_${format(new Date(), 'yyyy-MM-dd')}.csv`;
       }
