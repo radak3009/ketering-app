@@ -164,6 +164,11 @@ export function UsersManagement() {
       return;
     }
 
+    if (!userForm.company_card_id || userForm.company_card_id.trim() === '') {
+      toast({ title: "Greška", description: "ID zaposlenog je obavezan", variant: "destructive" });
+      return;
+    }
+
     const cardValidation = validateCompanyCardId(userForm.company_card_id, users);
     if (!cardValidation.isValid) {
       toast({ title: 'Greška', description: cardValidation.error, variant: 'destructive' });

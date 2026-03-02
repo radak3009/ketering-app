@@ -242,6 +242,7 @@
     "order": "Poruči",
     "pickedUp": "Preuzeto",
     "notPickedUp": "Nije preuzeto",
+    "profileIncomplete": "Morate uneti ID i organizaciju u profilu pre nego što možete poručiti obrok",
     "shifts": {
       "prva": "Prva smena",
       "druga": "Druga smena",

@@ -84,17 +84,39 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           <h2 className="text-xl font-semibold">{t('navigation.nextWeek')}</h2>
         </div>
         {canEdit && (
-          <Button 
-            onClick={onOpenOrderDialog} 
-            size="sm" 
-            className="gap-2"
-            disabled={isAllOrdered}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">
-              {isAllOrdered ? t('orders.allOrderedButton') : t('orders.orderMeal')}
-            </span>
-          </Button>
+          profileIncomplete ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button 
+                      size="sm" 
+                      className="gap-2"
+                      disabled
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="hidden sm:inline">{t('orders.orderMeal')}</span>
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('orders.profileIncomplete')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Button 
+              onClick={onOpenOrderDialog} 
+              size="sm" 
+              className="gap-2"
+              disabled={isAllOrdered}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {isAllOrdered ? t('orders.allOrderedButton') : t('orders.orderMeal')}
+              </span>
+            </Button>
+          )
         )}
       </div>
 

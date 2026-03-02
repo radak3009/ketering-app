@@ -215,6 +215,7 @@ export function EmployeeDashboard() {
               onOpenOrderDialog={() => setOrderDialogOpen(true)}
               onOrderDeleted={handleOrderDeleted}
               totalMenuDays={totalMenuDays}
+              profileIncomplete={requiresIdSetup}
             />
           )}
           {currentView === 'current' && !requiresIdSetup && (
