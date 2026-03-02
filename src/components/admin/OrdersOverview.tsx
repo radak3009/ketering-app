@@ -9,7 +9,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2 } from "lucide-react";
+import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/csv-export";
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
