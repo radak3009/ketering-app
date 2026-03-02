@@ -400,63 +400,90 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             />
           ) : (
             /* List view with edit/delete */
-            <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-              <div className="min-w-[600px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs md:text-sm">Korisnik</TableHead>
-                      <TableHead className="text-xs md:text-sm">ID Kartice</TableHead>
-                      <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
-                      <TableHead className="text-xs md:text-sm">Obrok</TableHead>
-                      <TableHead className="text-xs md:text-sm">Smena</TableHead>
-                      <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {flatOrderItems.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg md:text-xl">Lista porudžbina</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">Lista porudžbina po korisnicima</CardDescription>
+                  </div>
+                  {flatOrderItems.length > 0 && (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const header = ["Korisnik", "ID Kartice", "Datum dostave", "Obrok", "Smena"];
+                      const rows: (string | number)[][] = [header, ...flatOrderItems.map(item => [
+                        item.userName,
+                        item.cardId,
+                        item.deliveryDate,
+                        item.mealName,
+                        SHIFT_ROMAN[item.shift] || item.shift,
+                      ])];
+                      downloadCSV(rows, `porudzbine-lista_${format(new Date(), 'yyyy-MM-dd')}`);
+                      toast({ title: "CSV izvezen", description: `Izvezeno ${flatOrderItems.length} stavki` });
+                    }}>
+                      <Download className="h-4 w-4 mr-1.5" />
+                      CSV
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+                <div className="min-w-[600px]">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          Nema stavki za prikaz
-                        </TableCell>
+                        <TableHead className="text-xs md:text-sm">Korisnik</TableHead>
+                        <TableHead className="text-xs md:text-sm">ID Kartice</TableHead>
+                        <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
+                        <TableHead className="text-xs md:text-sm">Obrok</TableHead>
+                        <TableHead className="text-xs md:text-sm">Smena</TableHead>
+                        <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
                       </TableRow>
-                    ) : (
-                      flatOrderItems.map((item) => (
-                        <TableRow key={item.orderItemId}>
-                          <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
-                          <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
-                          <TableCell className="text-xs md:text-sm">{item.deliveryDate}</TableCell>
-                          <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
-                          <TableCell className="text-xs md:text-sm">
-                            <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => handleEditItem(item)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive"
-                                onClick={() => setDeleteItemId(item.orderItemId)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {flatOrderItems.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            Nema stavki za prikaz
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+                      ) : (
+                        flatOrderItems.map((item) => (
+                          <TableRow key={item.orderItemId}>
+                            <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
+                            <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
+                            <TableCell className="text-xs md:text-sm">{item.deliveryDate}</TableCell>
+                            <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
+                            <TableCell className="text-xs md:text-sm">
+                              <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => handleEditItem(item)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteItemId(item.orderItemId)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
