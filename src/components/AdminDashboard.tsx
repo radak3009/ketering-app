@@ -55,11 +55,16 @@ export function AdminDashboard() {
   const sendMenuAlert = async () => {
     try {
       setNotificationsLoading(true);
-      const { error } = await supabase.functions.invoke('send-admin-menu-alert');
+      const { data, error } = await supabase.functions.invoke('notify-menu-ready');
       if (error) throw error;
-      toast({ title: t('toast.success'), description: t('toast.menuAlertSent') });
+      const result = data;
+      const totalSent = (result?.email?.sent || 0) + (result?.push?.sent || 0);
+      toast({ 
+        title: t('toast.success'), 
+        description: `Obaveštenje o jelovniku poslato ${totalSent} zaposlenom/ih` 
+      });
     } catch (error) {
-      console.error('Error sending menu alert:', error);
+      console.error('Error sending menu notification:', error);
       toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
     } finally {
       setNotificationsLoading(false);
