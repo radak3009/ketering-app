@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,28 @@ import { QRCodeSVG } from "qrcode.react";
 import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export function SettingsTab() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { getSetting, updateSetting, isUpdating } = useAppSettings();
-  // tag_selection_visible is now a per-tag object: { "Proizvodnja": true, "Hogo": false }
+  const [allTags, setAllTags] = useState<string[]>([]);
+
+  // Fetch all unique tags from profiles
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tag')
+        .not('tag', 'is', null)
+        .neq('tag', '');
+      const unique = [...new Set((data || []).map(p => p.tag).filter(Boolean))] as string[];
+      unique.sort();
+      setAllTags(unique);
+    };
+    fetchTags();
+  }, []);
 
   // Kiosk tokens state - stored in localStorage for persistence
   const [employeeToken, setEmployeeToken] = useState(() => 
@@ -235,7 +251,7 @@ export function SettingsTab() {
           <p className="text-sm text-muted-foreground">
             {t('settings.tagSelectionVisibleDesc', 'Prikažite opciju za odabir organizacione jedinice zaposlenima prilikom registracije')}
           </p>
-          {(['Proizvodnja', 'Hogo'] as const).map((tag) => {
+          {allTags.map((tag) => {
             const tagVisibility = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
             const isVisible = tagVisibility[tag] === true;
             return (
