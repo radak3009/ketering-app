@@ -260,19 +260,64 @@ export function SettingsTab() {
                 <div className="space-y-1">
                   <Label className="text-base">{tag}</Label>
                 </div>
-                <Switch
-                  checked={isVisible}
-                  disabled={isUpdating}
-                  onCheckedChange={async (checked) => {
-                    try {
-                      const current = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
-                      await updateSetting({ key: 'tag_selection_visible', value: { ...current, [tag]: checked } });
-                      toast({ title: t('toast.success'), description: t('toast.profileUpdated') });
-                    } catch {
-                      toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
-                    }
-                  }}
-                />
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={isVisible}
+                    disabled={isUpdating}
+                    onCheckedChange={async (checked) => {
+                      try {
+                        const current = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
+                        await updateSetting({ key: 'tag_selection_visible', value: { ...current, [tag]: checked } });
+                        toast({ title: t('toast.success'), description: t('toast.profileUpdated') });
+                      } catch {
+                        toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
+                      }
+                    }}
+                  />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Obrisati tag "{tag}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tag će biti uklonjen sa svih korisnika koji ga trenutno imaju i iz podešavanja vidljivosti. Ova akcija se ne može poništiti.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={async () => {
+                            try {
+                              // Remove tag from all profiles
+                              await supabase
+                                .from('profiles')
+                                .update({ tag: null })
+                                .eq('tag', tag);
+
+                              // Remove from visibility settings
+                              const current = (getSetting('tag_selection_visible') as Record<string, boolean> | null) || {};
+                              const { [tag]: _, ...rest } = current;
+                              await updateSetting({ key: 'tag_selection_visible', value: rest });
+
+                              // Update local state
+                              setAllTags(prev => prev.filter(t => t !== tag));
+                              toast({ title: 'Uspeh', description: `Tag "${tag}" je obrisan` });
+                            } catch {
+                              toast({ title: t('toast.error'), description: t('toast.errorOccurred'), variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          Obriši
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             );
           })}
