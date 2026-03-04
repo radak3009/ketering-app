@@ -32,10 +32,34 @@ const DAY_NAMES = [
 
 export function useKitchenSchedule() {
   const { toast } = useToast();
+  const { getSetting, updateSetting, isLoading: settingsLoading } = useAppSettings();
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule[]>([]);
   const [exceptions, setExceptions] = useState<ScheduleException[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Get schedule tags from app_settings
+  const scheduleTags: string[] = getSetting("kitchen_schedule_tags") || [];
+
+  const updateScheduleTags = useCallback(
+    async (tags: string[]) => {
+      try {
+        await updateSetting({ key: "kitchen_schedule_tags", value: tags });
+        toast({
+          title: "Uspešno",
+          description: "Primena rasporeda po organizaciji je sačuvana",
+        });
+      } catch (error) {
+        console.error("Error updating schedule tags:", error);
+        toast({
+          title: "Greška",
+          description: "Nije moguće sačuvati podešavanje",
+          variant: "destructive",
+        });
+      }
+    },
+    [updateSetting, toast]
+  );
 
   const fetchWeeklySchedule = useCallback(async () => {
     setLoading(true);
