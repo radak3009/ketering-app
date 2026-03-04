@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     // Fetch the pickup request to get company_id
     const { data: pickupRequest, error: fetchError } = await supabase
       .from("pickup_requests")
-      .select("id, pickup_date, status, order_item_id, company_id")
+      .select("id, pickup_date, status, order_item_id, company_id, profile_id")
       .eq("id", pickupRequestId)
       .maybeSingle();
 
@@ -72,32 +72,63 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check kitchen status
-    const kitchenStatus = await isKitchenOpen(supabase, pickupRequest.company_id);
+    // Determine if kitchen schedule applies to this user's tag
+    let scheduleApplies = true; // default: schedule applies
 
-    // Validation based on token type and kitchen status:
-    // - Kitchen kiosk can only confirm when kitchenOpen=true
-    // - Employee kiosk can only confirm when kitchenOpen=false
-    if (isKitchenKiosk && !kitchenStatus.isOpen) {
-      return new Response(
-        JSON.stringify({
-          error: "Kuhinja trenutno ne radi",
-          kitchenOpen: false,
-          schedule: { open: kitchenStatus.openTime, close: kitchenStatus.closeTime },
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (pickupRequest.profile_id) {
+      // Fetch user's tag and kitchen_schedule_tags setting in parallel
+      const [profileRes, settingRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("tag")
+          .eq("id", pickupRequest.profile_id)
+          .maybeSingle(),
+        supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "kitchen_schedule_tags")
+          .maybeSingle(),
+      ]);
+
+      const userTag = profileRes.data?.tag || null;
+      const scheduleTags: string[] = (settingRes.data?.value as string[]) || [];
+
+      // If scheduleTags is empty → no restrictions (schedule applies to nobody specifically)
+      // If scheduleTags has entries → schedule only applies to users with those tags
+      if (scheduleTags.length > 0) {
+        scheduleApplies = userTag !== null && scheduleTags.includes(userTag);
+      } else {
+        // Empty array = no tag-based restrictions, schedule applies to all
+        scheduleApplies = true;
+      }
     }
 
-    if (isEmployeeKiosk && kitchenStatus.isOpen) {
-      return new Response(
-        JSON.stringify({
-          error: "Kuhinja radi - preuzmite obrok na šalteru",
-          kitchenOpen: true,
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (scheduleApplies) {
+      // Check kitchen status - apply schedule normally
+      const kitchenStatus = await isKitchenOpen(supabase, pickupRequest.company_id);
+
+      if (isKitchenKiosk && !kitchenStatus.isOpen) {
+        return new Response(
+          JSON.stringify({
+            error: "Kuhinja trenutno ne radi",
+            kitchenOpen: false,
+            schedule: { open: kitchenStatus.openTime, close: kitchenStatus.closeTime },
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (isEmployeeKiosk && kitchenStatus.isOpen) {
+        return new Response(
+          JSON.stringify({
+            error: "Kuhinja radi - preuzmite obrok na šalteru",
+            kitchenOpen: true,
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
+    // If scheduleApplies is false → skip kitchen status check, allow both kiosk types
 
     // Update pickup request to served
     const { error: updateError } = await supabase

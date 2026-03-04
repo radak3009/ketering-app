@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { kioskToken, companyId } = await req.json();
+    const { kioskToken, companyId, employeeTag } = await req.json();
 
     // Validate kiosk token (accept either employee or kitchen token)
     const employeeToken = Deno.env.get("KIOSK_TOKEN_EMPLOYEE");
@@ -34,6 +34,36 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // If employeeTag is provided, check if schedule applies to this tag
+    if (employeeTag) {
+      const { data: setting } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "kitchen_schedule_tags")
+        .maybeSingle();
+
+      const scheduleTags: string[] = (setting?.value as string[]) || [];
+
+      // If scheduleTags has entries and this tag is NOT in the list → kitchen is "closed" for them
+      if (scheduleTags.length > 0 && !scheduleTags.includes(employeeTag)) {
+        return new Response(
+          JSON.stringify({
+            isOpen: false,
+            openTime: null,
+            closeTime: null,
+            currentTime: new Date().toLocaleTimeString("en-GB", {
+              timeZone: "Europe/Belgrade",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+            reason: "tag_excluded",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     // Get kitchen status
     const kitchenStatus = await isKitchenOpen(supabase, companyId || null);
