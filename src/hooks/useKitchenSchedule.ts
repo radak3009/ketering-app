@@ -334,5 +334,8 @@ export function useKitchenSchedule() {
     updateException,
     deleteException,
     setWeeklySchedule,
+    scheduleTags,
+    updateScheduleTags,
+    settingsLoading,
   };
 }

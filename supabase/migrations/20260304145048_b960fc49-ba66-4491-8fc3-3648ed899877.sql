@@ -1,0 +1,1 @@
+INSERT INTO app_settings (key, value) VALUES ('kitchen_schedule_tags', '[]'::jsonb) ON CONFLICT DO NOTHING
