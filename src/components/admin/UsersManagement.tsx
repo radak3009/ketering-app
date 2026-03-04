@@ -737,7 +737,7 @@ export function UsersManagement() {
                           <Input
                             placeholder="Pretraži..."
                             value={userFilters.id}
-                            onChange={(e) => setUserFilters(prev => ({...prev, id: e.target.value}))}
+                            onChange={(e) => { setUserFilters(prev => ({...prev, id: e.target.value})); setUsersPage(1); }}
                             className="h-7 text-xs"
                           />
                         </div>
@@ -748,7 +748,7 @@ export function UsersManagement() {
                           <Input
                             placeholder="Pretraži..."
                             value={userFilters.fullName}
-                            onChange={(e) => setUserFilters(prev => ({...prev, fullName: e.target.value}))}
+                            onChange={(e) => { setUserFilters(prev => ({...prev, fullName: e.target.value})); setUsersPage(1); }}
                             className="h-7 text-xs"
                           />
                         </div>
@@ -759,7 +759,7 @@ export function UsersManagement() {
                           <Input
                             placeholder="Pretraži..."
                             value={userFilters.email}
-                            onChange={(e) => setUserFilters(prev => ({...prev, email: e.target.value}))}
+                            onChange={(e) => { setUserFilters(prev => ({...prev, email: e.target.value})); setUsersPage(1); }}
                             className="h-7 text-xs"
                           />
                         </div>
@@ -769,7 +769,7 @@ export function UsersManagement() {
                           <span className="font-semibold text-xs">Tag</span>
                           <Select 
                             value={userFilters.tag} 
-                            onValueChange={(value) => setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value}))}
+                            onValueChange={(value) => { setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value})); setUsersPage(1); }}
                           >
                             <SelectTrigger className="h-7 text-xs">
                               <SelectValue />
@@ -790,7 +790,7 @@ export function UsersManagement() {
                           <Input
                             placeholder="Pretraži..."
                             value={userFilters.phone}
-                            onChange={(e) => setUserFilters(prev => ({...prev, phone: e.target.value}))}
+                            onChange={(e) => { setUserFilters(prev => ({...prev, phone: e.target.value})); setUsersPage(1); }}
                             className="h-7 text-xs"
                           />
                         </div>
@@ -801,7 +801,7 @@ export function UsersManagement() {
                           <Input
                             placeholder="Pretraži..."
                             value={userFilters.dateOfBirth}
-                            onChange={(e) => setUserFilters(prev => ({...prev, dateOfBirth: e.target.value}))}
+                            onChange={(e) => { setUserFilters(prev => ({...prev, dateOfBirth: e.target.value})); setUsersPage(1); }}
                             className="h-7 text-xs"
                           />
                         </div>
@@ -811,7 +811,7 @@ export function UsersManagement() {
                           <span className="font-semibold text-xs">Uloga</span>
                           <Select 
                             value={userFilters.role} 
-                            onValueChange={(value) => setUserFilters(prev => ({...prev, role: value}))}
+                            onValueChange={(value) => { setUserFilters(prev => ({...prev, role: value})); setUsersPage(1); }}
                           >
                             <SelectTrigger className="h-7 text-xs">
                               <SelectValue />
