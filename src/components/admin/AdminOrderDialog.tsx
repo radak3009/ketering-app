@@ -119,6 +119,7 @@ export function AdminOrderDialog({
           shift,
           mealId,
           mealPrice: Number(selectedMeal.price),
+          fiscalize,
         });
       }
       onOpenChange(false);
