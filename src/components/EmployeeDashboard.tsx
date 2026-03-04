@@ -21,6 +21,7 @@ type View = 'current' | 'next' | 'feedback' | 'profile';
 export function EmployeeDashboard() {
   const { t } = useTranslation();
   const { signOut, user, profile, requiresIdSetup } = useAuth();
+  const { needRefresh } = useUpdate();
   
   // Force profile view if password not set
   const [currentView, setCurrentView] = useState<View>(requiresIdSetup ? 'profile' : 'next');
