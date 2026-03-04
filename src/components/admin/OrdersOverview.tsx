@@ -546,7 +546,14 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
         meals={meals}
         editData={editData}
         onSubmit={async (data) => {
-          await createAdminOrder(data);
+          await createAdminOrder({
+            userId: data.userId,
+            deliveryDate: data.deliveryDate,
+            shift: data.shift,
+            mealId: data.mealId,
+            mealPrice: data.mealPrice,
+            fiscalize: data.fiscalize,
+          });
         }}
         onUpdate={async (data) => {
           await updateOrderItem({

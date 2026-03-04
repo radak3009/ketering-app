@@ -10,6 +10,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -33,6 +34,7 @@ export interface AdminOrderDialogProps {
     shift: string;
     mealId: string;
     mealPrice: number;
+    fiscalize: boolean;
   }) => Promise<void>;
   editData?: {
     orderItemId: string;
@@ -56,6 +58,7 @@ export function AdminOrderDialog({
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>();
   const [shift, setShift] = useState("prva");
   const [mealId, setMealId] = useState("");
+  const [fiscalize, setFiscalize] = useState(false);
   const [saving, setSaving] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
@@ -74,6 +77,7 @@ export function AdminOrderDialog({
         setDeliveryDate(undefined);
         setShift("prva");
         setMealId("");
+        setFiscalize(false);
       }
     }
   }, [open, editData]);
@@ -115,6 +119,7 @@ export function AdminOrderDialog({
           shift,
           mealId,
           mealPrice: Number(selectedMeal.price),
+          fiscalize,
         });
       }
       onOpenChange(false);
@@ -307,6 +312,19 @@ export function AdminOrderDialog({
               </PopoverContent>
             </Popover>
           </div>
+        {/* Fiscalize checkbox - only in create mode */}
+          {!isEdit && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="fiscalize"
+                checked={fiscalize}
+                onCheckedChange={(checked) => setFiscalize(checked === true)}
+              />
+              <Label htmlFor="fiscalize" className="cursor-pointer">
+                Izdati fiskalni račun
+              </Label>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
