@@ -148,7 +148,7 @@ export function EmployeeDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
+      <div className={`container mx-auto px-4 py-6 ${needRefresh ? 'pb-20' : ''}`}>
         {/* Password Setup Warning Alert */}
         {requiresIdSetup && (
           <Alert className="mb-4 border-destructive bg-destructive/10">
