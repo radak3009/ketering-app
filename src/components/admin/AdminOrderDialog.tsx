@@ -34,6 +34,7 @@ export interface AdminOrderDialogProps {
     shift: string;
     mealId: string;
     mealPrice: number;
+    fiscalize: boolean;
   }) => Promise<void>;
   editData?: {
     orderItemId: string;
