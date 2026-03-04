@@ -224,6 +224,67 @@ export function KitchenScheduleSettings() {
         </CardContent>
       </Card>
 
+      {/* Tag-based Schedule Application */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tags className="h-5 w-5" />
+            Primena rasporeda po organizaciji
+          </CardTitle>
+          <CardDescription>
+            Izaberite organizacije (tagove) na koje se nedeljni raspored kuhinje primenjuje.
+            Za ostale organizacije, fiskalizacija će uvek ići putem Kiosk ulaz u kantinu.
+            Ako nijedan tag nije označen, raspored važi za sve.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {availableTags.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Tags className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p>Nema definisanih tagova u profilima korisnika</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {availableTags.map((tag) => {
+                const isChecked = scheduleTags.includes(tag);
+                return (
+                  <div
+                    key={tag}
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+                  >
+                    <Checkbox
+                      id={`tag-${tag}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        const newTags = checked
+                          ? [...scheduleTags, tag]
+                          : scheduleTags.filter((t) => t !== tag);
+                        updateScheduleTags(newTags);
+                      }}
+                    />
+                    <Label
+                      htmlFor={`tag-${tag}`}
+                      className="flex-1 cursor-pointer font-medium"
+                    >
+                      {tag}
+                    </Label>
+                    {isChecked && (
+                      <Badge variant="secondary">Raspored aktivan</Badge>
+                    )}
+                  </div>
+                );
+              })}
+
+              {scheduleTags.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Raspored kuhinje se primenjuje na: {scheduleTags.join(", ")}
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Exceptions */}
       <Card>
         <CardHeader>
