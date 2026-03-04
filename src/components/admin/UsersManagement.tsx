@@ -769,7 +769,7 @@ export function UsersManagement() {
                           <span className="font-semibold text-xs">Tag</span>
                           <Select 
                             value={userFilters.tag} 
-                            onValueChange={(value) => setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value}))}
+                            onValueChange={(value) => { setUserFilters(prev => ({...prev, tag: value === 'all' ? '' : value})); setUsersPage(1); }}
                           >
                             <SelectTrigger className="h-7 text-xs">
                               <SelectValue />
