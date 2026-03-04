@@ -8,6 +8,7 @@ interface CreateAdminOrderParams {
   shift: string;
   mealId: string;
   mealPrice: number;
+  fiscalize: boolean;
 }
 
 interface UpdateOrderItemParams {
