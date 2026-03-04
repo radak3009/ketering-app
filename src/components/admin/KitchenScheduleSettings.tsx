@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
@@ -20,11 +21,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Clock, CalendarIcon, Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Clock, CalendarIcon, Plus, Trash2, Save, Loader2, Tags } from "lucide-react";
 import { useKitchenSchedule, WeeklySchedule, ScheduleException } from "@/hooks/useKitchenSchedule";
 import { format, parseISO } from "date-fns";
 import { sr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export function KitchenScheduleSettings() {
   const {
@@ -37,7 +39,27 @@ export function KitchenScheduleSettings() {
     addException,
     deleteException,
     setWeeklySchedule,
+    scheduleTags,
+    updateScheduleTags,
   } = useKitchenSchedule();
+
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  // Fetch unique tags from profiles
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("tag")
+        .not("tag", "is", null)
+        .neq("tag", "");
+      if (data) {
+        const unique = [...new Set(data.map((p) => p.tag).filter(Boolean))] as string[];
+        setAvailableTags(unique.sort());
+      }
+    };
+    fetchTags();
+  }, []);
 
   const [newException, setNewException] = useState<{
     date: Date | undefined;
@@ -199,6 +221,67 @@ export function KitchenScheduleSettings() {
               )}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Tag-based Schedule Application */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tags className="h-5 w-5" />
+            Primena rasporeda po organizaciji
+          </CardTitle>
+          <CardDescription>
+            Izaberite organizacije (tagove) na koje se nedeljni raspored kuhinje primenjuje.
+            Za ostale organizacije, fiskalizacija će uvek ići putem Kiosk ulaz u kantinu.
+            Ako nijedan tag nije označen, raspored važi za sve.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {availableTags.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Tags className="h-10 w-10 mx-auto mb-3 opacity-50" />
+              <p>Nema definisanih tagova u profilima korisnika</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {availableTags.map((tag) => {
+                const isChecked = scheduleTags.includes(tag);
+                return (
+                  <div
+                    key={tag}
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+                  >
+                    <Checkbox
+                      id={`tag-${tag}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        const newTags = checked
+                          ? [...scheduleTags, tag]
+                          : scheduleTags.filter((t) => t !== tag);
+                        updateScheduleTags(newTags);
+                      }}
+                    />
+                    <Label
+                      htmlFor={`tag-${tag}`}
+                      className="flex-1 cursor-pointer font-medium"
+                    >
+                      {tag}
+                    </Label>
+                    {isChecked && (
+                      <Badge variant="secondary">Raspored aktivan</Badge>
+                    )}
+                  </div>
+                );
+              })}
+
+              {scheduleTags.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Raspored kuhinje se primenjuje na: {scheduleTags.join(", ")}
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -1,61 +1,65 @@
 
 
-## Plan: Tag-based Kitchen Schedule Application
+## Plan: Tag-based Octopos Product Code Selection
 
-### Problem
-Currently the kitchen weekly schedule applies to ALL users equally. The requirement is to make the schedule apply only to selected tags (organizations). Users with other tags should always bypass the kitchen schedule (treated as if kitchen is closed = always use pickup kiosk logic).
+### Pregled
 
-### How It Works Today
-1. `kiosk-confirm-pickup` calls `isKitchenOpen()` to determine kitchen status
-2. If kitchen is open → only Kitchen Kiosk can confirm pickup
-3. If kitchen is closed → only Employee Kiosk (pickup) can confirm pickup
-4. Fiscalization fires after confirmation regardless
+Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
 
-### New Behavior
-- Admin configures which tags the kitchen schedule applies to (via `app_settings` key `kitchen_schedule_tags`)
-- In `kiosk-confirm-pickup`, after getting the pickup request, fetch the user's tag from their profile
-- If the user's tag is in the configured list → apply kitchen schedule normally
-- If the user's tag is NOT in the list → treat as "kitchen always closed" (employee kiosk always works, kitchen kiosk always works too — essentially no schedule restriction)
+---
 
-### Changes
+### Tehnicko resenje
 
-#### 1. Database: Add `app_settings` row for `kitchen_schedule_tags`
-Insert a new setting `kitchen_schedule_tags` with value `[]` (empty array = schedule applies to nobody, meaning no restrictions).
+U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
+```typescript
+const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+```
 
-#### 2. `supabase/functions/kiosk-confirm-pickup/index.ts`
-- After fetching `pickupRequest`, also fetch the user's profile tag via `profile_id`
-- Fetch `kitchen_schedule_tags` from `app_settings`
-- If user's tag is in the list → use `isKitchenOpen()` as before
-- If not → skip kitchen status check entirely (allow both kiosk types)
+Potrebno je:
+1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
+2. Na osnovu taga odabrati product code
 
-#### 3. `supabase/functions/kiosk-get-kitchen-status/index.ts`
-- Optionally accept `employeeTag` parameter
-- If `employeeTag` is provided and not in `kitchen_schedule_tags` → return `isOpen: false` always (so pickup kiosk UI shows self-service mode)
-- This keeps the frontend kiosk behavior consistent
+### Izmene u `supabase/functions/fiscalize-meal/index.ts`
 
-#### 4. `src/components/admin/KitchenScheduleSettings.tsx`
-- Below the "Nedeljni raspored kuhinje" card, add a new section: "Primena rasporeda po organizaciji"
-- Fetch all unique tags from profiles (reuse the same pattern as SettingsTab)
-- Fetch current `kitchen_schedule_tags` from `app_settings`
-- Display checkboxes for each tag
-- Save checked tags to `app_settings` key `kitchen_schedule_tags`
+#### 1. Prosiriti profile select (linija 336-340)
 
-#### 5. `src/hooks/useKitchenSchedule.ts`
-- Add state and functions for `scheduleTags` (which tags the schedule applies to)
-- Fetch/save from `app_settings` table
+Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
 
-### Files to modify
+```typescript
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("user_id, tag")
+  .eq("id", existing.profile_id)
+  .maybeSingle();
+```
 
-| File | Action |
+#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
+
+```typescript
+const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+```
+
+#### 3. Ukloniti dupliran profile upit (linije 335-344)
+
+Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
+
+### Novi secret
+
+| Secret | Vrednost |
+|--------|----------|
+| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+
+### Fajlovi za izmenu
+
+| Fajl | Akcija |
 |------|--------|
-| `app_settings` table | Insert `kitchen_schedule_tags` row with `[]` |
-| `supabase/functions/kiosk-confirm-pickup/index.ts` | Add tag check before kitchen status validation |
-| `supabase/functions/kiosk-get-kitchen-status/index.ts` | Accept optional `employeeTag`, check against settings |
-| `src/components/admin/KitchenScheduleSettings.tsx` | Add tag checkboxes section |
-| `src/hooks/useKitchenSchedule.ts` | Add scheduleTags management |
+| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
 
-### No changes needed
-- `fiscalize-meal` — already has its own tag-based logic (Proizvodnja/Hogo), unrelated to kitchen schedule
-- `kiosk-serve` — kitchen-only function, doesn't need tag check
-- Database schema — uses existing `app_settings` table
+### Bez promena
+
+- Baza podataka — nema schema promena
+- UI — nema promena
+- Ostale edge funkcije — bez promena
 
