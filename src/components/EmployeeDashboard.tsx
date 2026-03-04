@@ -235,7 +235,7 @@ export function EmployeeDashboard() {
 
       {/* Mobile Bottom Navigation - Hidden when password not set */}
       {!requiresIdSetup && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
+        <div className={`md:hidden fixed left-0 right-0 bg-background border-t z-20 ${needRefresh ? 'bottom-[44px]' : 'bottom-0'}`}>
           <div className="grid grid-cols-5 gap-1 p-2">
             <Button
               variant={currentView === 'next' ? 'default' : 'ghost'}
