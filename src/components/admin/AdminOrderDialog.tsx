@@ -58,7 +58,7 @@ export function AdminOrderDialog({
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>();
   const [shift, setShift] = useState("prva");
   const [mealId, setMealId] = useState("");
-  const [fiscalize, setFiscalize] = useState(false);
+  const [fiscalize, setFiscalize] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
