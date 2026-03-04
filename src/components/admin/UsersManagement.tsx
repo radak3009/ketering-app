@@ -811,7 +811,7 @@ export function UsersManagement() {
                           <span className="font-semibold text-xs">Uloga</span>
                           <Select 
                             value={userFilters.role} 
-                            onValueChange={(value) => setUserFilters(prev => ({...prev, role: value}))}
+                            onValueChange={(value) => { setUserFilters(prev => ({...prev, role: value})); setUsersPage(1); }}
                           >
                             <SelectTrigger className="h-7 text-xs">
                               <SelectValue />
