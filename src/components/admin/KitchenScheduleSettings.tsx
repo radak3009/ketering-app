@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Clock, CalendarIcon, Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Clock, CalendarIcon, Plus, Trash2, Save, Loader2, Tags } from "lucide-react";
 import { useKitchenSchedule, WeeklySchedule, ScheduleException } from "@/hooks/useKitchenSchedule";
 import { format, parseISO } from "date-fns";
 import { sr } from "date-fns/locale";
