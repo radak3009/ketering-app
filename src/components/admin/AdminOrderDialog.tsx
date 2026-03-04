@@ -77,7 +77,7 @@ export function AdminOrderDialog({
         setDeliveryDate(undefined);
         setShift("prva");
         setMealId("");
-        setFiscalize(false);
+        setFiscalize(true);
       }
     }
   }, [open, editData]);
