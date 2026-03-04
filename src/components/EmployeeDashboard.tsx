@@ -14,12 +14,14 @@ import { OrderMealDialog } from './employee/OrderMealDialog';
 import { ProfileView } from './employee/ProfileView';
 import { FeedbackView } from './employee/FeedbackView';
 import { AIHelpChat } from './AIHelpChat';
+import { useUpdate } from '@/contexts/UpdateContext';
 
 type View = 'current' | 'next' | 'feedback' | 'profile';
 
 export function EmployeeDashboard() {
   const { t } = useTranslation();
   const { signOut, user, profile, requiresIdSetup } = useAuth();
+  const { needRefresh } = useUpdate();
   
   // Force profile view if password not set
   const [currentView, setCurrentView] = useState<View>(requiresIdSetup ? 'profile' : 'next');
@@ -146,7 +148,7 @@ export function EmployeeDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
+      <div className={`container mx-auto px-4 py-6 ${needRefresh ? 'pb-20' : ''}`}>
         {/* Password Setup Warning Alert */}
         {requiresIdSetup && (
           <Alert className="mb-4 border-destructive bg-destructive/10">
@@ -233,7 +235,7 @@ export function EmployeeDashboard() {
 
       {/* Mobile Bottom Navigation - Hidden when password not set */}
       {!requiresIdSetup && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t z-20">
+        <div className={`md:hidden fixed left-0 right-0 bg-background border-t z-20 ${needRefresh ? 'bottom-[44px]' : 'bottom-0'}`}>
           <div className="grid grid-cols-5 gap-1 p-2">
             <Button
               variant={currentView === 'next' ? 'default' : 'ghost'}

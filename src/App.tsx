@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
+import { UpdateProvider } from "@/contexts/UpdateContext";
 
 // Lazy load pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -28,6 +29,7 @@ const PageLoader = () => (
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
+      <UpdateProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -53,6 +55,7 @@ const App = () => (
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
+      </UpdateProvider>
     </QueryClientProvider>
   </ThemeProvider>
 );
