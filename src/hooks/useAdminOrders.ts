@@ -63,6 +63,16 @@ export function useAdminOrders(onSuccess?: () => void) {
 
       if (itemError) throw itemError;
 
+      // Get the inserted order_item id
+      const { data: insertedItem } = await supabase
+        .from('order_items')
+        .select('id')
+        .eq('order_id', orderId)
+        .eq('meal_id', params.mealId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
       // Update order total_amount
       const { data: items } = await supabase
         .from('order_items')
@@ -71,6 +81,48 @@ export function useAdminOrders(onSuccess?: () => void) {
 
       const newTotal = items?.reduce((sum, i) => sum + Number(i.total_price), 0) || 0;
       await supabase.from('orders').update({ total_amount: newTotal }).eq('id', orderId);
+
+      // Fiscalization
+      if (params.fiscalize && insertedItem) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, company_card_id, full_name, company_id')
+          .eq('user_id', params.userId)
+          .single();
+
+        if (profile) {
+          const { data: meal } = await supabase
+            .from('meals')
+            .select('name')
+            .eq('id', params.mealId)
+            .single();
+
+          const { data: pickup, error: pickupError } = await supabase
+            .from('pickup_requests')
+            .insert({
+              employee_identifier: profile.company_card_id || profile.full_name || 'N/A',
+              pickup_date: params.deliveryDate,
+              status: 'served',
+              served_at: new Date().toISOString(),
+              served_by: 'admin',
+              order_id: orderId,
+              order_item_id: insertedItem.id,
+              profile_id: profile.id,
+              company_id: profile.company_id,
+              meal_name_snapshot: meal?.name || 'Nepoznat obrok',
+              fiscal_status: 'pending',
+            })
+            .select('id')
+            .single();
+
+          if (pickupError) throw pickupError;
+
+          // Fire fiscalize-meal (don't await — let it run async)
+          supabase.functions.invoke('fiscalize-meal', {
+            body: { pickupId: pickup.id },
+          }).catch(console.error);
+        }
+      }
 
       handleSuccess({ category: 'create', entity: 'porudžbina' });
       onSuccess?.();

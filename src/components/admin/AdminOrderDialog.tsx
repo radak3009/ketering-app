@@ -312,6 +312,19 @@ export function AdminOrderDialog({
               </PopoverContent>
             </Popover>
           </div>
+        {/* Fiscalize checkbox - only in create mode */}
+          {!isEdit && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="fiscalize"
+                checked={fiscalize}
+                onCheckedChange={(checked) => setFiscalize(checked === true)}
+              />
+              <Label htmlFor="fiscalize" className="cursor-pointer">
+                Izdati fiskalni račun
+              </Label>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
