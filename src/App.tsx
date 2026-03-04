@@ -29,6 +29,7 @@ const PageLoader = () => (
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
+      <UpdateProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
