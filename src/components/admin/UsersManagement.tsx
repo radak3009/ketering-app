@@ -790,7 +790,7 @@ export function UsersManagement() {
                           <Input
                             placeholder="Pretraži..."
                             value={userFilters.phone}
-                            onChange={(e) => setUserFilters(prev => ({...prev, phone: e.target.value}))}
+                            onChange={(e) => { setUserFilters(prev => ({...prev, phone: e.target.value})); setUsersPage(1); }}
                             className="h-7 text-xs"
                           />
                         </div>
