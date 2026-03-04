@@ -14,6 +14,7 @@ import { OrderMealDialog } from './employee/OrderMealDialog';
 import { ProfileView } from './employee/ProfileView';
 import { FeedbackView } from './employee/FeedbackView';
 import { AIHelpChat } from './AIHelpChat';
+import { useUpdate } from '@/contexts/UpdateContext';
 
 type View = 'current' | 'next' | 'feedback' | 'profile';
 
