@@ -26,6 +26,7 @@ import { useKitchenSchedule, WeeklySchedule, ScheduleException } from "@/hooks/u
 import { format, parseISO } from "date-fns";
 import { sr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export function KitchenScheduleSettings() {
   const {
