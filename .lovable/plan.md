@@ -1,65 +1,43 @@
 
 
-## Plan: Tag-based Octopos Product Code Selection
+## Plan: Persistent Update Footer for Employee Panel
 
-### Pregled
+### Problem
+The current update prompt is a dismissible pop-up card. Users can close it and ignore the update indefinitely. The requirement is to force employees to update by showing a persistent, non-dismissible footer bar that stays visible until the update is applied.
 
-Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
+### Approach
+Replace the floating card with a sticky bottom footer bar in the EmployeeDashboard. The footer cannot be dismissed -- only clicking "Ažuriraj" will remove it (by reloading with the new SW).
 
----
+### Changes
 
-### Tehnicko resenje
+#### 1. `src/components/UpdatePrompt.tsx`
+- Remove the `dismissed` state and `X` close button entirely
+- Remove the "Kasnije" (Later) button
+- Change layout from floating card to a full-width sticky bottom bar (`fixed bottom-0 left-0 right-0`)
+- Keep the RefreshCw icon, update message text, and "Učitaj ponovo" button
+- Use a prominent background (e.g., `bg-primary text-primary-foreground`) so it's clearly visible
+- Set `z-[60]` so it sits above the mobile bottom nav (`z-20`) but below modals
 
-U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
-```typescript
-const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-```
+#### 2. `src/components/EmployeeDashboard.tsx`
+- Add bottom padding to the main content area when `needRefresh` is active, so the footer doesn't overlap content
+- Import and use `useRegisterSW` or pass a prop/context to know if update is available
+- Alternatively: the UpdatePrompt already renders globally in App.tsx, so we just need to ensure the mobile bottom nav shifts up when the footer is visible
 
-Potrebno je:
-1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
-2. Na osnovu taga odabrati product code
+#### 3. Coordination with mobile bottom nav
+- The mobile bottom nav is `fixed bottom-0`. When the update footer is showing, add `bottom-[48px]` (or similar) to the nav so it sits above the update bar
+- Expose the `needRefresh` state via a simple React context or a shared hook so EmployeeDashboard can react to it
 
-### Izmene u `supabase/functions/fiscalize-meal/index.ts`
+### Implementation detail
+Create a small `useUpdateAvailable` hook that wraps `useRegisterSW` and exposes `{ needRefresh, updateServiceWorker }`. Both `UpdatePrompt` and `EmployeeDashboard` import it. This avoids registering the SW twice (the hook will use a module-level singleton pattern or we move SW registration to the hook and use it in App.tsx only, passing state down via context).
 
-#### 1. Prosiriti profile select (linija 336-340)
+Simpler alternative: Create an `UpdateContext` provider in App.tsx that wraps the `useRegisterSW` call and provides `{ needRefresh, updateServiceWorker }` to children. UpdatePrompt consumes this context. EmployeeDashboard also consumes it to adjust bottom padding/nav position.
 
-Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
+### Files to modify
 
-```typescript
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("user_id, tag")
-  .eq("id", existing.profile_id)
-  .maybeSingle();
-```
-
-#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
-
-```typescript
-const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
-const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
-```
-
-#### 3. Ukloniti dupliran profile upit (linije 335-344)
-
-Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
-
-### Novi secret
-
-| Secret | Vrednost |
-|--------|----------|
-| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
-
-### Fajlovi za izmenu
-
-| Fajl | Akcija |
+| File | Change |
 |------|--------|
-| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
-
-### Bez promena
-
-- Baza podataka — nema schema promena
-- UI — nema promena
-- Ostale edge funkcije — bez promena
+| `src/contexts/UpdateContext.tsx` | New context providing `needRefresh` + `updateServiceWorker` |
+| `src/App.tsx` | Wrap with `UpdateProvider`, remove direct `UpdatePrompt` |
+| `src/components/UpdatePrompt.tsx` | Rewrite as persistent bottom bar, consume context, remove dismiss/close |
+| `src/components/EmployeeDashboard.tsx` | Consume `UpdateContext` to shift mobile nav up and add bottom padding when update bar is visible |
 
