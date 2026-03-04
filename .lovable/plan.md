@@ -1,65 +1,44 @@
 
 
-## Plan: Tag-based Octopos Product Code Selection
+## Plan: Admin Order Fiscalization with Checkbox
 
-### Pregled
+### Overview
+When admin creates an order via AdminOrderDialog, add a "Izdati fiskalni račun" checkbox below the meal selector. When checked, after the order+order_item is created, the system will:
+1. Create a `pickup_request` record (status=served, served_at=now)
+2. Call `fiscalize-meal` edge function with that pickup request ID
 
-Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
+### Changes
 
----
+#### 1. `src/components/admin/AdminOrderDialog.tsx`
+- Add `fiscalize` boolean state (default: false), reset on open
+- Add Checkbox + Label below Obrok field (only in create mode, not edit)
+- Pass `fiscalize` flag in `onSubmit` data
 
-### Tehnicko resenje
+#### 2. `AdminOrderDialogProps` interface update
+- Extend `onSubmit` data type to include `fiscalize: boolean`
 
-U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
-```typescript
-const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-```
+#### 3. `src/hooks/useAdminOrders.ts` — `createAdminOrder`
+- Add `fiscalize: boolean` to `CreateAdminOrderParams`
+- After order_item creation, if `fiscalize` is true:
+  - Fetch user's profile (id, company_card_id, full_name, company_id) from profiles where `user_id = params.userId`
+  - Create a `pickup_request` row: `{ employee_identifier: company_card_id, pickup_date: deliveryDate, status: 'served', served_at: now, order_item_id, profile_id, company_id, meal_name_snapshot: meal name, fiscal_status: 'pending' }`
+  - Call `supabase.functions.invoke('fiscalize-meal', { body: { pickupId } })` 
+  - The existing `fiscalize-meal` function handles everything (tag check, Octopos call, PDF generation)
 
-Potrebno je:
-1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
-2. Na osnovu taga odabrati product code
+#### 4. Caller in `OrdersOverview.tsx` (or wherever AdminOrderDialog is used)
+- Pass `fiscalize` through to `createAdminOrder`
 
-### Izmene u `supabase/functions/fiscalize-meal/index.ts`
+### No edge function changes needed
+The existing `fiscalize-meal` already:
+- Checks user tag (Proizvodnja/Hogo) and skips others
+- Calls Octopos API
+- Generates PDF receipt
+- Handles idempotency
 
-#### 1. Prosiriti profile select (linija 336-340)
-
-Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
-
-```typescript
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("user_id, tag")
-  .eq("id", existing.profile_id)
-  .maybeSingle();
-```
-
-#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
-
-```typescript
-const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
-const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
-```
-
-#### 3. Ukloniti dupliran profile upit (linije 335-344)
-
-Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
-
-### Novi secret
-
-| Secret | Vrednost |
-|--------|----------|
-| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
-
-### Fajlovi za izmenu
-
-| Fajl | Akcija |
+### Files to modify
+| File | Change |
 |------|--------|
-| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
-
-### Bez promena
-
-- Baza podataka — nema schema promena
-- UI — nema promena
-- Ostale edge funkcije — bez promena
+| `src/components/admin/AdminOrderDialog.tsx` | Add checkbox, pass fiscalize flag |
+| `src/hooks/useAdminOrders.ts` | Create pickup_request + invoke fiscalize-meal |
+| Caller component (OrdersOverview or similar) | Pass fiscalize through |
 
