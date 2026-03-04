@@ -39,7 +39,27 @@ export function KitchenScheduleSettings() {
     addException,
     deleteException,
     setWeeklySchedule,
+    scheduleTags,
+    updateScheduleTags,
   } = useKitchenSchedule();
+
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
+  // Fetch unique tags from profiles
+  useEffect(() => {
+    const fetchTags = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("tag")
+        .not("tag", "is", null)
+        .neq("tag", "");
+      if (data) {
+        const unique = [...new Set(data.map((p) => p.tag).filter(Boolean))] as string[];
+        setAvailableTags(unique.sort());
+      }
+    };
+    fetchTags();
+  }, []);
 
   const [newException, setNewException] = useState<{
     date: Date | undefined;
