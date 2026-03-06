@@ -56,7 +56,8 @@ export function useMenus() {
         .insert([{
           name: menuData.name,
           description: menuData.description,
-          menu_date: menuData.menu_date
+          menu_date: menuData.menu_date,
+          organization_tag: menuData.organization_tag ?? null
         }])
         .select()
         .single();
