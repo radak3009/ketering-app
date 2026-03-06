@@ -312,6 +312,7 @@ export type Database = {
           is_active: boolean
           menu_date: string
           name: string
+          organization_tag: string | null
           updated_at: string
         }
         Insert: {
@@ -321,6 +322,7 @@ export type Database = {
           is_active?: boolean
           menu_date: string
           name: string
+          organization_tag?: string | null
           updated_at?: string
         }
         Update: {
@@ -330,6 +332,7 @@ export type Database = {
           is_active?: boolean
           menu_date?: string
           name?: string
+          organization_tag?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -169,7 +169,8 @@ export function useMenus() {
             name: generateMenuName(targetDate),
             description: sourceMenu.description,
             menu_date: format(targetDate, 'yyyy-MM-dd'),
-            is_active: true
+            is_active: true,
+            organization_tag: sourceMenu.organization_tag ?? null
           }])
           .select()
           .single();
