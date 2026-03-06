@@ -104,14 +104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleCodeExchange();
     }
 
-    // Helper function to fetch user profile - OUTSIDE the callback
+    // Helper function to fetch user profile AND tag setting in parallel
     const fetchUserProfile = async (userId: string) => {
       try {
         if (import.meta.env.DEV) {
-          console.log('[AuthContext] Fetching profile for user:', userId);
+          console.log('[AuthContext] Fetching profile + tag setting for user:', userId);
         }
         
-        const [profileResult, roleResult] = await Promise.all([
+        const [profileResult, roleResult, tagSettingResult] = await Promise.all([
           supabase
             .from('profiles')
             .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
@@ -121,11 +121,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('user_roles' as any)
             .select('role')
             .eq('user_id', userId)
+            .maybeSingle(),
+          supabase
+            .from('app_settings' as any)
+            .select('value')
+            .eq('key', 'tag_selection_visible')
             .maybeSingle()
         ]);
 
         const { data: profileData, error: profileError } = profileResult;
         const { data: roleData, error: roleError } = roleResult;
+        
+        // Process tag setting
+        if (tagSettingResult.data) {
+          const val = (tagSettingResult.data as any).value;
+          const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
+          setTagSelectionVisible(anyVisible);
+        }
+        setTagSettingLoaded(true);
         
         if (profileError) {
           if (import.meta.env.DEV) {
@@ -319,32 +332,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tagSelectionVisible, setTagSelectionVisible] = useState(false);
   const [tagSettingLoaded, setTagSettingLoaded] = useState(false);
   
+  // Tag setting is now fetched inside fetchUserProfile in parallel with profile+role
+  // This useEffect only handles the case when session changes (e.g. sign out → sign in again)
   useEffect(() => {
     if (!session) {
       setTagSettingLoaded(false);
-      return;
+      setTagSelectionVisible(false);
     }
-    const fetchTagSetting = async () => {
-      try {
-        const { data } = await supabase
-          .from('app_settings' as any)
-          .select('value')
-          .eq('key', 'tag_selection_visible')
-          .maybeSingle();
-        if (data) {
-          const val = (data as any).value;
-          const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
-          setTagSelectionVisible(anyVisible);
-        }
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('[AuthContext] Error fetching tag setting:', error);
-        }
-      } finally {
-        setTagSettingLoaded(true);
-      }
-    };
-    fetchTagSetting();
   }, [session]);
 
   // Computed property: employee needs to set company_card_id (and tag if visible)
