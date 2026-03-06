@@ -104,14 +104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleCodeExchange();
     }
 
-    // Helper function to fetch user profile - OUTSIDE the callback
+    // Helper function to fetch user profile AND tag setting in parallel
     const fetchUserProfile = async (userId: string) => {
       try {
         if (import.meta.env.DEV) {
-          console.log('[AuthContext] Fetching profile for user:', userId);
+          console.log('[AuthContext] Fetching profile + tag setting for user:', userId);
         }
         
-        const [profileResult, roleResult] = await Promise.all([
+        const [profileResult, roleResult, tagSettingResult] = await Promise.all([
           supabase
             .from('profiles')
             .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
@@ -121,11 +121,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .from('user_roles' as any)
             .select('role')
             .eq('user_id', userId)
+            .maybeSingle(),
+          supabase
+            .from('app_settings' as any)
+            .select('value')
+            .eq('key', 'tag_selection_visible')
             .maybeSingle()
         ]);
 
         const { data: profileData, error: profileError } = profileResult;
         const { data: roleData, error: roleError } = roleResult;
+        
+        // Process tag setting
+        if (tagSettingResult.data) {
+          const val = (tagSettingResult.data as any).value;
+          const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
+          setTagSelectionVisible(anyVisible);
+        }
+        setTagSettingLoaded(true);
         
         if (profileError) {
           if (import.meta.env.DEV) {
