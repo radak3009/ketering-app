@@ -73,13 +73,22 @@ export function EmployeeDashboard() {
     const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
     const nextWeekEnd = addDays(nextWeekStart, 6);
 
-    const { data } = await supabase
+    let query = supabase
       .from('menus')
       .select('menu_date')
       .gte('menu_date', format(nextWeekStart, 'yyyy-MM-dd'))
       .lte('menu_date', format(nextWeekEnd, 'yyyy-MM-dd'))
       .eq('is_active', true);
 
+    // Filter by user's organization tag
+    const userTag = profile?.tag;
+    if (userTag === 'Proizvodnja') {
+      query = query.eq('organization_tag', 'Proizvodnja');
+    } else {
+      query = query.or('organization_tag.is.null,organization_tag.neq.Proizvodnja');
+    }
+
+    const { data } = await query;
     setTotalMenuDays(data?.length || 0);
   };
 

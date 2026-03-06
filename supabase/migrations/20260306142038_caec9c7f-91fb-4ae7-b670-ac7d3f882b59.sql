@@ -1,0 +1,1 @@
+ALTER TABLE menus ADD COLUMN organization_tag TEXT DEFAULT NULL;

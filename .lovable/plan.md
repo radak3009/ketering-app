@@ -1,60 +1,65 @@
 
 
-## Plan: Organization-based Menu Sub-tabs (Proizvodnja / Hogo)
+## Plan: Tag-based Octopos Product Code Selection
 
-### Overview
-Split the Admin > Jelovnici section into two sub-tabs based on organization. Each tab filters meals and menus accordingly. Employees see only menus matching their profile tag.
+### Pregled
 
-### Database Change
+Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
 
-Add `organization_tag` column to `menus` table:
-```sql
-ALTER TABLE menus ADD COLUMN organization_tag TEXT DEFAULT NULL;
+---
+
+### Tehnicko resenje
+
+U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
+```typescript
+const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
 ```
 
-This column stores which organization a menu belongs to (e.g., `'Proizvodnja'` or `NULL`/other for Hogo).
+Potrebno je:
+1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
+2. Na osnovu taga odabrati product code
 
-### Admin: MenusManagement.tsx
+### Izmene u `supabase/functions/fiscalize-meal/index.ts`
 
-Add `Tabs` component with two sub-tabs:
+#### 1. Prosiriti profile select (linija 336-340)
 
-| Tab | Label | Menu filter | Meal filter in create form |
-|-----|-------|-------------|---------------------------|
-| `proizvodnja` | Proizvodnja | `organization_tag = 'Proizvodnja'` | Meals where `allowed_tags` includes `'Proizvodnja'` |
-| `hogo` | Hogo | `organization_tag IS NULL OR organization_tag != 'Proizvodnja'` | Meals where `allowed_tags` does NOT include `'Proizvodnja'` (or has no tags) |
+Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
 
-Changes:
-- Wrap existing content in `Tabs` with two `TabsContent` sections
-- Each tab renders the same menu list/create/clone UI but filtered by active tab
-- When creating a menu, auto-set `organization_tag` based on active tab (`'Proizvodnja'` or `NULL`)
-- When cloning, cloned menus inherit the source tab's `organization_tag`
-- Meal selection in create/edit form filters by the active tab's organization rules
+```typescript
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("user_id, tag")
+  .eq("id", existing.profile_id)
+  .maybeSingle();
+```
 
-### Hook: useMenus.ts
+#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
 
-- Add `organization_tag` to `createMenu` and `cloneWeekMenus` data
-- Update `MenuCreateData` type to include optional `organization_tag`
+```typescript
+const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
+const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
+const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
+```
 
-### Types: menu.ts
+#### 3. Ukloniti dupliran profile upit (linije 335-344)
 
-- Add `organization_tag?: string | null` to `MenuCreateData` and `MenuUpdateData`
+Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
 
-### Employee Side
+### Novi secret
 
-**OrderMealDialog.tsx**: When fetching menus for next week, also filter by the employee's profile tag:
-- If user tag is `'Proizvodnja'` → fetch menus where `organization_tag = 'Proizvodnja'`
-- Otherwise → fetch menus where `organization_tag IS NULL` or `organization_tag != 'Proizvodnja'`
+| Secret | Vrednost |
+|--------|----------|
+| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
 
-**EmployeeDashboard.tsx / fetchTotalMenuDays**: Apply same filter logic when counting available menu days.
+### Fajlovi za izmenu
 
-### Files to modify
-
-| File | Change |
+| Fajl | Akcija |
 |------|--------|
-| DB migration | Add `organization_tag TEXT` to `menus` |
-| `src/types/menu.ts` | Add `organization_tag` to create/update types |
-| `src/hooks/useMenus.ts` | Pass `organization_tag` in create/clone operations |
-| `src/components/admin/MenusManagement.tsx` | Add Tabs (Proizvodnja/Hogo), filter menus and meals per tab, pass org tag on create/clone |
-| `src/components/employee/OrderMealDialog.tsx` | Filter menus by user's profile tag |
-| `src/components/EmployeeDashboard.tsx` | Filter `fetchTotalMenuDays` by user's tag |
+| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
+
+### Bez promena
+
+- Baza podataka — nema schema promena
+- UI — nema promena
+- Ostale edge funkcije — bez promena
 

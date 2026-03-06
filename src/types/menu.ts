@@ -21,6 +21,7 @@ export interface MenuCreateData {
   description?: string;
   menu_date: string;
   meal_ids: string[];
+  organization_tag?: string | null;
 }
 
 // Menu update data
@@ -29,4 +30,5 @@ export interface MenuUpdateData {
   description?: string;
   menu_date?: string;
   meal_ids?: string[];
+  organization_tag?: string | null;
 }

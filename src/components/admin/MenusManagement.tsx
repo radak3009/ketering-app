@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2, Factory, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
@@ -24,11 +25,20 @@ interface MenuFormState {
   selectedMeals: string[];
 }
 
+type OrgTab = 'proizvodnja' | 'hogo';
+
+// Helper: does this menu belong to the given org tab?
+function menuMatchesTab(menu: MenuWithMeals, tab: OrgTab): boolean {
+  if (tab === 'proizvodnja') return menu.organization_tag === 'Proizvodnja';
+  return !menu.organization_tag || menu.organization_tag !== 'Proizvodnja';
+}
+
 export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
   const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus } = useMenus();
   
+  const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [creatingMenu, setCreatingMenu] = useState(false);
@@ -47,12 +57,30 @@ export function MenusManagement() {
   const [cloneTargetDate, setCloneTargetDate] = useState<Date>();
   const [existingMenusInTargetWeek, setExistingMenusInTargetWeek] = useState<MenuWithMeals[]>([]);
 
+  // Filter meals based on active org tab
+  const getFilteredMealsForTab = (tab: OrgTab) => {
+    return meals.filter(meal => {
+      if (meal.status !== "aktivan") return false;
+      const hasProizvodnja = meal.allowed_tags?.includes('Proizvodnja');
+      if (tab === 'proizvodnja') return hasProizvodnja;
+      return !hasProizvodnja;
+    });
+  };
+
+  const tabMeals = getFilteredMealsForTab(activeOrgTab);
+  const filteredMenuMeals = tabMeals.filter(
+    meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
+  );
+
+  // Filter menus by active org tab
+  const filteredMenus = menus.filter(m => menuMatchesTab(m, activeOrgTab));
+
   // Check for existing menus when target date changes
   const checkExistingMenusInWeek = (targetMonday: Date) => {
     const weekStart = startOfWeek(targetMonday, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(targetMonday, { weekStartsOn: 1 });
     
-    const existingMenus = menus.filter(menu => {
+    const existingMenus = filteredMenus.filter(menu => {
       const menuDate = new Date(menu.menu_date);
       return isWithinInterval(menuDate, { start: weekStart, end: weekEnd });
     });
@@ -70,10 +98,6 @@ export function MenusManagement() {
     }
   };
 
-  const filteredMenuMeals = meals.filter(
-    meal => meal.status === "aktivan" && meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
-  );
-
   const generateMenuName = (date: string) => {
     const menuDate = new Date(date);
     const dayName = WEEK_DAYS[menuDate.getDay()];
@@ -83,9 +107,14 @@ export function MenusManagement() {
 
   const isDateDisabled = (date: Date): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const hasMenu = menus.some(menu => menu.menu_date === dateStr);
+    // Only check for duplicate within the same org tab
+    const hasMenu = filteredMenus.some(menu => menu.menu_date === dateStr);
     const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
     return hasMenu || isPast;
+  };
+
+  const getOrgTagForTab = (tab: OrgTab): string | null => {
+    return tab === 'proizvodnja' ? 'Proizvodnja' : null;
   };
 
   const handleCreateMenu = async () => {
@@ -111,7 +140,7 @@ export function MenusManagement() {
       return;
     }
 
-    const existingMenu = menus.find(menu => menu.menu_date === menuForm.menu_date);
+    const existingMenu = filteredMenus.find(menu => menu.menu_date === menuForm.menu_date);
     if (existingMenu) {
       toast({
         title: "Greška",
@@ -128,7 +157,8 @@ export function MenusManagement() {
         name: menuName,
         description: menuForm.description || undefined,
         menu_date: menuForm.menu_date,
-        meal_ids: menuForm.selectedMeals
+        meal_ids: menuForm.selectedMeals,
+        organization_tag: getOrgTagForTab(activeOrgTab)
       });
       
       setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
@@ -144,7 +174,6 @@ export function MenusManagement() {
     setUpdatingMenu(true);
     try {
       const selectedMealIds = selectedMenu.meals?.map((m: any) => m.meal_id) || [];
-      // Regenerate menu name based on new date
       const updatedName = generateMenuName(selectedMenu.menu_date);
       await updateMenu(selectedMenu.id, {
         name: updatedName,
@@ -181,7 +210,7 @@ export function MenusManagement() {
   };
 
   // Group menus by week
-  const groupMenusByWeek = (menus: MenuWithMeals[]) => {
+  const groupMenusByWeek = (menuList: MenuWithMeals[]) => {
     const grouped = new Map<string, { 
       weekNumber: number, 
       year: number, 
@@ -198,7 +227,7 @@ export function MenusManagement() {
     const nextWeekNumber = getWeek(nextWeek, { weekStartsOn: 1 });
     const nextWeekYear = getYear(nextWeek);
     
-    menus.forEach(menu => {
+    menuList.forEach(menu => {
       const date = new Date(menu.menu_date);
       const weekNumber = getWeek(date, { weekStartsOn: 1 });
       const year = getYear(date);
@@ -221,7 +250,7 @@ export function MenusManagement() {
       .sort((a, b) => a[0].localeCompare(b[0]));
   };
 
-  const groupedMenus = groupMenusByWeek(menus).filter(([key, weekData]) => {
+  const groupedMenus = groupMenusByWeek(filteredMenus).filter(([key, weekData]) => {
     const firstMenuDate = weekData.menus[0]?.menu_date;
     if (!firstMenuDate) return false;
     
@@ -230,6 +259,13 @@ export function MenusManagement() {
     
     return weekStart >= currentWeekStart;
   });
+
+  const handleTabChange = (tab: string) => {
+    setActiveOrgTab(tab as OrgTab);
+    // Reset form when switching tabs
+    setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
+    setMenuMealSearch("");
+  };
 
   return (
     <>
@@ -252,7 +288,7 @@ export function MenusManagement() {
               </SheetTrigger>
               <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
-                  <SheetTitle>Kreiraj novi jelovnik</SheetTitle>
+                  <SheetTitle>Kreiraj novi jelovnik ({activeOrgTab === 'proizvodnja' ? 'Proizvodnja' : 'Hogo'})</SheetTitle>
                 </SheetHeader>
                 <div className="space-y-4 mt-6">
                   <div>
@@ -296,7 +332,7 @@ export function MenusManagement() {
                   </div>
                   
                   <div>
-                    <Label>Odaberi obroke</Label>
+                    <Label>Odaberi obroke ({activeOrgTab === 'proizvodnja' ? 'Proizvodnja' : 'Hogo'})</Label>
                     <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
                       {filteredMenuMeals.map(meal => (
                         <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
@@ -328,6 +364,9 @@ export function MenusManagement() {
                           </div>
                         </div>
                       ))}
+                      {filteredMenuMeals.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-2">Nema dostupnih obroka za ovu organizaciju</p>
+                      )}
                     </div>
                   </div>
                   
@@ -355,71 +394,87 @@ export function MenusManagement() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4 md:space-y-6">
-          {groupedMenus.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
-          ) : (
-            <div className="space-y-2">
-              {groupedMenus.map(([key, weekData]) => (
-                <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
-                  <div className="flex items-center gap-2">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="flex-1 justify-between p-4 h-auto hover:bg-accent/50 group">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-base md:text-lg font-medium">
-                            {weekData.isCurrentWeek 
-                              ? "Tekuća nedelja" 
-                              : weekData.isNextWeek 
-                                ? "Sledeća nedelja"
-                                : `Nedelja ${weekData.weekNumber}`
-                            }
-                          </h3>
-                          <Badge variant="secondary">
-                            {weekData.menus.length} {weekData.menus.length === 1 ? 'jelovnik' : 'jelovnika'}
-                          </Badge>
-                        </div>
-                        <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCloneWeek(weekData.menus);
-                      }}
-                      title="Kloniraj nedelju"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <CollapsibleContent className="px-2 pb-4">
-                    <div className="grid gap-2 md:gap-3 mt-2">
-                      {weekData.menus.map(menu => (
-                        <div 
-                          key={menu.id} 
-                          className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" 
-                          onClick={() => setSelectedMenu({ ...menu })}
+          {/* Organization Tabs */}
+          <Tabs value={activeOrgTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="w-full grid grid-cols-2">
+              <TabsTrigger value="proizvodnja" className="gap-2">
+                <Factory className="h-4 w-4" />
+                <span>Proizvodnja</span>
+              </TabsTrigger>
+              <TabsTrigger value="hogo" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                <span>Hogo</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={activeOrgTab} className="mt-4">
+              {groupedMenus.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
+              ) : (
+                <div className="space-y-2">
+                  {groupedMenus.map(([key, weekData]) => (
+                    <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
+                      <div className="flex items-center gap-2">
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" className="flex-1 justify-between p-4 h-auto hover:bg-accent/50 group">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-base md:text-lg font-medium">
+                                {weekData.isCurrentWeek 
+                                  ? "Tekuća nedelja" 
+                                  : weekData.isNextWeek 
+                                    ? "Sledeća nedelja"
+                                    : `Nedelja ${weekData.weekNumber}`
+                                }
+                              </h3>
+                              <Badge variant="secondary">
+                                {weekData.menus.length} {weekData.menus.length === 1 ? 'jelovnik' : 'jelovnika'}
+                              </Badge>
+                            </div>
+                            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCloneWeek(weekData.menus);
+                          }}
+                          title="Kloniraj nedelju"
                         >
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
-                            {menu.description && (
-                              <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">
-                                {menu.description}
-                              </p>
-                            )}
-                            <p className="text-xs md:text-sm text-muted-foreground">
-                              {menu.meals?.length || 0} obroka
-                            </p>
-                          </div>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <CollapsibleContent className="px-2 pb-4">
+                        <div className="grid gap-2 md:gap-3 mt-2">
+                          {weekData.menus.map(menu => (
+                            <div 
+                              key={menu.id} 
+                              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 border rounded-lg hover:bg-muted/50 cursor-pointer" 
+                              onClick={() => setSelectedMenu({ ...menu })}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm md:text-base truncate">{menu.name}</p>
+                                {menu.description && (
+                                  <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">
+                                    {menu.description}
+                                  </p>
+                                )}
+                                <p className="text-xs md:text-sm text-muted-foreground">
+                                  {menu.meals?.length || 0} obroka
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
-            </div>
-          )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -580,7 +635,7 @@ export function MenusManagement() {
       <Sheet open={showCloneDialog} onOpenChange={setShowCloneDialog}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Kloniranje nedelje</SheetTitle>
+            <SheetTitle>Kloniranje nedelje ({activeOrgTab === 'proizvodnja' ? 'Proizvodnja' : 'Hogo'})</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-6">
             <div className="space-y-2">

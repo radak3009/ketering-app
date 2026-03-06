@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { format, addWeeks, startOfWeek, addDays } from 'date-fns';
 import { sr, enUS } from 'date-fns/locale';
 
@@ -37,6 +38,7 @@ interface OrderMealDialogProps {
 
 export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, totalMenuDays, refreshTrigger }: OrderMealDialogProps) {
   const { t, i18n } = useTranslation();
+  const { profile } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<string>('');
@@ -123,12 +125,14 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     const nextWeekStart = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
     const nextWeekEnd = addDays(nextWeekStart, 6);
 
-    const { data, error } = await supabase
+    // Build query with organization filter
+    let query = supabase
       .from('menus')
       .select(`
         id,
         menu_date,
         name,
+        organization_tag,
         menu_meals (
           meal_id,
           meals (
@@ -145,6 +149,16 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
       .lte('menu_date', format(nextWeekEnd, 'yyyy-MM-dd'))
       .eq('is_active', true)
       .order('menu_date', { ascending: true });
+
+    // Filter by user's organization tag
+    const userTag = profile?.tag;
+    if (userTag === 'Proizvodnja') {
+      query = query.eq('organization_tag', 'Proizvodnja');
+    } else {
+      query = query.or('organization_tag.is.null,organization_tag.neq.Proizvodnja');
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching menus:', error);

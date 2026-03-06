@@ -56,7 +56,8 @@ export function useMenus() {
         .insert([{
           name: menuData.name,
           description: menuData.description,
-          menu_date: menuData.menu_date
+          menu_date: menuData.menu_date,
+          organization_tag: menuData.organization_tag ?? null
         }])
         .select()
         .single();
@@ -168,7 +169,8 @@ export function useMenus() {
             name: generateMenuName(targetDate),
             description: sourceMenu.description,
             menu_date: format(targetDate, 'yyyy-MM-dd'),
-            is_active: true
+            is_active: true,
+            organization_tag: sourceMenu.organization_tag ?? null
           }])
           .select()
           .single();
