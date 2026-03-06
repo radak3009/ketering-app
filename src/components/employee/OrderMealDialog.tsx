@@ -38,6 +38,7 @@ interface OrderMealDialogProps {
 
 export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, totalMenuDays, refreshTrigger }: OrderMealDialogProps) {
   const { t, i18n } = useTranslation();
+  const { profile } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShift, setSelectedShift] = useState<string>('');
