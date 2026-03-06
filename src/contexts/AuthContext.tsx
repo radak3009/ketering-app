@@ -332,32 +332,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tagSelectionVisible, setTagSelectionVisible] = useState(false);
   const [tagSettingLoaded, setTagSettingLoaded] = useState(false);
   
+  // Tag setting is now fetched inside fetchUserProfile in parallel with profile+role
+  // This useEffect only handles the case when session changes (e.g. sign out → sign in again)
   useEffect(() => {
     if (!session) {
       setTagSettingLoaded(false);
-      return;
+      setTagSelectionVisible(false);
     }
-    const fetchTagSetting = async () => {
-      try {
-        const { data } = await supabase
-          .from('app_settings' as any)
-          .select('value')
-          .eq('key', 'tag_selection_visible')
-          .maybeSingle();
-        if (data) {
-          const val = (data as any).value;
-          const anyVisible = typeof val === 'object' && val !== null && Object.values(val).some(v => v === true);
-          setTagSelectionVisible(anyVisible);
-        }
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error('[AuthContext] Error fetching tag setting:', error);
-        }
-      } finally {
-        setTagSettingLoaded(true);
-      }
-    };
-    fetchTagSetting();
   }, [session]);
 
   // Computed property: employee needs to set company_card_id (and tag if visible)
