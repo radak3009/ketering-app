@@ -581,7 +581,9 @@ export default function Auth() {
                       <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signin-identifier"
+                        name="username"
                         type="text"
+                        autoComplete="username"
                         placeholder={t('auth.emailOrIdPlaceholder')}
                         className="pl-10"
                         value={signInData.identifier}
