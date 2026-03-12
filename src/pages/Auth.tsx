@@ -599,7 +599,9 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signin-password"
+                        name="password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
                         placeholder={t('auth.enterPassword')}
                         className="pl-10 pr-10"
                         value={signInData.password}
