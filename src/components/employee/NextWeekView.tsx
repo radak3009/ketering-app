@@ -88,7 +88,13 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span tabIndex={0}>
+                  <span 
+                    tabIndex={0}
+                    onClick={() => toast({
+                      title: t('orders.notPossible'),
+                      description: t('orders.noMenusForNextWeek'),
+                    })}
+                  >
                     <Button 
                       size="sm" 
                       className="gap-2"
@@ -109,7 +115,13 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span tabIndex={0}>
+                  <span 
+                    tabIndex={0}
+                    onClick={() => toast({
+                      title: t('orders.notPossible'),
+                      description: t('orders.profileIncomplete'),
+                    })}
+                  >
                     <Button 
                       size="sm" 
                       className="gap-2"
