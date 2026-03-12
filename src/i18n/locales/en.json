@@ -249,6 +249,7 @@
     "pickedUp": "Picked up",
     "notPickedUp": "Not picked up",
     "profileIncomplete": "You must set your ID and organization in your profile before ordering meals",
+    "noMenusForNextWeek": "No menus defined for next week",
     "shifts": {
       "prva": "First shift",
       "druga": "Second shift",

@@ -84,7 +84,28 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           <h2 className="text-xl font-semibold">{t('navigation.nextWeek')}</h2>
         </div>
         {canEdit && (
-          profileIncomplete ? (
+          totalMenuDays === 0 ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button 
+                      size="sm" 
+                      className="gap-2"
+                      variant="secondary"
+                      disabled
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span className="hidden sm:inline">{t('orders.orderMeal')}</span>
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('orders.noMenusForNextWeek')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : profileIncomplete ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
