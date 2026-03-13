@@ -95,6 +95,8 @@ export function UsersManagement() {
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
   const [bulkTagValue, setBulkTagValue] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Pagination state
   const [usersPage, setUsersPage] = useState(1);
@@ -371,6 +373,41 @@ export function UsersManagement() {
     } finally {
       setBulkUpdating(false);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUserIds.size === 0) return;
+    
+    setBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const userId of Array.from(selectedUserIds)) {
+      try {
+        await deleteUser(userId);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        console.error(`Failed to delete user ${userId}:`, error);
+      }
+    }
+    
+    if (failCount > 0) {
+      toast({
+        title: 'Delimičan uspeh',
+        description: `Obrisano: ${successCount}, neuspešno: ${failCount}`,
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: 'Uspeh',
+        description: `Obrisano je ${successCount} korisnika`
+      });
+    }
+    
+    setSelectedUserIds(new Set());
+    setBulkDeleteDialogOpen(false);
+    setBulkDeleting(false);
   };
 
   const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id));
@@ -700,6 +737,38 @@ export function UsersManagement() {
                       <AlertDialogCancel>Otkaži</AlertDialogCancel>
                       <AlertDialogAction onClick={handleBulkTagUpdate} disabled={bulkUpdating}>
                         {bulkUpdating ? 'Ažuriranje...' : 'Primeni'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Obriši izabrane
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Masovno brisanje korisnika</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Da li ste sigurni da želite da obrišete {selectedUserIds.size} izabranih korisnika? 
+                        Ova akcija je nepovratna i briše sve podatke korisnika uključujući narudžbine i profil.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={bulkDeleting}>Otkaži</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleBulkDelete} 
+                        disabled={bulkDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {bulkDeleting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Brisanje...
+                          </>
+                        ) : `Obriši ${selectedUserIds.size} korisnika`}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
