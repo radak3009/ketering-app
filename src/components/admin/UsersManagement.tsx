@@ -95,6 +95,8 @@ export function UsersManagement() {
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
   const [bulkTagValue, setBulkTagValue] = useState("");
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Pagination state
   const [usersPage, setUsersPage] = useState(1);
