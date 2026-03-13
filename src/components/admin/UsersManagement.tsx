@@ -375,6 +375,41 @@ export function UsersManagement() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedUserIds.size === 0) return;
+    
+    setBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const userId of Array.from(selectedUserIds)) {
+      try {
+        await deleteUser(userId);
+        successCount++;
+      } catch (error) {
+        failCount++;
+        console.error(`Failed to delete user ${userId}:`, error);
+      }
+    }
+    
+    if (failCount > 0) {
+      toast({
+        title: 'Delimičan uspeh',
+        description: `Obrisano: ${successCount}, neuspešno: ${failCount}`,
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: 'Uspeh',
+        description: `Obrisano je ${successCount} korisnika`
+      });
+    }
+    
+    setSelectedUserIds(new Set());
+    setBulkDeleteDialogOpen(false);
+    setBulkDeleting(false);
+  };
+
   const isAllSelected = filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.has(u.id));
   const isSomeSelected = selectedUserIds.size > 0;
 
