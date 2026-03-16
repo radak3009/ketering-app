@@ -185,6 +185,7 @@
     "saveId": "Sačuvaj ID",
     "idAlreadyExists": "ID {{id}} je već dodeljen drugom korisniku",
     "idMustBeNumeric": "ID mora biti numerička vrednost",
+    "nameRequired": "Ime i prezime je obavezno",
     "idSetSuccess": "ID je uspešno postavljen! Sada možete koristiti sve funkcionalnosti aplikacije.",
     "changePassword": "Promena lozinke",
     "changePasswordDescription": "Ažurirajte lozinku za pristup aplikaciji",
