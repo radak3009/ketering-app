@@ -43,6 +43,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
   // ID setup state
   const [idInput, setIdInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [nameInput, setNameInput] = useState('');
   const [idError, setIdError] = useState('');
   const [idLoading, setIdLoading] = useState(false);
   const idSectionRef = useRef<HTMLDivElement>(null);
@@ -136,9 +137,15 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
     setIdError('');
   };
 
-  // Save company card ID and tag
+  // Save company card ID, tag, and name if needed
   const handleSaveId = async () => {
     if (!user || !idInput) return;
+
+    // Validate name if not already set
+    if (!fullName && !nameInput.trim()) {
+      setIdError(t('profile.nameRequired', 'Ime i prezime je obavezno'));
+      return;
+    }
 
     if (!/^[0-9]+$/.test(idInput)) {
       setIdError(t('profile.idMustBeNumeric', 'ID mora biti numerička vrednost'));
@@ -167,10 +174,13 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
       return;
     }
 
-    // Save ID + tag
+    // Save ID + tag + name if needed
     const updateData: any = { company_card_id: idInput };
     if (tagSelectionVisible && tagInput) {
       updateData.tag = tagInput;
+    }
+    if (!fullName && nameInput.trim()) {
+      updateData.full_name = nameInput.trim();
     }
 
     const { error } = await supabase
@@ -268,6 +278,8 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
 
   // Whether the ID field should be read-only (already set)
   const idIsReadOnly = !!companyCardId;
+  // Whether the name needs to be set during onboarding
+  const needsNameSetup = isIdSetupMode && !fullName;
 
   return (
     <Card className="mb-24 sm:mb-0">
@@ -312,6 +324,22 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 </div>
               </div>
 
+              {/* Name input - only shown if name is missing */}
+              {needsNameSetup && (
+                <div className="space-y-2">
+                  <Label htmlFor="nameSetup">{t('profile.fullName')}</Label>
+                  <Input
+                    id="nameSetup"
+                    value={nameInput}
+                    onChange={(e) => { setNameInput(e.target.value); setIdError(''); }}
+                    placeholder={t('profile.fullNamePlaceholder')}
+                    maxLength={100}
+                  />
+                </div>
+              )}
+
+              {needsNameSetup && <Separator className="my-2" />}
+
               <div className="space-y-2">
                 <Label htmlFor="idSetup">{t('profile.companyCardId')}</Label>
                 <Input
@@ -322,7 +350,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={10}
-                  autoFocus
+                  autoFocus={!needsNameSetup}
                   className={idError ? 'border-destructive' : ''}
                 />
                 {idError && (
@@ -361,7 +389,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
               <div className="flex justify-end pt-2">
                 <Button 
                   onClick={handleSaveId} 
-                  disabled={idLoading || !idInput || (tagSelectionVisible && !tagInput)} 
+                  disabled={idLoading || !idInput || (tagSelectionVisible && !tagInput) || (needsNameSetup && !nameInput.trim())} 
                   size="lg"
                   className="gap-2"
                 >

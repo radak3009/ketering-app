@@ -185,6 +185,7 @@
     "saveId": "Save ID",
     "idAlreadyExists": "ID {{id}} is already assigned to another user",
     "idMustBeNumeric": "ID must be a numeric value",
+    "nameRequired": "Full name is required",
     "idSetSuccess": "ID set successfully! You can now use all app features.",
     "changePassword": "Change password",
     "changePasswordDescription": "Update your password for app access",
