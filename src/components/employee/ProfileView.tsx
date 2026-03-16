@@ -324,6 +324,22 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                 </div>
               </div>
 
+              {/* Name input - only shown if name is missing */}
+              {needsNameSetup && (
+                <div className="space-y-2">
+                  <Label htmlFor="nameSetup">{t('profile.fullName')}</Label>
+                  <Input
+                    id="nameSetup"
+                    value={nameInput}
+                    onChange={(e) => { setNameInput(e.target.value); setIdError(''); }}
+                    placeholder={t('profile.fullNamePlaceholder')}
+                    maxLength={100}
+                  />
+                </div>
+              )}
+
+              {needsNameSetup && <Separator className="my-2" />}
+
               <div className="space-y-2">
                 <Label htmlFor="idSetup">{t('profile.companyCardId')}</Label>
                 <Input
@@ -334,7 +350,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={10}
-                  autoFocus
+                  autoFocus={!needsNameSetup}
                   className={idError ? 'border-destructive' : ''}
                 />
                 {idError && (
