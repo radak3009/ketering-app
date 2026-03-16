@@ -137,9 +137,15 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
     setIdError('');
   };
 
-  // Save company card ID and tag
+  // Save company card ID, tag, and name if needed
   const handleSaveId = async () => {
     if (!user || !idInput) return;
+
+    // Validate name if not already set
+    if (!fullName && !nameInput.trim()) {
+      setIdError(t('profile.nameRequired', 'Ime i prezime je obavezno'));
+      return;
+    }
 
     if (!/^[0-9]+$/.test(idInput)) {
       setIdError(t('profile.idMustBeNumeric', 'ID mora biti numerička vrednost'));
@@ -168,10 +174,13 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
       return;
     }
 
-    // Save ID + tag
+    // Save ID + tag + name if needed
     const updateData: any = { company_card_id: idInput };
     if (tagSelectionVisible && tagInput) {
       updateData.tag = tagInput;
+    }
+    if (!fullName && nameInput.trim()) {
+      updateData.full_name = nameInput.trim();
     }
 
     const { error } = await supabase
