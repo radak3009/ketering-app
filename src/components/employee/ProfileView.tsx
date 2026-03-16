@@ -43,6 +43,7 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
   // ID setup state
   const [idInput, setIdInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const [nameInput, setNameInput] = useState('');
   const [idError, setIdError] = useState('');
   const [idLoading, setIdLoading] = useState(false);
   const idSectionRef = useRef<HTMLDivElement>(null);

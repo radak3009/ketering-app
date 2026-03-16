@@ -341,9 +341,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [session]);
 
-  // Computed property: employee needs to set company_card_id (and tag if visible)
+  // Computed property: employee needs to set company_card_id, full_name (and tag if visible)
   const requiresIdSetup = profile !== null && profile.role === 'employee' && 
-    (!profile.company_card_id || (tagSelectionVisible && !profile.tag));
+    (!profile.company_card_id || !profile.full_name || (tagSelectionVisible && !profile.tag));
 
   // Function to refresh profile (after password is set)
   const refreshProfile = useCallback(async () => {
