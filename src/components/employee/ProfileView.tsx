@@ -269,6 +269,8 @@ export function ProfileView({ user, isIdSetupMode = false }: ProfileViewProps) {
 
   // Whether the ID field should be read-only (already set)
   const idIsReadOnly = !!companyCardId;
+  // Whether the name needs to be set during onboarding
+  const needsNameSetup = isIdSetupMode && !fullName;
 
   return (
     <Card className="mb-24 sm:mb-0">
