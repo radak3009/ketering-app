@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info, X, Check, ChevronDown } from "lucide-react";
+import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info, X, Check, ChevronDown, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
@@ -64,6 +64,11 @@ const initialMealForm: MealFormState = {
   meal_group: ""
 };
 
+const getShiftRoman = (shift: string): string => {
+  const map: Record<string, string> = { 'prva': 'I', 'druga': 'II', 'treća': 'III' };
+  return map[shift] || shift;
+};
+
 export function MealsManagement() {
   const { toast } = useToast();
   const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
@@ -75,6 +80,12 @@ export function MealsManagement() {
   const [updatingMeal, setUpdatingMeal] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Bulk selection state
+  const [selectedMealIds, setSelectedMealIds] = useState<Set<string>>(new Set());
+  const [bulkShiftDialogOpen, setBulkShiftDialogOpen] = useState(false);
+  const [bulkShiftValues, setBulkShiftValues] = useState<string[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   
   const [mealForm, setMealForm] = useState<MealFormState>(initialMealForm);
   const [mealFilters, setMealFilters] = useState<MealFilters>({
@@ -343,6 +354,54 @@ export function MealsManagement() {
     return matchesCode && matchesName && matchesDescription && 
            matchesAllergens && matchesShifts && matchesStatus && matchesTags && matchesGroup;
   });
+
+  // Bulk selection helpers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedMealIds(new Set(filteredMeals.map(m => m.id)));
+    } else {
+      setSelectedMealIds(new Set());
+    }
+  };
+
+  const handleSelectMeal = (mealId: string, checked: boolean) => {
+    const newSet = new Set(selectedMealIds);
+    if (checked) {
+      newSet.add(mealId);
+    } else {
+      newSet.delete(mealId);
+    }
+    setSelectedMealIds(newSet);
+  };
+
+  const handleBulkShiftUpdate = async () => {
+    if (selectedMealIds.size === 0) return;
+    
+    setBulkUpdating(true);
+    try {
+      const updatePromises = Array.from(selectedMealIds).map(mealId => 
+        updateMeal(mealId, { shifts: bulkShiftValues })
+      );
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: 'Uspeh',
+        description: `Smene su ažurirane za ${selectedMealIds.size} obroka`
+      });
+      
+      setSelectedMealIds(new Set());
+      setBulkShiftDialogOpen(false);
+      setBulkShiftValues([]);
+    } catch (error) {
+      console.error('Bulk shift update error:', error);
+      toast({ title: 'Greška', description: 'Greška pri ažuriranju smena', variant: 'destructive' });
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const isAllSelected = filteredMeals.length > 0 && filteredMeals.every(m => selectedMealIds.has(m.id));
+  const isSomeSelected = selectedMealIds.size > 0;
 
   return (
     <>
@@ -626,9 +685,77 @@ export function MealsManagement() {
             <div className="text-center py-8">Učitavanje...</div>
           ) : (
             <div className="rounded-md border overflow-x-auto">
+              {/* Bulk action bar */}
+              {isSomeSelected && (
+                <div className="flex items-center justify-between p-3 bg-muted/50 border-b">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">
+                      Izabrano: {selectedMealIds.size} obroka
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <AlertDialog open={bulkShiftDialogOpen} onOpenChange={setBulkShiftDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          Izmeni smene
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Masovna izmena smena</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Odaberite smene za {selectedMealIds.size} izabranih obroka.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="flex flex-col gap-3 py-4">
+                          {SHIFTS.map(shift => (
+                            <div key={shift} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`bulk-shift-${shift}`}
+                                checked={bulkShiftValues.includes(shift)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setBulkShiftValues(prev => [...prev, shift]);
+                                  } else {
+                                    setBulkShiftValues(prev => prev.filter(s => s !== shift));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`bulk-shift-${shift}`} className="text-sm cursor-pointer">
+                                {getShiftRoman(shift)} smena
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleBulkShiftUpdate} disabled={bulkUpdating}>
+                            {bulkUpdating ? 'Ažuriranje...' : 'Primeni'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setSelectedMealIds(new Set())}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Poništi
+                    </Button>
+                  </div>
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-[100px]">
                       <div className="space-y-1">
                         <span className="font-semibold text-xs">Šifra</span>
@@ -721,11 +848,47 @@ export function MealsManagement() {
                         </Popover>
                       </div>
                     </TableHead>
-                    <TableHead className="w-[100px]">
-                      <span className="font-semibold text-xs">Nabavna cena</span>
-                    </TableHead>
-                    <TableHead className="w-[100px]">
-                      <span className="font-semibold text-xs">Cena</span>
+                    <TableHead className="w-[150px]">
+                      <div className="space-y-1">
+                        <span className="font-semibold text-xs">Smene</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="h-7 text-xs w-full justify-start font-normal">
+                              {mealFilters.shifts.length === 0 ? "Sve smene" : mealFilters.shifts.map(s => getShiftRoman(s)).join(', ')}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-2 bg-popover border" align="start">
+                            {SHIFTS.map(shift => (
+                              <div key={shift} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
+                                <Checkbox
+                                  id={`filter-shift-${shift}`}
+                                  checked={mealFilters.shifts.includes(shift)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setMealFilters(prev => ({ ...prev, shifts: [...prev.shifts, shift] }));
+                                    } else {
+                                      setMealFilters(prev => ({ ...prev, shifts: prev.shifts.filter(s => s !== shift) }));
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`filter-shift-${shift}`} className="text-sm cursor-pointer">
+                                  {getShiftRoman(shift)} smena
+                                </Label>
+                              </div>
+                            ))}
+                            {mealFilters.shifts.length > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full mt-2 text-xs"
+                                onClick={() => setMealFilters(prev => ({...prev, shifts: []}))}
+                              >
+                                Resetuj filter
+                              </Button>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </TableHead>
                     <TableHead className="w-[130px]">
                       <div className="space-y-1">
@@ -761,9 +924,15 @@ export function MealsManagement() {
                     filteredMeals.map(meal => (
                       <TableRow 
                         key={meal.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={`cursor-pointer hover:bg-muted/50 ${selectedMealIds.has(meal.id) ? 'bg-primary/5' : ''}`}
                         onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
                       >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedMealIds.has(meal.id)}
+                            onCheckedChange={(checked) => handleSelectMeal(meal.id, !!checked)}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono text-xs font-medium">
                           {meal.code || <span className="text-muted-foreground">-</span>}
                         </TableCell>
@@ -801,10 +970,19 @@ export function MealsManagement() {
                             <span className="text-muted-foreground text-xs">Sve</span>
                           )}
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {meal.purchase_price ? `${meal.purchase_price} RSD` : '-'}
+                        <TableCell>
+                          {meal.shifts && meal.shifts.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {meal.shifts.map((shift, i) => (
+                                <Badge key={i} variant="secondary" className="text-xs">
+                                  {getShiftRoman(shift)}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
                         </TableCell>
-                        <TableCell className="font-medium">{meal.price} RSD</TableCell>
                         <TableCell>
                           <Badge variant={meal.status === 'aktivan' ? 'default' : 'secondary'}>
                             {meal.status}
