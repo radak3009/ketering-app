@@ -62,6 +62,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   // Build pivot data
   const pivotData: { [mealName: string]: MealPivotRow } = {};
   const dayTotals: { [dayName: string]: number } = {};
+  const mealShiftsMap: { [mealName: string]: string[] | null } = {};
   
   DAYS_OF_WEEK.forEach(day => { dayTotals[day] = 0; });
   
@@ -73,6 +74,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
     
     order.order_items?.forEach(item => {
       const mealName = item.meal?.name || item.meals?.name || 'Nepoznat obrok';
+      const mealShifts = item.meal?.shifts || item.meals?.shifts || null;
       const quantity = item.quantity;
       const shift = item.shift || 'prva';
       
@@ -83,6 +85,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
           pivotData[mealName].shifts[s] = { byDay: {}, total: 0 };
           DAYS_OF_WEEK.forEach(day => { pivotData[mealName].shifts[s].byDay[day] = 0; });
         });
+        mealShiftsMap[mealName] = mealShifts;
       }
       
       pivotData[mealName].byDay[dayName] += quantity;
@@ -95,6 +98,13 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   
   const grandTotal = Object.values(dayTotals).reduce((sum, val) => sum + val, 0);
   const sortedMeals = Object.keys(pivotData).sort((a, b) => a.localeCompare(b, 'sr'));
+  
+  const getMealDisplayName = (mealName: string) => {
+    const shifts = mealShiftsMap[mealName];
+    if (!shifts || shifts.length === 0 || shifts.length === SHIFTS.length) return mealName;
+    const romanShifts = shifts.map(s => SHIFT_ROMAN[s] || s).join(', ');
+    return `${mealName} (${romanShifts})`;
+  };
   
   const showDrillDown = shiftFilter === "all";
 
