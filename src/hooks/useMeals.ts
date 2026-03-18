@@ -59,7 +59,7 @@ export function useMeals() {
     }
   };
 
-  const updateMeal = async (id: string, updates: MealUpdate) => {
+  const updateMeal = async (id: string, updates: MealUpdate, options?: { silent?: boolean }) => {
     try {
       const { data, error } = await supabase
         .from('meals')
@@ -72,7 +72,9 @@ export function useMeals() {
 
       setMeals(prev => prev.map(meal => meal.id === id ? data : meal));
       await fetchMeals();
-      handleSuccess({ category: 'update', entity: 'obrok' });
+      if (!options?.silent) {
+        handleSuccess({ category: 'update', entity: 'obrok' });
+      }
       return data;
     } catch (error) {
       handleError({ category: 'update', entity: 'obrok', error });

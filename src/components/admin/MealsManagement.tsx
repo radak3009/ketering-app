@@ -380,13 +380,14 @@ export function MealsManagement() {
     setBulkUpdating(true);
     try {
       const updatePromises = Array.from(selectedMealIds).map(mealId => 
-        updateMeal(mealId, { shifts: bulkShiftValues })
+        updateMeal(mealId, { shifts: bulkShiftValues }, { silent: true })
       );
       await Promise.all(updatePromises);
       
       toast({
         title: 'Uspeh',
-        description: `Smene su ažurirane za ${selectedMealIds.size} obroka`
+        description: `Smene su ažurirane za ${selectedMealIds.size} obroka`,
+        duration: 2000
       });
       
       setSelectedMealIds(new Set());
