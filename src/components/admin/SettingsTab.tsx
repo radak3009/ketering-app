@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock, Users, Trash2 } from "lucide-react";
+import { ExternalLink, MonitorSmartphone, ChefHat, QrCode, Clock, Users, Trash2, Bell, Send } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { QRCodeSVG } from "qrcode.react";
 import { KitchenScheduleSettings } from "./KitchenScheduleSettings";
@@ -345,7 +345,75 @@ export function SettingsTab() {
         </TabsContent>
       </Tabs>
 
+      {/* Send Update Notification */}
+      <SendUpdateNotification />
+
       <AppVersionBadge />
     </div>
+  );
+}
+
+function SendUpdateNotification() {
+  const { toast } = useToast();
+  const [sending, setSending] = useState(false);
+
+  const handleSendUpdateNotification = async () => {
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          payload: {
+            title: 'Ažuriranje dostupno',
+            body: 'Nova verzija aplikacije je objavljena. Otvorite aplikaciju da biste ažurirali.',
+            tag: 'app-update',
+            url: '/',
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Uspešno',
+        description: `Push obaveštenje poslato (${data?.sent || 0} od ${data?.total || 0} pretplata).`,
+      });
+    } catch (error) {
+      console.error('Error sending update notification:', error);
+      toast({
+        title: 'Greška',
+        description: 'Nije moguće poslati push obaveštenje.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Bell className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Push obaveštenje o ažuriranju</CardTitle>
+            <CardDescription>
+              Pošaljite svim korisnicima obaveštenje da je nova verzija aplikacije dostupna
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Button
+          onClick={handleSendUpdateNotification}
+          disabled={sending}
+          className="gap-2"
+        >
+          <Send className="h-4 w-4" />
+          {sending ? 'Slanje...' : 'Pošalji obaveštenje o ažuriranju'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
