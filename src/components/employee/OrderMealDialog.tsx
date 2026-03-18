@@ -18,6 +18,7 @@ interface Meal {
   image_url: string | null;
   category: string;
   allergens: string[] | null;
+  shifts: string[] | null;
 }
 
 interface Menu {
