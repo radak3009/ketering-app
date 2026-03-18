@@ -156,9 +156,8 @@ function toast({ duration, ...props }: Toast) {
     },
   });
 
-  if (duration) {
-    setTimeout(dismiss, duration);
-  }
+  const autoDismissDelay = duration ?? 2000;
+  setTimeout(dismiss, autoDismissDelay);
 
   return {
     id: id,
