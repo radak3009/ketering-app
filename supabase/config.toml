@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.receipt-download]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = true
+
+[functions.notify-menu-ready]
+verify_jwt = true
