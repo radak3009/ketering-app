@@ -193,7 +193,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
                               ? <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" /> 
                               : <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           )}
-                          {mealName}
+                          {getMealDisplayName(mealName)}
                         </div>
                       </TableCell>
                       {DAYS_OF_WEEK.map(day => {
