@@ -142,7 +142,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
             description,
             image_url,
             category,
-            allergens
+            allergens,
+            shifts
           )
         )
       `)
