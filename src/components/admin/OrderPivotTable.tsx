@@ -11,8 +11,8 @@ interface Order {
   delivery_date: string;
   order_items?: Array<{
     meal_id: string;
-    meal?: { name: string };
-    meals?: { name: string };
+    meal?: { name: string; shifts?: string[] | null };
+    meals?: { name: string; shifts?: string[] | null };
     shift?: string;
     quantity: number;
   }>;
@@ -41,6 +41,11 @@ const SHIFT_LABELS: Record<string, string> = {
   'druga': 'II smena',
   'treća': 'III smena',
 };
+const SHIFT_ROMAN: Record<string, string> = {
+  'prva': 'I',
+  'druga': 'II',
+  'treća': 'III',
+};
 
 export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
@@ -57,6 +62,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   // Build pivot data
   const pivotData: { [mealName: string]: MealPivotRow } = {};
   const dayTotals: { [dayName: string]: number } = {};
+  const mealShiftsMap: { [mealName: string]: string[] | null } = {};
   
   DAYS_OF_WEEK.forEach(day => { dayTotals[day] = 0; });
   
@@ -68,6 +74,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
     
     order.order_items?.forEach(item => {
       const mealName = item.meal?.name || item.meals?.name || 'Nepoznat obrok';
+      const mealShifts = item.meal?.shifts || item.meals?.shifts || null;
       const quantity = item.quantity;
       const shift = item.shift || 'prva';
       
@@ -78,6 +85,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
           pivotData[mealName].shifts[s] = { byDay: {}, total: 0 };
           DAYS_OF_WEEK.forEach(day => { pivotData[mealName].shifts[s].byDay[day] = 0; });
         });
+        mealShiftsMap[mealName] = mealShifts;
       }
       
       pivotData[mealName].byDay[dayName] += quantity;
@@ -91,6 +99,13 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const grandTotal = Object.values(dayTotals).reduce((sum, val) => sum + val, 0);
   const sortedMeals = Object.keys(pivotData).sort((a, b) => a.localeCompare(b, 'sr'));
   
+  const getMealDisplayName = (mealName: string) => {
+    const shifts = mealShiftsMap[mealName];
+    if (!shifts || shifts.length === 0 || shifts.length === SHIFTS.length) return mealName;
+    const romanShifts = shifts.map(s => SHIFT_ROMAN[s] || s).join(', ');
+    return `${mealName} (${romanShifts})`;
+  };
+  
   const showDrillDown = shiftFilter === "all";
 
   const handleExportCSV = useCallback(() => {
@@ -101,7 +116,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
     sortedMeals.forEach(mealName => {
       const row = pivotData[mealName];
       // Parent row (total)
-      rows.push([mealName, 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
+      rows.push([getMealDisplayName(mealName), 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
       // Shift rows
       SHIFTS.forEach(shift => {
         const sr = row.shifts[shift];
@@ -178,7 +193,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
                               ? <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" /> 
                               : <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           )}
-                          {mealName}
+                          {getMealDisplayName(mealName)}
                         </div>
                       </TableCell>
                       {DAYS_OF_WEEK.map(day => {
