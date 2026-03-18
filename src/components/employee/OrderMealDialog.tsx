@@ -18,6 +18,7 @@ interface Meal {
   image_url: string | null;
   category: string;
   allergens: string[] | null;
+  shifts: string[] | null;
 }
 
 interface Menu {
@@ -80,6 +81,11 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     }
   }, [selectedDate, menus]);
 
+  // Reset selected meal when shift changes
+  useEffect(() => {
+    setSelectedMeal('');
+  }, [selectedShift]);
+
   useEffect(() => {
     if (menus.length > 0) {
       generateAvailableDatesFromMenus(menus);
@@ -141,7 +147,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
             description,
             image_url,
             category,
-            allergens
+            allergens,
+            shifts
           )
         )
       `)
@@ -358,54 +365,58 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>{t('orders.meal')}</Label>
-            {!selectedDate && (
-              <p className="text-sm text-muted-foreground">{t('orders.selectDayFirst')}</p>
-            )}
-            {selectedDate && meals.length === 0 && (
-              <p className="text-sm text-muted-foreground">{t('orders.noMealsForDay')}</p>
-            )}
-            {selectedDate && meals.length > 0 && (
-              <div className="grid gap-3">
-                {meals.map(meal => (
-                  <div
-                    key={meal.id}
-                    onClick={() => setSelectedMeal(meal.id)}
-                    className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
-                      selectedMeal === meal.id ? 'ring-2 ring-primary' : 'hover:shadow-md'
-                    }`}
-                  >
-                    {meal.image_url && (
-                      <img
-                        src={meal.image_url}
-                        alt={meal.name}
-                        className="w-full h-32 object-cover"
-                      />
-                    )}
-                    <div className="p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium">{meal.name}</h3>
-                        <Badge variant="outline">{meal.category}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {meal.description}
-                      </p>
-                      {meal.allergens && meal.allergens.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {meal.allergens.map((allergen, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {allergen}
-                            </Badge>
-                          ))}
+          {selectedDate && selectedShift && (
+            <div className="space-y-2">
+              <Label>{t('orders.meal')}</Label>
+              {(() => {
+                const filteredMeals = meals.filter(meal =>
+                  !meal.shifts || meal.shifts.length === 0 || meal.shifts.includes(selectedShift)
+                );
+                if (filteredMeals.length === 0) {
+                  return <p className="text-sm text-muted-foreground">{t('orders.noMealsForDay')}</p>;
+                }
+                return (
+                  <div className="grid gap-3">
+                    {filteredMeals.map(meal => (
+                      <div
+                        key={meal.id}
+                        onClick={() => setSelectedMeal(meal.id)}
+                        className={`border rounded-lg overflow-hidden cursor-pointer transition-all ${
+                          selectedMeal === meal.id ? 'ring-2 ring-primary' : 'hover:shadow-md'
+                        }`}
+                      >
+                        {meal.image_url && (
+                          <img
+                            src={meal.image_url}
+                            alt={meal.name}
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        <div className="p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-medium">{meal.name}</h3>
+                            <Badge variant="outline">{meal.category}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {meal.description}
+                          </p>
+                          {meal.allergens && meal.allergens.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {meal.allergens.map((allergen, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {allergen}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2">
