@@ -101,7 +101,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   
   const getMealDisplayName = (mealName: string) => {
     const shifts = mealShiftsMap[mealName];
-    if (!shifts || shifts.length === 0 || shifts.length === SHIFTS.length) return mealName;
+    if (!shifts || shifts.length === 0) return mealName;
     const romanShifts = shifts.map(s => SHIFT_ROMAN[s] || s).join(', ');
     return `${mealName} (${romanShifts})`;
   };
