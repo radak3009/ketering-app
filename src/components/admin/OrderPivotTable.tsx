@@ -11,8 +11,8 @@ interface Order {
   delivery_date: string;
   order_items?: Array<{
     meal_id: string;
-    meal?: { name: string };
-    meals?: { name: string };
+    meal?: { name: string; shifts?: string[] | null };
+    meals?: { name: string; shifts?: string[] | null };
     shift?: string;
     quantity: number;
   }>;
