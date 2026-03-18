@@ -81,6 +81,11 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
     }
   }, [selectedDate, menus]);
 
+  // Reset selected meal when shift changes
+  useEffect(() => {
+    setSelectedMeal('');
+  }, [selectedShift]);
+
   useEffect(() => {
     if (menus.length > 0) {
       generateAvailableDatesFromMenus(menus);
