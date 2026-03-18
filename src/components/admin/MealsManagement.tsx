@@ -64,6 +64,11 @@ const initialMealForm: MealFormState = {
   meal_group: ""
 };
 
+const getShiftRoman = (shift: string): string => {
+  const map: Record<string, string> = { 'prva': 'I', 'druga': 'II', 'treća': 'III' };
+  return map[shift] || shift;
+};
+
 export function MealsManagement() {
   const { toast } = useToast();
   const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
@@ -75,6 +80,12 @@ export function MealsManagement() {
   const [updatingMeal, setUpdatingMeal] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Bulk selection state
+  const [selectedMealIds, setSelectedMealIds] = useState<Set<string>>(new Set());
+  const [bulkShiftDialogOpen, setBulkShiftDialogOpen] = useState(false);
+  const [bulkShiftValues, setBulkShiftValues] = useState<string[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   
   const [mealForm, setMealForm] = useState<MealFormState>(initialMealForm);
   const [mealFilters, setMealFilters] = useState<MealFilters>({
