@@ -355,7 +355,54 @@ export function MealsManagement() {
            matchesAllergens && matchesShifts && matchesStatus && matchesTags && matchesGroup;
   });
 
-  return (
+  // Bulk selection helpers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedMealIds(new Set(filteredMeals.map(m => m.id)));
+    } else {
+      setSelectedMealIds(new Set());
+    }
+  };
+
+  const handleSelectMeal = (mealId: string, checked: boolean) => {
+    const newSet = new Set(selectedMealIds);
+    if (checked) {
+      newSet.add(mealId);
+    } else {
+      newSet.delete(mealId);
+    }
+    setSelectedMealIds(newSet);
+  };
+
+  const handleBulkShiftUpdate = async () => {
+    if (selectedMealIds.size === 0) return;
+    
+    setBulkUpdating(true);
+    try {
+      const updatePromises = Array.from(selectedMealIds).map(mealId => 
+        updateMeal(mealId, { shifts: bulkShiftValues })
+      );
+      await Promise.all(updatePromises);
+      
+      toast({
+        title: 'Uspeh',
+        description: `Smene su ažurirane za ${selectedMealIds.size} obroka`
+      });
+      
+      setSelectedMealIds(new Set());
+      setBulkShiftDialogOpen(false);
+      setBulkShiftValues([]);
+    } catch (error) {
+      console.error('Bulk shift update error:', error);
+      toast({ title: 'Greška', description: 'Greška pri ažuriranju smena', variant: 'destructive' });
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const isAllSelected = filteredMeals.length > 0 && filteredMeals.every(m => selectedMealIds.has(m.id));
+  const isSomeSelected = selectedMealIds.size > 0;
+
     <>
       <Card>
         <CardHeader>
