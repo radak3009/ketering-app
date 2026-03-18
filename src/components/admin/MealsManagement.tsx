@@ -403,6 +403,7 @@ export function MealsManagement() {
   const isAllSelected = filteredMeals.length > 0 && filteredMeals.every(m => selectedMealIds.has(m.id));
   const isSomeSelected = selectedMealIds.size > 0;
 
+  return (
     <>
       <Card>
         <CardHeader>
