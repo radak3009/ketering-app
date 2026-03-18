@@ -41,6 +41,11 @@ const SHIFT_LABELS: Record<string, string> = {
   'druga': 'II smena',
   'treća': 'III smena',
 };
+const SHIFT_ROMAN: Record<string, string> = {
+  'prva': 'I',
+  'druga': 'II',
+  'treća': 'III',
+};
 
 export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
