@@ -116,7 +116,7 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
     sortedMeals.forEach(mealName => {
       const row = pivotData[mealName];
       // Parent row (total)
-      rows.push([mealName, 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
+      rows.push([getMealDisplayName(mealName), 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
       // Shift rows
       SHIFTS.forEach(shift => {
         const sr = row.shifts[shift];
