@@ -496,6 +496,15 @@ export function MenusManagement() {
                                   {menu.meals?.length || 0} obroka
                                 </p>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => handleCloneSingleMenuClick(menu, e)}
+                                title="Kopiraj jelovnik"
+                                className="shrink-0"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
                             </div>
                           ))}
                         </div>
