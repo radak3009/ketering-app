@@ -16,7 +16,7 @@ import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIco
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
-import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval, isSameDay } from "date-fns";
 import { WEEK_DAYS } from "@/constants";
 
 interface MenuFormState {
