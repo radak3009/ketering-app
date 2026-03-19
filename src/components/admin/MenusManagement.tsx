@@ -760,6 +760,64 @@ export function MenusManagement() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Clone Single Menu Dialog */}
+      <Sheet open={!!cloneSingleSource} onOpenChange={(open) => { if (!open) { setCloneSingleSource(null); setCloneSingleTargetDate(undefined); } }}>
+        <SheetContent className="w-full md:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Kopiranje jelovnika</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-6">
+            <div className="space-y-2">
+              <Label>Izvorni jelovnik:</Label>
+              <p className="text-sm text-muted-foreground">{cloneSingleSource?.name}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Odaberite ciljni datum:</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {cloneSingleTargetDate ? format(cloneSingleTargetDate, "PPP") : "Izaberite datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={cloneSingleTargetDate}
+                    onSelect={setCloneSingleTargetDate}
+                    disabled={isCloneSingleDateDisabled}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">Datumi koji već imaju jelovnik su onemogućeni</p>
+            </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className="w-full" disabled={!cloneSingleTargetDate}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Kopiraj jelovnik
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Potvrdi kopiranje</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Da li ste sigurni da želite da kopirate jelovnik "{cloneSingleSource?.name}" na {cloneSingleTargetDate ? format(cloneSingleTargetDate, "dd.MM.yyyy") : ''}?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmCloneSingle}>Kopiraj</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
