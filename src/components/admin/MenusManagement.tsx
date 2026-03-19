@@ -51,11 +51,15 @@ export function MenusManagement() {
     selectedMeals: []
   });
 
-  // Clone dialog state
+  // Clone week dialog state
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [cloneSourceMenus, setCloneSourceMenus] = useState<MenuWithMeals[]>([]);
   const [cloneTargetDate, setCloneTargetDate] = useState<Date>();
   const [existingMenusInTargetWeek, setExistingMenusInTargetWeek] = useState<MenuWithMeals[]>([]);
+
+  // Clone single menu dialog state
+  const [cloneSingleSource, setCloneSingleSource] = useState<MenuWithMeals | null>(null);
+  const [cloneSingleTargetDate, setCloneSingleTargetDate] = useState<Date>();
 
   // Filter meals based on active org tab
   const getFilteredMealsForTab = (tab: OrgTab) => {
