@@ -65,7 +65,8 @@ const initialUserForm: UserFormState = {
 
 export function UsersManagement() {
   const { toast } = useToast();
-  const { users, loading, createUser, updateUser, deleteUser, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
+  const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
+  const [changingRole, setChangingRole] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
