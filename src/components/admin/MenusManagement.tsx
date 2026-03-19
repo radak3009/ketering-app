@@ -36,7 +36,7 @@ function menuMatchesTab(menu: MenuWithMeals, tab: OrgTab): boolean {
 export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
-  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus } = useMenus();
+  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu } = useMenus();
   
   const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
