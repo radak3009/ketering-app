@@ -312,6 +312,7 @@ export function useUsers() {
     createUser,
     updateUser,
     deleteUser,
+    changeUserRole,
     sendMagicLink,
     sendInvitationWithCredentials,
     resetUserPassword,

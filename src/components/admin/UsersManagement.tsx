@@ -1120,7 +1120,22 @@ export function UsersManagement() {
               
               <div>
                 <Label>Uloga</Label>
-                <Select value={selectedUser.role || 'employee'} disabled>
+                <Select 
+                  value={selectedUser.role || 'employee'} 
+                  onValueChange={async (value: 'admin' | 'employee') => {
+                    if (value === selectedUser.role) return;
+                    setChangingRole(true);
+                    try {
+                      await changeUserRole(selectedUser.id, selectedUser.user_id, value);
+                      setSelectedUser({ ...selectedUser, role: value });
+                    } catch (error) {
+                      console.error('Error changing role:', error);
+                    } finally {
+                      setChangingRole(false);
+                    }
+                  }}
+                  disabled={changingRole}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Odaberite ulogu" />
                   </SelectTrigger>
@@ -1129,9 +1144,9 @@ export function UsersManagement() {
                     <SelectItem value="admin">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Uloge se upravljaju posebno iz bezbednosnih razloga
-                </p>
+                {changingRole && (
+                  <p className="text-xs text-muted-foreground mt-1">Menjanje uloge...</p>
+                )}
               </div>
               
               <div className="space-y-2 pt-4 border-t">
