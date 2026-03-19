@@ -209,6 +209,53 @@ export function useMenus() {
     }
   };
 
+  const cloneSingleMenu = async (sourceMenu: MenuWithMeals, targetDate: Date) => {
+    try {
+      const { data: newMenu, error: menuError } = await supabase
+        .from('menus')
+        .insert([{
+          name: generateMenuName(targetDate),
+          description: sourceMenu.description,
+          menu_date: format(targetDate, 'yyyy-MM-dd'),
+          is_active: true,
+          organization_tag: sourceMenu.organization_tag ?? null
+        }])
+        .select()
+        .single();
+
+      if (menuError) throw menuError;
+
+      if (sourceMenu.meals && sourceMenu.meals.length > 0) {
+        const menuMeals = sourceMenu.meals.map(mm => ({
+          menu_id: newMenu.id,
+          meal_id: mm.meal_id,
+          quantity: mm.quantity
+        }));
+
+        const { error: menuMealsError } = await supabase
+          .from('menu_meals')
+          .insert(menuMeals);
+
+        if (menuMealsError) throw menuMealsError;
+      }
+
+      await fetchMenus();
+      handleSuccess({ 
+        category: 'create', 
+        entity: 'jelovnik', 
+        customMessage: `Jelovnik kloniran na ${format(targetDate, 'dd.MM.yyyy')}` 
+      });
+    } catch (error) {
+      handleError({ 
+        category: 'create', 
+        entity: 'jelovnik', 
+        error,
+        customMessage: 'Nije moguće klonirati jelovnik'
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchMenus();
   }, []);
@@ -220,6 +267,7 @@ export function useMenus() {
     updateMenu,
     deleteMenu,
     cloneWeekMenus,
+    cloneSingleMenu,
     refetch: fetchMenus
   };
 }
