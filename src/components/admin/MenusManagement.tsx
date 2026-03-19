@@ -16,7 +16,7 @@ import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIco
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
-import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval, isSameDay } from "date-fns";
 import { WEEK_DAYS } from "@/constants";
 
 interface MenuFormState {
@@ -36,7 +36,7 @@ function menuMatchesTab(menu: MenuWithMeals, tab: OrgTab): boolean {
 export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
-  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus } = useMenus();
+  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu } = useMenus();
   
   const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
@@ -51,11 +51,15 @@ export function MenusManagement() {
     selectedMeals: []
   });
 
-  // Clone dialog state
+  // Clone week dialog state
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [cloneSourceMenus, setCloneSourceMenus] = useState<MenuWithMeals[]>([]);
   const [cloneTargetDate, setCloneTargetDate] = useState<Date>();
   const [existingMenusInTargetWeek, setExistingMenusInTargetWeek] = useState<MenuWithMeals[]>([]);
+
+  // Clone single menu dialog state
+  const [cloneSingleSource, setCloneSingleSource] = useState<MenuWithMeals | null>(null);
+  const [cloneSingleTargetDate, setCloneSingleTargetDate] = useState<Date>();
 
   // Filter meals based on active org tab
   const getFilteredMealsForTab = (tab: OrgTab) => {
@@ -206,6 +210,33 @@ export function MenusManagement() {
       setCloneTargetDate(undefined);
     } catch (error) {
       console.error('Error cloning week:', error);
+    }
+  };
+
+  // Clone single menu handlers
+  const handleCloneSingleMenuClick = (menu: MenuWithMeals, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCloneSingleSource(menu);
+    setCloneSingleTargetDate(undefined);
+  };
+
+  const isCloneSingleDateDisabled = (date: Date): boolean => {
+    const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    currentWeekStart.setHours(0, 0, 0, 0);
+    if (date < currentWeekStart) return true;
+    // Disable dates that already have a menu in the same organization
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return filteredMenus.some(menu => menu.menu_date === dateStr);
+  };
+
+  const handleConfirmCloneSingle = async () => {
+    if (!cloneSingleSource || !cloneSingleTargetDate) return;
+    try {
+      await cloneSingleMenu(cloneSingleSource, cloneSingleTargetDate);
+      setCloneSingleSource(null);
+      setCloneSingleTargetDate(undefined);
+    } catch (error) {
+      console.error('Error cloning single menu:', error);
     }
   };
 
@@ -465,6 +496,15 @@ export function MenusManagement() {
                                   {menu.meals?.length || 0} obroka
                                 </p>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => handleCloneSingleMenuClick(menu, e)}
+                                title="Kopiraj jelovnik"
+                                className="shrink-0"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
                             </div>
                           ))}
                         </div>
@@ -714,6 +754,64 @@ export function MenusManagement() {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Otkaži</AlertDialogCancel>
                   <AlertDialogAction onClick={handleConfirmClone}>Kloniraj</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Clone Single Menu Dialog */}
+      <Sheet open={!!cloneSingleSource} onOpenChange={(open) => { if (!open) { setCloneSingleSource(null); setCloneSingleTargetDate(undefined); } }}>
+        <SheetContent className="w-full md:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Kopiranje jelovnika</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 mt-6">
+            <div className="space-y-2">
+              <Label>Izvorni jelovnik:</Label>
+              <p className="text-sm text-muted-foreground">{cloneSingleSource?.name}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Odaberite ciljni datum:</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {cloneSingleTargetDate ? format(cloneSingleTargetDate, "PPP") : "Izaberite datum"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={cloneSingleTargetDate}
+                    onSelect={setCloneSingleTargetDate}
+                    disabled={isCloneSingleDateDisabled}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">Datumi koji već imaju jelovnik su onemogućeni</p>
+            </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className="w-full" disabled={!cloneSingleTargetDate}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Kopiraj jelovnik
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Potvrdi kopiranje</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Da li ste sigurni da želite da kopirate jelovnik "{cloneSingleSource?.name}" na {cloneSingleTargetDate ? format(cloneSingleTargetDate, "dd.MM.yyyy") : ''}?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmCloneSingle}>Kopiraj</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
