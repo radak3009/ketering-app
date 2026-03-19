@@ -251,6 +251,26 @@ export function useUsers() {
     }
   };
 
+  const changeUserRole = async (userId: string, userIdAuth: string, newRole: 'admin' | 'employee') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-user-role', {
+        body: { userId: userIdAuth, role: newRole }
+      });
+
+      if (error) throw new Error(error.message || 'Greška pri promeni uloge');
+      if (data?.error) throw new Error(data.error);
+
+      setUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, role: newRole } : user
+      ));
+
+      handleSuccess({ category: 'update', entity: 'korisnik' });
+    } catch (error) {
+      handleError({ category: 'update', entity: 'korisnik', error, customMessage: getErrorMessage(error) });
+      throw error;
+    }
+  };
+
   const resetUserPassword = async (userId: string, newPassword: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('reset-user-password', {
@@ -292,6 +312,7 @@ export function useUsers() {
     createUser,
     updateUser,
     deleteUser,
+    changeUserRole,
     sendMagicLink,
     sendInvitationWithCredentials,
     resetUserPassword,
