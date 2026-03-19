@@ -213,6 +213,33 @@ export function MenusManagement() {
     }
   };
 
+  // Clone single menu handlers
+  const handleCloneSingleMenuClick = (menu: MenuWithMeals, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCloneSingleSource(menu);
+    setCloneSingleTargetDate(undefined);
+  };
+
+  const isCloneSingleDateDisabled = (date: Date): boolean => {
+    const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    currentWeekStart.setHours(0, 0, 0, 0);
+    if (date < currentWeekStart) return true;
+    // Disable dates that already have a menu in the same organization
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return filteredMenus.some(menu => menu.menu_date === dateStr);
+  };
+
+  const handleConfirmCloneSingle = async () => {
+    if (!cloneSingleSource || !cloneSingleTargetDate) return;
+    try {
+      await cloneSingleMenu(cloneSingleSource, cloneSingleTargetDate);
+      setCloneSingleSource(null);
+      setCloneSingleTargetDate(undefined);
+    } catch (error) {
+      console.error('Error cloning single menu:', error);
+    }
+  };
+
   // Group menus by week
   const groupMenusByWeek = (menuList: MenuWithMeals[]) => {
     const grouped = new Map<string, { 
