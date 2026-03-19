@@ -1,65 +1,46 @@
 
 
-## Plan: Tag-based Octopos Product Code Selection
+## Plan: Kloniranje pojedinačnog jelovnika
 
 ### Pregled
 
-Dodati novi Supabase secret `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` i izmeniti `fiscalize-meal` edge funkciju da na osnovu Tag-a zaposlenog bira odgovarajuci product code pri slanju Octopos zahteva.
+Dodati dugme za kopiranje na svaki pojedinačni jelovnik u listi. Klikom se otvara dijalog za izbor datuma (isti UX kao kloniranje nedelje), sa ograničenjima: ne može se birati prošlost, niti datumi koji već imaju jelovnik za istu organizaciju.
 
 ---
 
-### Tehnicko resenje
+### Izmene
 
-U `fiscalize-meal/index.ts`, linija 266 trenutno hardkoduje jedan product code:
-```typescript
-const productCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-```
+#### 1. Dugme za kopiranje na svakom jelovniku
 
-Potrebno je:
-1. Procitati tag zaposlenog iz `profiles` tabele (vec imamo `existing.profile_id`)
-2. Na osnovu taga odabrati product code
+U `MenusManagement.tsx`, linije 451-469 — dodati Copy dugme pored svakog jelovnika u listi (desna strana, kao na screenshot-u).
 
-### Izmene u `supabase/functions/fiscalize-meal/index.ts`
+#### 2. Novo stanje za kloniranje pojedinačnog jelovnika
 
-#### 1. Prosiriti profile select (linija 336-340)
+Dodati state:
+- `cloneSingleMenu: MenuWithMeals | null` — izvor za kloniranje
+- `cloneSingleTargetDate: Date | undefined` — ciljni datum
 
-Profil se vec cita za `user_id` radi storage path-a. Pomericemo ovaj upit IZNAD Octopos poziva (pre linije 262) i dodacemo `tag` u select:
+#### 3. Nova funkcija `cloneSingleMenu` u `useMenus.ts`
 
-```typescript
-const { data: profile } = await supabase
-  .from("profiles")
-  .select("user_id, tag")
-  .eq("id", existing.profile_id)
-  .maybeSingle();
-```
+Kreira kopiju jednog jelovnika na odabrani datum:
+- Kreira novi menu sa `generateMenuName(targetDate)`, kopira opis i `organization_tag`
+- Kopira sve `menu_meals` iz izvora
 
-#### 2. Odabir product code-a na osnovu taga (zamena linije 266)
+#### 4. Dijalog za izbor datuma (Sheet)
 
-```typescript
-const defaultProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL") || "S001";
-const hogoProductCode = Deno.env.get("OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO") || defaultProductCode;
-const productCode = profile?.tag === "Hogo" ? hogoProductCode : defaultProductCode;
-```
+Novi Sheet sličan postojećem "Clone Week" dijalogu, ali za jedan jelovnik:
+- Prikazuje naziv izvornog jelovnika
+- Kalendar za izbor datuma sa ograničenjima:
+  - `disabled` za datume pre tekuće nedelje (ponedeljak tekuće nedelje)
+  - `disabled` za datume koji već imaju jelovnik u istoj organizaciji (`filteredMenus`)
+- Potvrda kloniranja kroz AlertDialog
 
-#### 3. Ukloniti dupliran profile upit (linije 335-344)
-
-Posto smo profil vec procitali ranije, koristicemo istu `profile` promenljivu za storage path umesto ponovnog upita.
-
-### Novi secret
-
-| Secret | Vrednost |
-|--------|----------|
-| `OCTOPOS_PRODUCT_CODE_PERSONAL_MEAL_HOGO` | Korisnik mora da postavi u Supabase dashboard-u |
+---
 
 ### Fajlovi za izmenu
 
 | Fajl | Akcija |
 |------|--------|
-| `supabase/functions/fiscalize-meal/index.ts` | Pomeri profile upit pre Octopos poziva, dodaj tag-based product code selekciju |
-
-### Bez promena
-
-- Baza podataka — nema schema promena
-- UI — nema promena
-- Ostale edge funkcije — bez promena
+| `src/hooks/useMenus.ts` | Dodati `cloneSingleMenu(sourceMenu, targetDate)` funkciju |
+| `src/components/admin/MenusManagement.tsx` | Dodati Copy dugme na svaki jelovnik, novi Sheet dijalog za izbor datuma |
 
