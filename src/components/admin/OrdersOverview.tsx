@@ -145,7 +145,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
     // Filter by card if set
     if (userCardFilter.trim()) {
       const f = userCardFilter.toLowerCase().trim();
-      return items.filter(i => i.cardId.toLowerCase().includes(f));
+      return items.filter(i => i.cardId.toLowerCase().includes(f) || i.userName.toLowerCase().includes(f));
     }
     return items.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate) || a.userName.localeCompare(b.userName, "sr"));
   }, [filteredOrders, users, userCardFilter]);
@@ -291,7 +291,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             
             {/* Filters Row */}
             <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex flex-1 gap-2">
+              <div className="flex flex-1 gap-2 max-w-[280px]">
                 <Input 
                   placeholder="Pretraži po obroku..." 
                   value={orderSearch} 
@@ -307,10 +307,10 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               {(pivotView === "users" || pivotView === "list") && (
                 <div className="flex gap-2">
                   <Input 
-                    placeholder="Filter po ID kartice..." 
+                    placeholder="Filter po ID kartice ili imenu..." 
                     value={userCardFilter} 
                     onChange={e => setUserCardFilter(e.target.value)} 
-                    className="text-sm w-40"
+                    className="text-sm w-56"
                   />
                 </div>
               )}
