@@ -1,46 +1,25 @@
 
 
-## Plan: Kloniranje pojedinačnog jelovnika
+## Plan: Pretraga po imenu i ID kartice + podešavanje širina
 
-### Pregled
+### Izmene u `src/components/admin/OrdersOverview.tsx`
 
-Dodati dugme za kopiranje na svaki pojedinačni jelovnik u listi. Klikom se otvara dijalog za izbor datuma (isti UX kao kloniranje nedelje), sa ograničenjima: ne može se birati prošlost, niti datumi koji već imaju jelovnik za istu organizaciju.
+1. **Promeniti placeholder** Input polja za filter (linija 310) sa "Filter po ID kartice..." na "Filter po ID kartice ili imenu..."
 
----
+2. **Proširiti logiku filtriranja** u `flatOrderItems` memo (linije 146-149) — pored `cardId`, pretraživati i po `userName`:
+   ```typescript
+   return items.filter(i => 
+     i.cardId.toLowerCase().includes(f) || 
+     i.userName.toLowerCase().includes(f)
+   );
+   ```
 
-### Izmene
+3. **Smanjiti širinu** Input-a za pretragu po obroku (linija 295-301) — dodati `max-w-[280px]` klasu
 
-#### 1. Dugme za kopiranje na svakom jelovniku
+4. **Povećati širinu** Input-a za filter po ID/imenu (linija 309-314) — promeniti `w-40` na `w-56`
 
-U `MenusManagement.tsx`, linije 451-469 — dodati Copy dugme pored svakog jelovnika u listi (desna strana, kao na screenshot-u).
-
-#### 2. Novo stanje za kloniranje pojedinačnog jelovnika
-
-Dodati state:
-- `cloneSingleMenu: MenuWithMeals | null` — izvor za kloniranje
-- `cloneSingleTargetDate: Date | undefined` — ciljni datum
-
-#### 3. Nova funkcija `cloneSingleMenu` u `useMenus.ts`
-
-Kreira kopiju jednog jelovnika na odabrani datum:
-- Kreira novi menu sa `generateMenuName(targetDate)`, kopira opis i `organization_tag`
-- Kopira sve `menu_meals` iz izvora
-
-#### 4. Dijalog za izbor datuma (Sheet)
-
-Novi Sheet sličan postojećem "Clone Week" dijalogu, ali za jedan jelovnik:
-- Prikazuje naziv izvornog jelovnika
-- Kalendar za izbor datuma sa ograničenjima:
-  - `disabled` za datume pre tekuće nedelje (ponedeljak tekuće nedelje)
-  - `disabled` za datume koji već imaju jelovnik u istoj organizaciji (`filteredMenus`)
-- Potvrda kloniranja kroz AlertDialog
-
----
-
-### Fajlovi za izmenu
-
-| Fajl | Akcija |
+### Fajlovi
+| Fajl | Izmena |
 |------|--------|
-| `src/hooks/useMenus.ts` | Dodati `cloneSingleMenu(sourceMenu, targetDate)` funkciju |
-| `src/components/admin/MenusManagement.tsx` | Dodati Copy dugme na svaki jelovnik, novi Sheet dijalog za izbor datuma |
+| `src/components/admin/OrdersOverview.tsx` | Placeholder, filter logika, širine inputa |
 
