@@ -145,7 +145,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
     // Filter by card if set
     if (userCardFilter.trim()) {
       const f = userCardFilter.toLowerCase().trim();
-      return items.filter(i => i.cardId.toLowerCase().includes(f));
+      return items.filter(i => i.cardId.toLowerCase().includes(f) || i.userName.toLowerCase().includes(f));
     }
     return items.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate) || a.userName.localeCompare(b.userName, "sr"));
   }, [filteredOrders, users, userCardFilter]);
