@@ -307,10 +307,10 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               {(pivotView === "users" || pivotView === "list") && (
                 <div className="flex gap-2">
                   <Input 
-                    placeholder="Filter po ID kartice..." 
+                    placeholder="Filter po ID kartice ili imenu..." 
                     value={userCardFilter} 
                     onChange={e => setUserCardFilter(e.target.value)} 
-                    className="text-sm w-40"
+                    className="text-sm w-56"
                   />
                 </div>
               )}
