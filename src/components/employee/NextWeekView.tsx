@@ -84,60 +84,24 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           <h2 className="text-xl font-semibold">{t('navigation.nextWeek')}</h2>
         </div>
         {canEdit && totalMenuDays === 0 && (
-          <>
-            {/* Desktop: tooltip on hover */}
-            <TooltipProvider>
-              <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden md:inline-flex">
-                    <Button size="sm" className="gap-2" variant="secondary" disabled>
-                      <Plus className="h-4 w-4" />
-                      <span>{t('orders.orderMeal')}</span>
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('orders.noMenusForNextWeek')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {/* Mobile: toast on tap */}
-            <span
-              className="inline-flex md:hidden"
-              onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.noMenusForNextWeek') })}
-            >
-              <Button size="sm" className="gap-2" variant="secondary" disabled>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </span>
-          </>
+          <span
+            onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.noMenusForNextWeek') })}
+          >
+            <Button size="sm" className="gap-2" variant="secondary" disabled>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('orders.orderMeal')}</span>
+            </Button>
+          </span>
         )}
         {canEdit && totalMenuDays > 0 && profileIncomplete && (
-          <>
-            <TooltipProvider>
-              <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden md:inline-flex">
-                    <Button size="sm" className="gap-2" disabled>
-                      <Plus className="h-4 w-4" />
-                      <span>{t('orders.orderMeal')}</span>
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('orders.profileIncomplete')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <span
-              className="inline-flex md:hidden"
-              onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.profileIncomplete') })}
-            >
-              <Button size="sm" className="gap-2" disabled>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </span>
-          </>
+          <span
+            onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.profileIncomplete') })}
+          >
+            <Button size="sm" className="gap-2" disabled>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('orders.orderMeal')}</span>
+            </Button>
+          </span>
         )}
         {canEdit && totalMenuDays > 0 && !profileIncomplete && !isAllOrdered && (
           <Button 
@@ -152,31 +116,14 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
           </Button>
         )}
         {canEdit && totalMenuDays > 0 && !profileIncomplete && isAllOrdered && (
-          <>
-            <TooltipProvider>
-              <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden md:inline-flex">
-                    <Button size="sm" className="gap-2" variant="secondary" disabled>
-                      <Plus className="h-4 w-4" />
-                      <span>{t('orders.allOrderedButton')}</span>
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('orders.allOrderedButton')}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <span
-              className="inline-flex md:hidden"
-              onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.allOrderedButton') })}
-            >
-              <Button size="sm" className="gap-2" variant="secondary" disabled>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </span>
-          </>
+          <span
+            onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.allOrderedButton') })}
+          >
+            <Button size="sm" className="gap-2" variant="secondary" disabled>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('orders.allOrderedButton')}</span>
+            </Button>
+          </span>
         )}
       </div>
 
