@@ -43,10 +43,10 @@ export function AdminDashboard() {
   const { users } = useUsers();
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   
-  // Date range state for filtering - defaults to next week
+  // Date range state for filtering - defaults to current week
   const [orderDateRange, setOrderDateRange] = useState({
-    startDate: format(startOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-    endDate: format(endOfWeek(addWeeks(new Date(), 1), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+    startDate: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+    endDate: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   });
   
   const { stats, loading: statsLoading } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
