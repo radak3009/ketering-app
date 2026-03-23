@@ -89,7 +89,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
             <TooltipProvider>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden sm:inline-flex">
+                  <span tabIndex={0} className="hidden md:inline-flex">
                     <Button size="sm" className="gap-2" variant="secondary" disabled>
                       <Plus className="h-4 w-4" />
                       <span>{t('orders.orderMeal')}</span>
@@ -103,7 +103,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
             </TooltipProvider>
             {/* Mobile: toast on tap */}
             <span
-              className="inline-flex sm:hidden"
+              className="inline-flex md:hidden"
               onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.noMenusForNextWeek') })}
             >
               <Button size="sm" className="gap-2" variant="secondary" disabled>
@@ -117,7 +117,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
             <TooltipProvider>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden sm:inline-flex">
+                  <span tabIndex={0} className="hidden md:inline-flex">
                     <Button size="sm" className="gap-2" disabled>
                       <Plus className="h-4 w-4" />
                       <span>{t('orders.orderMeal')}</span>
@@ -130,7 +130,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
               </Tooltip>
             </TooltipProvider>
             <span
-              className="inline-flex sm:hidden"
+              className="inline-flex md:hidden"
               onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.profileIncomplete') })}
             >
               <Button size="sm" className="gap-2" disabled>
@@ -156,7 +156,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
             <TooltipProvider>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <span tabIndex={0} className="hidden sm:inline-flex">
+                  <span tabIndex={0} className="hidden md:inline-flex">
                     <Button size="sm" className="gap-2" variant="secondary" disabled>
                       <Plus className="h-4 w-4" />
                       <span>{t('orders.allOrderedButton')}</span>
@@ -169,7 +169,7 @@ export function NextWeekView({ orders, loading, canEdit, onOpenOrderDialog, onOr
               </Tooltip>
             </TooltipProvider>
             <span
-              className="inline-flex sm:hidden"
+              className="inline-flex md:hidden"
               onClick={() => toast({ title: t('orders.notPossible'), description: t('orders.allOrderedButton') })}
             >
               <Button size="sm" className="gap-2" variant="secondary" disabled>
