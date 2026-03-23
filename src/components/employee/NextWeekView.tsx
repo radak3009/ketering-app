@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MealCard } from './MealCard';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 interface NextWeekViewProps {
   orders: WeekOrder[];
