@@ -151,8 +151,8 @@ export function MealCard({ item, canDelete = false, onDelete, onRefresh }: MealC
             )}
           </div>
 
-          {/* Fiscal status - only show when meal is picked up */}
-          {item.pickup_status === 'preuzeto' && item.fiscal_status && (
+          {/* Fiscal status - show for picked up OR auto-fiscalized */}
+          {item.fiscal_status && (item.pickup_status === 'preuzeto' || item.fiscal_status === 'fiscalized' || item.fiscal_status === 'pending' || item.fiscal_status === 'failed') && (
             <div className="pt-2 border-t mt-2">
               {item.fiscal_status === 'fiscalized' && item.pickup_request_id && (
                 <Button
