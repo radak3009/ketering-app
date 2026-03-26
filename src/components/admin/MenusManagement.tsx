@@ -217,24 +217,30 @@ export function MenusManagement() {
   const handleCloneSingleMenuClick = (menu: MenuWithMeals, e: React.MouseEvent) => {
     e.stopPropagation();
     setCloneSingleSource(menu);
-    setCloneSingleTargetDate(undefined);
+    setCloneSingleTargetDates([]);
   };
 
   const isCloneSingleDateDisabled = (date: Date): boolean => {
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
     currentWeekStart.setHours(0, 0, 0, 0);
     if (date < currentWeekStart) return true;
-    // Disable dates that already have a menu in the same organization
     const dateStr = format(date, 'yyyy-MM-dd');
     return filteredMenus.some(menu => menu.menu_date === dateStr);
   };
 
   const handleConfirmCloneSingle = async () => {
-    if (!cloneSingleSource || !cloneSingleTargetDate) return;
+    if (!cloneSingleSource || cloneSingleTargetDates.length === 0) return;
     try {
-      await cloneSingleMenu(cloneSingleSource, cloneSingleTargetDate);
+      const sortedDates = [...cloneSingleTargetDates].sort((a, b) => a.getTime() - b.getTime());
+      for (const targetDate of sortedDates) {
+        await cloneSingleMenu(cloneSingleSource, targetDate);
+      }
+      toast({
+        title: "Uspešno kopirano",
+        description: `Jelovnik kopiran na ${sortedDates.length} ${sortedDates.length === 1 ? 'datum' : 'datuma'}`,
+      });
       setCloneSingleSource(null);
-      setCloneSingleTargetDate(undefined);
+      setCloneSingleTargetDates([]);
     } catch (error) {
       console.error('Error cloning single menu:', error);
     }
