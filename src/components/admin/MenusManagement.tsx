@@ -59,7 +59,7 @@ export function MenusManagement() {
 
   // Clone single menu dialog state
   const [cloneSingleSource, setCloneSingleSource] = useState<MenuWithMeals | null>(null);
-  const [cloneSingleTargetDate, setCloneSingleTargetDate] = useState<Date>();
+  const [cloneSingleTargetDates, setCloneSingleTargetDates] = useState<Date[]>([]);
 
   // Filter meals based on active org tab
   const getFilteredMealsForTab = (tab: OrgTab) => {
