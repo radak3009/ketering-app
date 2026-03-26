@@ -41,12 +41,37 @@ export function useAdminStats(startDate?: string, endDate?: string) {
 
       if (error) throw error;
 
+      // Today's stats
+      const today = new Date().toISOString().split('T')[0];
+      const { count: todayOrdersCount } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('delivery_date', today);
+
+      const { data: todayOrderIds } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('delivery_date', today);
+
+      let todayPickedUpCount = 0;
+      if (todayOrderIds && todayOrderIds.length > 0) {
+        const ids = todayOrderIds.map(o => o.id);
+        const { count } = await supabase
+          .from('order_items')
+          .select('*', { count: 'exact', head: true })
+          .in('order_id', ids)
+          .eq('pickup_status', 'preuzeto');
+        todayPickedUpCount = count || 0;
+      }
+
       if (!orders || orders.length === 0) {
         setStats({
           totalOrders: 0,
           totalRevenue: 0,
           employeesOrdered: 0,
           avgOrderValue: 0,
+          todayOrders: todayOrdersCount || 0,
+          todayPickedUp: todayPickedUpCount,
         });
         return;
       }
