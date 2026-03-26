@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
           employee_identifier: profile.company_card_id || profile.full_name || "unknown",
           meal_name_snapshot: orderItem.meals?.name || "Obrok",
           pickup_date: today,
-          status: "not_picked_up",
+          status: "served",
           served_by: "auto-fiscal",
           served_at: new Date().toISOString(),
           fiscal_status: "pending",
