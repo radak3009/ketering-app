@@ -92,6 +92,8 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         totalRevenue: Math.round(totalRevenue),
         employeesOrdered,
         avgOrderValue: Math.round(avgOrderValue),
+        todayOrders: todayOrdersCount || 0,
+        todayPickedUp: todayPickedUpCount,
       });
     } catch (error) {
       handleError({ 

@@ -161,14 +161,18 @@ export function AdminDashboard() {
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                {t('stats.revenue')}
+                Danas
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
               <div className="text-lg md:text-2xl font-bold text-foreground">
-                {statsLoading ? "..." : `${stats.totalRevenue.toFixed(0)} RSD`}
+                {statsLoading ? "..." : stats.todayOrders}
               </div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">{t('stats.forSelectedPeriod')}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Porudžbina</p>
+              <div className="text-sm md:text-lg font-semibold text-foreground mt-1">
+                {statsLoading ? "..." : stats.todayPickedUp}
+              </div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Preuzeto</p>
             </CardContent>
           </Card>
         </div>
