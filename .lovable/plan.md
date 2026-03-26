@@ -1,25 +1,39 @@
 
 
-## Plan: Pretraga po imenu i ID kartice + podešavanje širina
+## Plan: Višestruki odabir datuma pri kopiranju jelovnika
 
-### Izmene u `src/components/admin/OrdersOverview.tsx`
+### Pregled
+Omogućiti adminu da odabere jedan ili više datuma prilikom kopiranja pojedinačnog jelovnika. Kalendar prelazi u `multiple` mode, odabrani datumi se prikazuju kao lista badge-eva, a kloniranje se izvršava za svaki odabrani datum.
 
-1. **Promeniti placeholder** Input polja za filter (linija 310) sa "Filter po ID kartice..." na "Filter po ID kartice ili imenu..."
+### Izmene
 
-2. **Proširiti logiku filtriranja** u `flatOrderItems` memo (linije 146-149) — pored `cardId`, pretraživati i po `userName`:
-   ```typescript
-   return items.filter(i => 
-     i.cardId.toLowerCase().includes(f) || 
-     i.userName.toLowerCase().includes(f)
-   );
-   ```
+#### 1. `src/components/admin/MenusManagement.tsx`
 
-3. **Smanjiti širinu** Input-a za pretragu po obroku (linija 295-301) — dodati `max-w-[280px]` klasu
+**State promena (linija 62):**
+- `cloneSingleTargetDate: Date | undefined` → `cloneSingleTargetDates: Date[]` (niz datuma)
 
-4. **Povećati širinu** Input-a za filter po ID/imenu (linija 309-314) — promeniti `w-40` na `w-56`
+**Kalendar (linije 785-792):**
+- Promeniti `mode="single"` u `mode="multiple"`
+- `selected={cloneSingleTargetDates}`, `onSelect={setCloneSingleTargetDates}`
 
-### Fajlovi
+**Prikaz odabranih datuma:**
+- Umesto jednog datuma u button trigeru, prikazati broj odabranih datuma (npr. "Odabrano: 3 datuma")
+- Ispod kalendara dodati listu odabranih datuma kao badge-eve sa mogućnošću uklanjanja (X)
+
+**Potvrda (linija 232-241):**
+- Iterirati kroz sve odabrane datume i pozvati `cloneSingleMenu` za svaki
+- Koristiti silent pattern za bulk operacije — prikazati jednu zbirnu toast poruku
+
+**Dugme i dijalog potvrde:**
+- Disabled kada je `cloneSingleTargetDates.length === 0`
+- Tekst potvrde: "Kopiraj na X datuma"
+
+#### 2. `src/hooks/useMenus.ts`
+
+Bez promena — postojeća `cloneSingleMenu` funkcija se poziva za svaki datum iz petlje.
+
+### Fajlovi za izmenu
 | Fajl | Izmena |
 |------|--------|
-| `src/components/admin/OrdersOverview.tsx` | Placeholder, filter logika, širine inputa |
+| `src/components/admin/MenusManagement.tsx` | Multi-select kalendar, badge lista, bulk clone logika |
 
