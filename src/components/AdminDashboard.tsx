@@ -255,14 +255,22 @@ export function AdminDashboard() {
 
           {/* Feedback Tab */}
           <TabsContent value="feedback">
-            <div className="grid gap-6">
-              <Suspense fallback={<TabLoader />}>
-                <FeedbackManagement />
-              </Suspense>
-              <Suspense fallback={<TabLoader />}>
-                <SuggestionsManagement />
-              </Suspense>
-            </div>
+            <Tabs defaultValue="utisci">
+              <TabsList>
+                <TabsTrigger value="utisci">Knjiga utisaka</TabsTrigger>
+                <TabsTrigger value="predlozi">Predlozi za nova jela</TabsTrigger>
+              </TabsList>
+              <TabsContent value="utisci">
+                <Suspense fallback={<TabLoader />}>
+                  <FeedbackManagement />
+                </Suspense>
+              </TabsContent>
+              <TabsContent value="predlozi">
+                <Suspense fallback={<TabLoader />}>
+                  <SuggestionsManagement />
+                </Suspense>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Notifications Tab */}
