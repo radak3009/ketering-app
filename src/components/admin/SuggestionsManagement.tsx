@@ -12,11 +12,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export function SuggestionsManagement() {
   const { suggestions, loading, updateSuggestion } = useSuggestions();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<SuggestionWithProfile | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const handleCheckboxChange = async (e: React.MouseEvent, id: string, currentValue: boolean) => {
     e.stopPropagation();
@@ -35,6 +38,16 @@ export function SuggestionsManagement() {
         item.profiles?.email?.toLowerCase().includes(lowerSearch)
     );
   }, [suggestions, searchTerm]);
+
+  const paginatedSuggestions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSuggestions.slice(start, start + pageSize);
+  }, [filteredSuggestions, currentPage, pageSize]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return (
@@ -72,7 +85,7 @@ export function SuggestionsManagement() {
               id="suggestions-search"
               placeholder="Pretraži po nazivu jela, opisu, imenu ili email-u korisnika..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
 
@@ -83,56 +96,65 @@ export function SuggestionsManagement() {
               description={searchTerm ? 'Pokušajte sa drugim terminom pretrage' : 'Korisnici još nisu predložili nova jela'}
             />
           ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Korisnik</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Naziv jela</TableHead>
-                    <TableHead>Opis</TableHead>
-                    <TableHead>Napomene</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead className="text-center">Obrađeno</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSuggestions.map((item) => (
-                    <TableRow 
-                      key={item.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedItem(item)}
-                    >
-                      <TableCell className="font-medium">
-                        {item.profiles?.full_name || 'N/A'}
-                      </TableCell>
-                      <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
-                      <TableCell className="font-medium">{item.meal_name}</TableCell>
-                      <TableCell className="max-w-xs">
-                        <div className="line-clamp-2">{item.description}</div>
-                      </TableCell>
-                      <TableCell className="max-w-xs">
-                        {item.additional_notes ? (
-                          <div className="line-clamp-2">{item.additional_notes}</div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Checkbox
-                          checked={item.obradeno}
-                          onCheckedChange={() => {}}
-                          onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
-                        />
-                      </TableCell>
+            <>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Korisnik</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Naziv jela</TableHead>
+                      <TableHead>Opis</TableHead>
+                      <TableHead>Napomene</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead className="text-center">Obrađeno</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedSuggestions.map((item) => (
+                      <TableRow 
+                        key={item.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <TableCell className="font-medium">
+                          {item.profiles?.full_name || 'N/A'}
+                        </TableCell>
+                        <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
+                        <TableCell className="font-medium">{item.meal_name}</TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="line-clamp-2">{item.description}</div>
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {item.additional_notes ? (
+                            <div className="line-clamp-2">{item.additional_notes}</div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={item.obradeno}
+                            onCheckedChange={() => {}}
+                            onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalItems={filteredSuggestions.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
           )}
         </CardContent>
       </Card>

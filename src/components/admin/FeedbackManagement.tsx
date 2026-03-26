@@ -12,11 +12,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TablePagination } from '@/components/ui/table-pagination';
 
 export function FeedbackManagement() {
   const { feedback, loading, updateFeedback } = useFeedback();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<FeedbackWithProfile | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const handleCheckboxChange = async (e: React.MouseEvent, id: string, currentValue: boolean) => {
     e.stopPropagation();
@@ -34,6 +37,16 @@ export function FeedbackManagement() {
         item.profiles?.email?.toLowerCase().includes(lowerSearch)
     );
   }, [feedback, searchTerm]);
+
+  const paginatedFeedback = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredFeedback.slice(start, start + pageSize);
+  }, [filteredFeedback, currentPage, pageSize]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return (
@@ -71,7 +84,7 @@ export function FeedbackManagement() {
               id="feedback-search"
               placeholder="Pretraži po sadržaju, imenu ili email-u korisnika..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
 
@@ -82,46 +95,55 @@ export function FeedbackManagement() {
               description={searchTerm ? 'Pokušajte sa drugim terminom pretrage' : 'Korisnici još nisu ostavili utiske'}
             />
           ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Korisnik</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Utisak</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead className="text-center">Obrađeno</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFeedback.map((item) => (
-                    <TableRow 
-                      key={item.id} 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedItem(item)}
-                    >
-                      <TableCell className="font-medium">
-                        {item.profiles?.full_name || 'N/A'}
-                      </TableCell>
-                      <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
-                      <TableCell className="max-w-md">
-                        <div className="line-clamp-2">{item.content}</div>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Checkbox
-                          checked={item.obradeno}
-                          onCheckedChange={() => {}}
-                          onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
-                        />
-                      </TableCell>
+            <>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Korisnik</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Utisak</TableHead>
+                      <TableHead>Datum</TableHead>
+                      <TableHead className="text-center">Obrađeno</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedFeedback.map((item) => (
+                      <TableRow 
+                        key={item.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        <TableCell className="font-medium">
+                          {item.profiles?.full_name || 'N/A'}
+                        </TableCell>
+                        <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
+                        <TableCell className="max-w-md">
+                          <div className="line-clamp-2">{item.content}</div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={item.obradeno}
+                            onCheckedChange={() => {}}
+                            onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalItems={filteredFeedback.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
           )}
         </CardContent>
       </Card>
