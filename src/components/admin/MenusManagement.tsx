@@ -59,7 +59,7 @@ export function MenusManagement() {
 
   // Clone single menu dialog state
   const [cloneSingleSource, setCloneSingleSource] = useState<MenuWithMeals | null>(null);
-  const [cloneSingleTargetDate, setCloneSingleTargetDate] = useState<Date>();
+  const [cloneSingleTargetDates, setCloneSingleTargetDates] = useState<Date[]>([]);
 
   // Filter meals based on active org tab
   const getFilteredMealsForTab = (tab: OrgTab) => {
@@ -217,24 +217,30 @@ export function MenusManagement() {
   const handleCloneSingleMenuClick = (menu: MenuWithMeals, e: React.MouseEvent) => {
     e.stopPropagation();
     setCloneSingleSource(menu);
-    setCloneSingleTargetDate(undefined);
+    setCloneSingleTargetDates([]);
   };
 
   const isCloneSingleDateDisabled = (date: Date): boolean => {
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
     currentWeekStart.setHours(0, 0, 0, 0);
     if (date < currentWeekStart) return true;
-    // Disable dates that already have a menu in the same organization
     const dateStr = format(date, 'yyyy-MM-dd');
     return filteredMenus.some(menu => menu.menu_date === dateStr);
   };
 
   const handleConfirmCloneSingle = async () => {
-    if (!cloneSingleSource || !cloneSingleTargetDate) return;
+    if (!cloneSingleSource || cloneSingleTargetDates.length === 0) return;
     try {
-      await cloneSingleMenu(cloneSingleSource, cloneSingleTargetDate);
+      const sortedDates = [...cloneSingleTargetDates].sort((a, b) => a.getTime() - b.getTime());
+      for (const targetDate of sortedDates) {
+        await cloneSingleMenu(cloneSingleSource, targetDate);
+      }
+      toast({
+        title: "Uspešno kopirano",
+        description: `Jelovnik kopiran na ${sortedDates.length} ${sortedDates.length === 1 ? 'datum' : 'datuma'}`,
+      });
       setCloneSingleSource(null);
-      setCloneSingleTargetDate(undefined);
+      setCloneSingleTargetDates([]);
     } catch (error) {
       console.error('Error cloning single menu:', error);
     }
@@ -762,7 +768,7 @@ export function MenusManagement() {
       </Sheet>
 
       {/* Clone Single Menu Dialog */}
-      <Sheet open={!!cloneSingleSource} onOpenChange={(open) => { if (!open) { setCloneSingleSource(null); setCloneSingleTargetDate(undefined); } }}>
+      <Sheet open={!!cloneSingleSource} onOpenChange={(open) => { if (!open) { setCloneSingleSource(null); setCloneSingleTargetDates([]); } }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Kopiranje jelovnika</SheetTitle>
@@ -773,40 +779,52 @@ export function MenusManagement() {
               <p className="text-sm text-muted-foreground">{cloneSingleSource?.name}</p>
             </div>
             <div className="space-y-2">
-              <Label>Odaberite ciljni datum:</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {cloneSingleTargetDate ? format(cloneSingleTargetDate, "PPP") : "Izaberite datum"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={cloneSingleTargetDate}
-                    onSelect={setCloneSingleTargetDate}
-                    disabled={isCloneSingleDateDisabled}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground">Datumi koji već imaju jelovnik su onemogućeni</p>
+              <Label>Odaberite ciljne datume:</Label>
+              <CalendarComponent
+                mode="multiple"
+                selected={cloneSingleTargetDates}
+                onSelect={(dates) => setCloneSingleTargetDates(dates || [])}
+                disabled={isCloneSingleDateDisabled}
+                className="pointer-events-auto rounded-md border"
+              />
+              <p className="text-xs text-muted-foreground">Datumi koji već imaju jelovnik su onemogućeni. Kliknite ponovo da uklonite odabir.</p>
             </div>
+
+            {cloneSingleTargetDates.length > 0 && (
+              <div className="space-y-2">
+                <Label>Odabrani datumi ({cloneSingleTargetDates.length}):</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...cloneSingleTargetDates].sort((a, b) => a.getTime() - b.getTime()).map((d, i) => (
+                    <Badge
+                      key={i}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      onClick={() => setCloneSingleTargetDates(prev => prev.filter(pd => !isSameDay(pd, d)))}
+                    >
+                      {format(d, "dd.MM.yyyy")} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button className="w-full" disabled={!cloneSingleTargetDate}>
+                <Button className="w-full" disabled={cloneSingleTargetDates.length === 0}>
                   <Copy className="h-4 w-4 mr-2" />
-                  Kopiraj jelovnik
+                  {cloneSingleTargetDates.length === 0
+                    ? 'Kopiraj jelovnik'
+                    : `Kopiraj na ${cloneSingleTargetDates.length} ${cloneSingleTargetDates.length === 1 ? 'datum' : 'datuma'}`}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Potvrdi kopiranje</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Da li ste sigurni da želite da kopirate jelovnik "{cloneSingleSource?.name}" na {cloneSingleTargetDate ? format(cloneSingleTargetDate, "dd.MM.yyyy") : ''}?
+                    Da li ste sigurni da želite da kopirate jelovnik "{cloneSingleSource?.name}" na {cloneSingleTargetDates.length} {cloneSingleTargetDates.length === 1 ? 'datum' : 'datuma'}?
+                    <span className="block mt-2 text-xs">
+                      {[...cloneSingleTargetDates].sort((a, b) => a.getTime() - b.getTime()).map(d => format(d, "dd.MM.yyyy")).join(", ")}
+                    </span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
