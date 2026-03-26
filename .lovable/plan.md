@@ -1,39 +1,28 @@
 
 
-## Plan: Višestruki odabir datuma pri kopiranju jelovnika
+## Plan: Zamena kartice Prihod sa karticama za danas
 
 ### Pregled
-Omogućiti adminu da odabere jedan ili više datuma prilikom kopiranja pojedinačnog jelovnika. Kalendar prelazi u `multiple` mode, odabrani datumi se prikazuju kao lista badge-eva, a kloniranje se izvršava za svaki odabrani datum.
+Ukloniti karticu "Prihod" iz metrike. Dodati novu karticu koja prikazuje dve vrednosti za danas: broj porudžbina i broj preuzetih porudžbina — sve na jednoj kartici radi uštede prostora.
 
 ### Izmene
 
-#### 1. `src/components/admin/MenusManagement.tsx`
+#### 1. `src/hooks/useAdminStats.ts`
+- Dodati u `AdminStats` interfejs: `todayOrders: number`, `todayPickedUp: number`
+- U `fetchStats`, dodati drugi upit za danas:
+  - Upit na `orders` tabelu za `delivery_date = today` → broji porudžbine
+  - Upit na `order_items` tabelu sa `pickup_status = 'preuzeto'` JOIN preko `orders` gde je `delivery_date = today` → broji preuzete
 
-**State promena (linija 62):**
-- `cloneSingleTargetDate: Date | undefined` → `cloneSingleTargetDates: Date[]` (niz datuma)
-
-**Kalendar (linije 785-792):**
-- Promeniti `mode="single"` u `mode="multiple"`
-- `selected={cloneSingleTargetDates}`, `onSelect={setCloneSingleTargetDates}`
-
-**Prikaz odabranih datuma:**
-- Umesto jednog datuma u button trigeru, prikazati broj odabranih datuma (npr. "Odabrano: 3 datuma")
-- Ispod kalendara dodati listu odabranih datuma kao badge-eve sa mogućnošću uklanjanja (X)
-
-**Potvrda (linija 232-241):**
-- Iterirati kroz sve odabrane datume i pozvati `cloneSingleMenu` za svaki
-- Koristiti silent pattern za bulk operacije — prikazati jednu zbirnu toast poruku
-
-**Dugme i dijalog potvrde:**
-- Disabled kada je `cloneSingleTargetDates.length === 0`
-- Tekst potvrde: "Kopiraj na X datuma"
-
-#### 2. `src/hooks/useMenus.ts`
-
-Bez promena — postojeća `cloneSingleMenu` funkcija se poziva za svaki datum iz petlje.
+#### 2. `src/components/AdminDashboard.tsx`
+- Ukloniti četvrtu karticu (Prihod, linije 160-173)
+- Na njenom mestu dodati karticu "Danas" sa dve vrednosti:
+  - Porudžbine danas: `stats.todayOrders`
+  - Preuzeto danas: `stats.todayPickedUp`
+- Grid ostaje `grid-cols-2 md:grid-cols-4` (4 kartice ukupno)
 
 ### Fajlovi za izmenu
 | Fajl | Izmena |
 |------|--------|
-| `src/components/admin/MenusManagement.tsx` | Multi-select kalendar, badge lista, bulk clone logika |
+| `src/hooks/useAdminStats.ts` | Dodati `todayOrders` i `todayPickedUp` u stats |
+| `src/components/AdminDashboard.tsx` | Zameniti karticu Prihod sa karticom Danas |
 
