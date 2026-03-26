@@ -1,28 +1,48 @@
 
 
-## Plan: Zamena kartice Prihod sa karticama za danas
+## Plan: Paginacija i tabovi za Povratne informacije
 
 ### Pregled
-Ukloniti karticu "Prihod" iz metrike. Dodati novu karticu koja prikazuje dve vrednosti za danas: broj porudžbina i broj preuzetih porudžbina — sve na jednoj kartici radi uštede prostora.
+Podeliti sekciju "Povratne" na dva taba (Knjiga utisaka / Predlozi) i dodati `TablePagination` komponentu na obe tabele.
 
 ### Izmene
 
-#### 1. `src/hooks/useAdminStats.ts`
-- Dodati u `AdminStats` interfejs: `todayOrders: number`, `todayPickedUp: number`
-- U `fetchStats`, dodati drugi upit za danas:
-  - Upit na `orders` tabelu za `delivery_date = today` → broji porudžbine
-  - Upit na `order_items` tabelu sa `pickup_status = 'preuzeto'` JOIN preko `orders` gde je `delivery_date = today` → broji preuzete
+#### 1. `src/components/AdminDashboard.tsx` (linije 256-266)
+Zameniti grid sa dva Suspense bloka jednim novim wrapper komponentom ili inline tabovima:
+```tsx
+<TabsContent value="feedback">
+  <Tabs defaultValue="utisci">
+    <TabsList>
+      <TabsTrigger value="utisci">Knjiga utisaka</TabsTrigger>
+      <TabsTrigger value="predlozi">Predlozi za nova jela</TabsTrigger>
+    </TabsList>
+    <TabsContent value="utisci">
+      <Suspense fallback={<TabLoader />}><FeedbackManagement /></Suspense>
+    </TabsContent>
+    <TabsContent value="predlozi">
+      <Suspense fallback={<TabLoader />}><SuggestionsManagement /></Suspense>
+    </TabsContent>
+  </Tabs>
+</TabsContent>
+```
 
-#### 2. `src/components/AdminDashboard.tsx`
-- Ukloniti četvrtu karticu (Prihod, linije 160-173)
-- Na njenom mestu dodati karticu "Danas" sa dve vrednosti:
-  - Porudžbine danas: `stats.todayOrders`
-  - Preuzeto danas: `stats.todayPickedUp`
-- Grid ostaje `grid-cols-2 md:grid-cols-4` (4 kartice ukupno)
+#### 2. `src/components/admin/FeedbackManagement.tsx`
+- Dodati state: `currentPage`, `pageSize` (default 20)
+- Paginirati `filteredFeedback` klijentski: `paginatedFeedback = filteredFeedback.slice((currentPage-1)*pageSize, currentPage*pageSize)`
+- Resetovati `currentPage` na 1 pri promeni pretrage
+- Dodati `<TablePagination>` ispod tabele
+
+#### 3. `src/components/admin/SuggestionsManagement.tsx`
+- Identična paginacija kao za FeedbackManagement
+- State: `currentPage`, `pageSize` (default 20)
+- Paginirati `filteredSuggestions` klijentski
+- Resetovati stranicu pri promeni pretrage
+- Dodati `<TablePagination>` ispod tabele
 
 ### Fajlovi za izmenu
 | Fajl | Izmena |
 |------|--------|
-| `src/hooks/useAdminStats.ts` | Dodati `todayOrders` i `todayPickedUp` u stats |
-| `src/components/AdminDashboard.tsx` | Zameniti karticu Prihod sa karticom Danas |
+| `src/components/AdminDashboard.tsx` | Nested tabovi za Povratne |
+| `src/components/admin/FeedbackManagement.tsx` | Paginacija |
+| `src/components/admin/SuggestionsManagement.tsx` | Paginacija |
 
