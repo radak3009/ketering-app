@@ -7,6 +7,8 @@ export interface AdminStats {
   totalRevenue: number;
   employeesOrdered: number;
   avgOrderValue: number;
+  todayOrders: number;
+  todayPickedUp: number;
 }
 
 export function useAdminStats(startDate?: string, endDate?: string) {
