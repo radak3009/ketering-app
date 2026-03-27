@@ -77,6 +77,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           todayOrders: todayOrdersCount || 0,
           todayPickedUp: todayPickedUpCount,
           shiftBreakdown: [],
+          topMeals: [],
         });
         return;
       }
