@@ -10,6 +10,7 @@ export interface AdminStats {
   todayOrders: number;
   todayPickedUp: number;
   shiftBreakdown: { shift: string; count: number }[];
+  topMeals: { name: string; count: number }[];
 }
 
 export function useAdminStats(startDate?: string, endDate?: string) {
@@ -21,6 +22,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     todayOrders: 0,
     todayPickedUp: 0,
     shiftBreakdown: [],
+    topMeals: [],
   });
   const [loading, setLoading] = useState(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -75,6 +77,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           todayOrders: todayOrdersCount || 0,
           todayPickedUp: todayPickedUpCount,
           shiftBreakdown: [],
+          topMeals: [],
         });
         return;
       }
@@ -93,19 +96,23 @@ export function useAdminStats(startDate?: string, endDate?: string) {
       // Fetch shift breakdown for the period
       const orderIds = orders.map(o => o.id);
       let shiftBreakdown: { shift: string; count: number }[] = [];
-      
+      let topMeals: { name: string; count: number }[] = [];
       if (orderIds.length > 0) {
         // Fetch in batches if needed (Supabase .in() limit)
         const batchSize = 100;
         const allShifts: string[] = [];
+        const mealCounts: Record<string, number> = {};
         for (let i = 0; i < orderIds.length; i += batchSize) {
           const batch = orderIds.slice(i, i + batchSize);
           const { data: items } = await supabase
             .from('order_items')
-            .select('shift')
+            .select('shift, meal_id')
             .in('order_id', batch);
           if (items) {
             allShifts.push(...items.map(it => it.shift));
+            items.forEach(it => {
+              mealCounts[it.meal_id] = (mealCounts[it.meal_id] || 0) + 1;
+            });
           }
         }
         
@@ -114,7 +121,27 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           shiftCounts[s] = (shiftCounts[s] || 0) + 1;
         });
         shiftBreakdown = Object.entries(shiftCounts).map(([shift, count]) => ({ shift, count }));
-        totalOrders = allShifts.length; // Use order_items count for consistency with shift breakdown
+        totalOrders = allShifts.length;
+
+        // Top 3 meals
+        const sortedMeals = Object.entries(mealCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 3);
+        
+        if (sortedMeals.length > 0) {
+          const topMealIds = sortedMeals.map(([id]) => id);
+          const { data: mealNames } = await supabase
+            .from('meals')
+            .select('id, name')
+            .in('id', topMealIds);
+          
+          const nameMap: Record<string, string> = {};
+          mealNames?.forEach(m => { nameMap[m.id] = m.name; });
+          topMeals = sortedMeals.map(([id, count]) => ({
+            name: nameMap[id] || 'Nepoznat',
+            count,
+          }));
+        }
       }
 
       setStats({
@@ -125,6 +152,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         todayOrders: todayOrdersCount || 0,
         todayPickedUp: todayPickedUpCount,
         shiftBreakdown,
+        topMeals,
       });
     } catch (error) {
       handleError({ 
