@@ -79,7 +79,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         return;
       }
 
-      const totalOrders = orders.length;
+      let totalOrders = orders.length;
       const totalRevenue = orders.reduce(
         (sum, order) => sum + parseFloat(order.total_amount.toString()),
         0
