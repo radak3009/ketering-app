@@ -52,19 +52,17 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         .select('*', { count: 'exact', head: true })
         .eq('delivery_date', today);
 
-      const { data: todayOrderIds } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('delivery_date', today);
 
+
+      // Count actually picked up meals (exclude auto-fiscal)
       let todayPickedUpCount = 0;
-      if (todayOrderIds && todayOrderIds.length > 0) {
-        const ids = todayOrderIds.map(o => o.id);
+      {
         const { count } = await supabase
-          .from('order_items')
+          .from('pickup_requests')
           .select('*', { count: 'exact', head: true })
-          .in('order_id', ids)
-          .eq('pickup_status', 'preuzeto');
+          .eq('pickup_date', today)
+          .eq('status', 'served')
+          .or('served_by.is.null,served_by.neq.auto-fiscal');
         todayPickedUpCount = count || 0;
       }
 
