@@ -36,6 +36,7 @@ const TabLoader = () => {
 };
 
 
+// AdminDashboard component
 export function AdminDashboard() {
   const { t } = useTranslation();
   const { signOut } = useAuth();
