@@ -241,26 +241,51 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
               <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:self-end">
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="w-full sm:w-auto" 
-                onClick={() => fetchOrders(orderDateRange.startDate || undefined, orderDateRange.endDate || undefined)}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-                Osveži
-              </Button>
-              <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-1.5" />
-                Nova porudžbina
-              </Button>
+            
+            {/* View Toggle + Action Buttons in same row on desktop */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant={pivotView === "meals" ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setPivotView("meals")}
+                >
+                  Po obrocima
+                </Button>
+                <Button 
+                  variant={pivotView === "users" ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setPivotView("users")}
+                >
+                  Po korisnicima
+                </Button>
+                <Button 
+                  variant={pivotView === "list" ? "default" : "outline"} 
+                  size="sm"
+                  onClick={() => setPivotView("list")}
+                >
+                  Lista
+                </Button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="w-full sm:w-auto" 
+                  onClick={() => fetchOrders(orderDateRange.startDate || undefined, orderDateRange.endDate || undefined)}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                  Osveži
+                </Button>
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Nova porudžbina
+                </Button>
+              </div>
             </div>
             
-            {/* View Toggle + Shift Filter */}
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={pivotView === "meals" ? "default" : "outline"} 
                   size="sm"
