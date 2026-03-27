@@ -50,6 +50,8 @@ const SHIFT_ROMAN: Record<string, string> = {
 
 export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }: UserOrderPivotTableProps) {
   const isMobile = useIsMobile();
+  const [mobilePage, setMobilePage] = useState(1);
+  const [mobilePageSize, setMobilePageSize] = useState(20);
   const userDataMap: { [userId: string]: UserPivotData } = {};
   const dayTotals: { [dayName: string]: number } = {};
   
