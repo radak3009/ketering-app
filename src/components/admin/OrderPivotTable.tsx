@@ -168,7 +168,9 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
         </CardHeader>
         <CardContent className="px-3">
           <Accordion type="single" collapsible className="w-full">
-            {sortedMeals.map((mealName) => {
+            {sortedMeals
+              .slice((mobilePage - 1) * mobilePageSize, mobilePage * mobilePageSize)
+              .map((mealName) => {
               const row = pivotData[mealName];
               return (
                 <AccordionItem key={mealName} value={mealName}>
@@ -219,6 +221,15 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
             <span>Ukupno</span>
             <span>{grandTotal}</span>
           </div>
+          {sortedMeals.length > 0 && (
+            <TablePagination
+              currentPage={mobilePage}
+              totalItems={sortedMeals.length}
+              pageSize={mobilePageSize}
+              onPageChange={setMobilePage}
+              onPageSizeChange={(size) => { setMobilePageSize(size); setMobilePage(1); }}
+            />
+          )}
         </CardContent>
       </Card>
     );

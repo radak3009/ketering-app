@@ -155,7 +155,9 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
           </div>
         </CardHeader>
         <CardContent className="px-3 space-y-3">
-          {usersArray.map((user, index) => (
+          {usersArray
+            .slice((mobilePage - 1) * mobilePageSize, mobilePage * mobilePageSize)
+            .map((user, index) => (
             <div key={`${user.company_card_id}-${index}`} className="border rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
@@ -182,6 +184,15 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
             <span>Ukupno</span>
             <span>{grandTotal}</span>
           </div>
+          {usersArray.length > 0 && (
+            <TablePagination
+              currentPage={mobilePage}
+              totalItems={usersArray.length}
+              pageSize={mobilePageSize}
+              onPageChange={setMobilePage}
+              onPageSizeChange={(size) => { setMobilePageSize(size); setMobilePage(1); }}
+            />
+          )}
         </CardContent>
       </Card>
     );
