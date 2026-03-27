@@ -131,7 +131,7 @@ export function SettingsTab() {
 
               {/* Kiosk Links */}
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg bg-card">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
                       <MonitorSmartphone className="h-5 w-5 text-primary" />
