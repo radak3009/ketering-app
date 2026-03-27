@@ -692,7 +692,7 @@ export function MealsManagement() {
             <div className="text-center py-8">Učitavanje...</div>
           ) : isMobile ? (
             /* Mobile card view */
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Input
                 placeholder="Pretraži po nazivu..."
                 value={mealFilters.name}
