@@ -120,7 +120,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         
         for (let i = 0; i < orderIds.length; i += batchSize) {
           const batch = orderIds.slice(i, i + batchSize);
-          const batchItems = await fetchAll<{ shift: string; meal_id: string }>(
+          const batchItems = await fetchAllFromTable(
             'order_items',
             'shift, meal_id',
             (q: any) => q.in('order_id', batch)
