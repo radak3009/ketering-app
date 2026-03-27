@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
     // 1. Idempotency check
     const { data: existing, error: fetchErr } = await supabase
       .from("pickup_requests")
-      .select("id, invoice_number, verification_url, fiscal_status, receipt_file_path, profile_id, order_item_id, receipt_text_top, receipt_text_bottom")
+      .select("id, invoice_number, verification_url, fiscal_status, receipt_file_path, profile_id, order_item_id, receipt_text_top, receipt_text_bottom, meal_name_snapshot")
       .eq("id", pickupId)
       .maybeSingle();
 
