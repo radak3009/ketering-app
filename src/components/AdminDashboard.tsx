@@ -44,6 +44,7 @@ export function AdminDashboard() {
   
   
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState('');
   
   // Date range state for filtering - defaults to current week
   const [orderDateRange, setOrderDateRange] = useState({
