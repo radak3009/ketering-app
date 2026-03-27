@@ -16,15 +16,8 @@ Deno.serve(async (req) => {
     const kioskToken = Deno.env.get("KIOSK_TOKEN_KITCHEN");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Today's date in Belgrade timezone
-    const now = new Date();
-    const belgradeOffset = 1; // CET (adjust for DST if needed)
-    const utcHours = now.getUTCHours();
-    const belgradeDate = new Date(now);
-    if (utcHours + belgradeOffset >= 24) {
-      belgradeDate.setUTCDate(belgradeDate.getUTCDate() + 1);
-    }
-    const today = belgradeDate.toISOString().split("T")[0];
+    // Today's date in Belgrade timezone (handles CET/CEST automatically)
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Belgrade" });
 
     console.log(`[fiscalize-undelivered] Running for date: ${today}`);
 
@@ -60,12 +53,13 @@ Deno.serve(async (req) => {
 
     console.log(`[fiscalize-undelivered] Found ${orderItems.length} undelivered items`);
 
-    // Check which order_items already have a pickup_request
+    // Check which order_items already have a pickup_request for today
     const orderItemIds = orderItems.map((oi: any) => oi.id);
     const { data: existingPickups } = await supabase
       .from("pickup_requests")
       .select("order_item_id")
-      .in("order_item_id", orderItemIds);
+      .in("order_item_id", orderItemIds)
+      .eq("pickup_date", today);
 
     const existingSet = new Set((existingPickups || []).map((p: any) => p.order_item_id));
 
