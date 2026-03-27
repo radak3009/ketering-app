@@ -55,7 +55,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     setLoading(true);
     try {
       // Fetch ALL orders for the period (bypass 1000-row limit)
-      const orders = await fetchAll<{ id: string; total_amount: number; user_id: string; delivery_date: string }>(
+      const orders = await fetchAllFromTable(
         'orders',
         'id, total_amount, user_id, delivery_date',
         (q: any) => {
