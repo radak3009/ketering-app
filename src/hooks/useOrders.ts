@@ -16,29 +16,43 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
       setLoading(true);
       currentDateRangeRef.current = { start: startDate, end: endDate };
       
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            *,
-            meals (*)
-          )
-        `)
-        .order('delivery_date', { ascending: true });
-
-      if (startDate) {
-        query = query.gte('delivery_date', startDate);
-      }
-      if (endDate) {
-        query = query.lte('delivery_date', endDate);
-      }
-
-      const { data: ordersData, error: ordersError } = await query;
-
-      if (ordersError) throw ordersError;
+      // Paginate to bypass Supabase 1000-row default limit
+      const pageSize = 1000;
+      let allOrders: any[] = [];
+      let from = 0;
+      let hasMore = true;
       
-      const userIds = [...new Set(ordersData?.map(o => o.user_id) || [])];
+      while (hasMore) {
+        let query = supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              *,
+              meals (*)
+            )
+          `)
+          .order('delivery_date', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (startDate) {
+          query = query.gte('delivery_date', startDate);
+        }
+        if (endDate) {
+          query = query.lte('delivery_date', endDate);
+        }
+
+        const { data: ordersData, error: ordersError } = await query;
+        if (ordersError) throw ordersError;
+        
+        if (ordersData) {
+          allOrders = allOrders.concat(ordersData);
+        }
+        hasMore = (ordersData?.length || 0) === pageSize;
+        from += pageSize;
+      }
+
+      const userIds = [...new Set(allOrders.map((o: any) => o.user_id as string))];
       
       let profilesMap: Record<string, ProfileBasic> = {};
       if (userIds.length > 0) {
@@ -56,10 +70,10 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
         });
       }
       
-      const formattedOrders: OrderWithItems[] = ordersData?.map(order => ({
+      const formattedOrders: OrderWithItems[] = allOrders.map((order: any) => ({
         ...order,
         profile: profilesMap[order.user_id],
-        order_items: order.order_items?.map(oi => ({
+        order_items: order.order_items?.map((oi: any) => ({
           ...oi,
           meal: oi.meals as unknown as Meal
         }))
