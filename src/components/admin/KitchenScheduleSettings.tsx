@@ -181,23 +181,23 @@ export function KitchenScheduleSettings() {
                   </div>
 
                   {day.enabled && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-center gap-2">
                       <Input
                         type="time"
                         value={day.openTime}
                         onChange={(e) =>
                           handleScheduleChange(dayOfWeek, "openTime", e.target.value)
                         }
-                        className="flex-1 sm:w-28 sm:flex-none"
+                        className="w-full sm:w-28"
                       />
-                      <span className="text-muted-foreground">-</span>
+                      <span className="hidden sm:inline text-muted-foreground">-</span>
                       <Input
                         type="time"
                         value={day.closeTime}
                         onChange={(e) =>
                           handleScheduleChange(dayOfWeek, "closeTime", e.target.value)
                         }
-                        className="flex-1 sm:w-28 sm:flex-none"
+                        className="w-full sm:w-28"
                       />
                     </div>
                   )}
