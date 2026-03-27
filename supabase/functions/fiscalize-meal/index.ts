@@ -393,6 +393,26 @@ Deno.serve(async (req) => {
     }
 
     // Update pickup_requests with fiscal data
+    // SdcDateTime from Octopos is Belgrade local time without timezone info
+    // Append +01:00 (CET) or +02:00 (CEST) so PostgreSQL stores it correctly
+    let fiscalizedAt = data.SdcDateTime;
+    if (fiscalizedAt && !fiscalizedAt.includes("+") && !fiscalizedAt.includes("Z")) {
+      // Determine Belgrade offset: CEST (UTC+2) from last Sunday of March to last Sunday of October
+      const sdcDate = new Date(fiscalizedAt);
+      const year = sdcDate.getFullYear();
+      const marchLast = new Date(year, 2, 31);
+      const dstStart = new Date(marchLast);
+      dstStart.setDate(31 - marchLast.getDay()); // last Sunday of March
+      dstStart.setHours(2, 0, 0, 0);
+      const octLast = new Date(year, 9, 31);
+      const dstEnd = new Date(octLast);
+      dstEnd.setDate(31 - octLast.getDay()); // last Sunday of October
+      dstEnd.setHours(3, 0, 0, 0);
+      const isCEST = sdcDate >= dstStart && sdcDate < dstEnd;
+      fiscalizedAt = fiscalizedAt + (isCEST ? "+02:00" : "+01:00");
+      console.log(`SdcDateTime timezone fix: ${data.SdcDateTime} -> ${fiscalizedAt} (${isCEST ? "CEST" : "CET"})`);
+    }
+
     await supabase
       .from("pickup_requests")
       .update({
@@ -402,7 +422,7 @@ Deno.serve(async (req) => {
         verification_url: verificationUrl,
         receipt_text_top: data.TextTop,
         receipt_text_bottom: data.TextBottom,
-        fiscalized_at: data.SdcDateTime,
+        fiscalized_at: fiscalizedAt,
         receipt_file_path: pdfUploaded ? storagePath : null,
         fiscal_error: null,
       })
