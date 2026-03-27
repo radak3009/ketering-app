@@ -145,8 +145,10 @@ export function AdminDashboard() {
                       <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <Tooltip
                         formatter={(value: number, _name: string, props: any) => [value, props.payload.fullName]}
-                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--popover-foreground))' }}
+                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
+                        itemStyle={{ color: 'hsl(var(--foreground))' }}
                         labelStyle={{ display: 'none' }}
+                        cursor={false}
                       />
                       <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))' }}>
                         {stats.topMeals.map((_, i) => (
