@@ -100,6 +100,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         // Fetch in batches if needed (Supabase .in() limit)
         const batchSize = 100;
         const allShifts: string[] = [];
+        const mealCounts: Record<string, number> = {};
         for (let i = 0; i < orderIds.length; i += batchSize) {
           const batch = orderIds.slice(i, i + batchSize);
           const { data: items } = await supabase
