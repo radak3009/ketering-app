@@ -355,13 +355,17 @@ Deno.serve(async (req) => {
       });
     } catch (netErr) {
       console.error("Octopos network error:", netErr);
+      const errMsg = `Network error: ${netErr.message}`;
       await supabase
         .from("pickup_requests")
-        .update({ fiscal_status: "failed", fiscal_error: `Network error: ${netErr.message}` })
+        .update({ fiscal_status: "failed", fiscal_error: errMsg })
         .eq("id", pickupId);
 
+      // Send alert email on first failure
+      sendFiscalFailAlert(pickupId, errMsg, existing.meal_name_snapshot).catch(() => {});
+
       return new Response(
-        JSON.stringify({ status: "failed", errors: [`Network error: ${netErr.message}`], pickupId }),
+        JSON.stringify({ status: "failed", errors: [errMsg], pickupId }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
