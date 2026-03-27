@@ -247,8 +247,8 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             </div>
             
             {/* View Toggle + Shift Filter */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <div className="flex gap-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={pivotView === "meals" ? "default" : "outline"} 
                   size="sm"
@@ -291,7 +291,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             
             {/* Filters Row */}
             <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex flex-1 gap-2 max-w-[280px]">
+              <div className="flex flex-1 gap-2 max-w-full md:max-w-[280px]">
                 <Input 
                   placeholder="Pretraži po obroku..." 
                   value={orderSearch} 
