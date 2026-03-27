@@ -742,8 +742,15 @@ export function MealsManagement() {
                     </div>
                   ))}
                 </div>
+                <TablePagination
+                  currentPage={mealsPage}
+                  totalItems={filteredMeals.length}
+                  pageSize={mealsPageSize}
+                  onPageChange={setMealsPage}
+                  onPageSizeChange={setMealsPageSize}
+                />
+                </>
               )}
-            </div>
           ) : (
             <div className="rounded-md border overflow-x-auto">
               {/* Bulk action bar */}
