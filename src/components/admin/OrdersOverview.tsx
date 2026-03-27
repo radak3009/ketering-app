@@ -285,30 +285,8 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               </div>
             </div>
             
-            <div className="flex flex-col gap-3">
-                <Button 
-                  variant={pivotView === "meals" ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => setPivotView("meals")}
-                >
-                  Po obrocima
-                </Button>
-                <Button 
-                  variant={pivotView === "users" ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => setPivotView("users")}
-                >
-                  Po korisnicima
-                </Button>
-                <Button 
-                  variant={pivotView === "list" ? "default" : "outline"} 
-                  size="sm"
-                  onClick={() => setPivotView("list")}
-                >
-                  Lista
-                </Button>
-              </div>
-              
+
+
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
                 <ToggleGroup
