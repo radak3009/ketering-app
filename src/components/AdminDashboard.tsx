@@ -320,7 +320,7 @@ export function AdminDashboard() {
                 <CardDescription className="text-xs md:text-sm">{t('admin.notifications.description')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto">
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">{t('admin.notifications.menuAlert.title')}</CardTitle>
