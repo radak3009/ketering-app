@@ -16,6 +16,7 @@ import { TablePagination } from '@/components/ui/table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function FeedbackManagement() {
+  const isMobile = useIsMobile();
   const { feedback, loading, updateFeedback } = useFeedback();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<FeedbackWithProfile | null>(null);
