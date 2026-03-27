@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { kioskApi } from "@/services/kioskApi";
 import { CheckCircle, XCircle, AlertCircle, Utensils, UserCheck } from "lucide-react";
-import type { ShowMealResponse } from "@/types/kiosk";
+import type { ShowMealResponse, PreloadMealEntry } from "@/types/kiosk";
+
+const PRELOAD_INTERVAL_MS = 30_000; // refresh cache every 30s
 
 type ScreenState = 
   | "input" 
@@ -32,6 +34,39 @@ export default function KioskPickup() {
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Preload cache
+  const cacheRef = useRef<Record<string, PreloadMealEntry>>({});
+  const cacheTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Preload today's meals into local cache
+  const refreshCache = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await kioskApi.preloadMeals(token);
+      cacheRef.current = data.meals || {};
+    } catch (err) {
+      console.warn("Preload cache refresh failed:", err);
+    }
+  }, [token]);
+
+  // Initialize cache on mount + periodic refresh
+  useEffect(() => {
+    if (!token) return;
+    refreshCache();
+    cacheTimerRef.current = setInterval(refreshCache, PRELOAD_INTERVAL_MS);
+    
+    // Refresh on visibility change (tab regains focus)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") refreshCache();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    
+    return () => {
+      if (cacheTimerRef.current) clearInterval(cacheTimerRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [token, refreshCache]);
 
   // Auto-focus input on mount and after reset
   useEffect(() => {
@@ -106,26 +141,48 @@ export default function KioskPickup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!cardId.trim()) {
+    const trimmedId = cardId.trim();
+    if (!trimmedId) {
       setErrorMessage("Unesite ID");
       return;
     }
+
+    // Instant cache lookup
+    const cached = cacheRef.current[trimmedId];
+    if (cached) {
+      // Already picked up - instant response, no edge function call
+      if (cached.pickupStatus === "preuzeto") {
+        setResult({
+          found: true,
+          fullName: cached.fullName,
+          mealName: cached.mealName,
+          alreadyServed: true,
+          message: "Obrok je već preuzet",
+        });
+        setScreenState("already-served");
+        return;
+      }
+    } else if (Object.keys(cacheRef.current).length > 0) {
+      // Cache is loaded but this card ID not found - show error instantly
+      setErrorMessage("Nema porudžbine za danas");
+      setScreenState("error");
+      return;
+    }
+    // If cache is empty (not loaded yet), fall through to edge function
 
     setScreenState("loading");
     setErrorMessage("");
 
     try {
-      const response = await kioskApi.showMeal(token, cardId.trim());
+      const response = await kioskApi.showMeal(token, trimmedId);
       setResult(response);
 
       if (response.alreadyServed) {
         setScreenState("already-served");
       } else if (response.found) {
-        // Check if confirmation is required (kitchen is closed)
         if (response.confirmationRequired) {
           setScreenState("confirm");
         } else {
-          // Kitchen is open - just show info, pickup at counter
           setScreenState("success");
         }
       } else {
@@ -151,11 +208,12 @@ export default function KioskPickup() {
     try {
       await kioskApi.confirmPickup(token, result.pickupRequestId);
       setScreenState("confirmed");
+      // Refresh cache after successful pickup
+      refreshCache();
     } catch (error) {
       console.error("Confirm error:", error);
       const message = error instanceof Error ? error.message : "Greška pri potvrdi";
       
-      // If kitchen is now open, show specific message
       if (message.includes("Kuhinja radi")) {
         setErrorMessage("Kuhinja sada radi - preuzmite obrok na šalteru");
       } else {
