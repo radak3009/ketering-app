@@ -291,7 +291,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             
             {/* Filters Row */}
             <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex flex-1 gap-2 max-w-[280px]">
+              <div className="flex flex-1 gap-2 max-w-full md:max-w-[280px]">
                 <Input 
                   placeholder="Pretraži po obroku..." 
                   value={orderSearch} 
