@@ -183,7 +183,7 @@ export function FeedbackManagement() {
       </Card>
 
       <Sheet open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <SheetContent className="sm:max-w-md">
+        <SheetContent className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Detalji utiska</SheetTitle>
             <SheetDescription>
@@ -194,11 +194,11 @@ export function FeedbackManagement() {
             <div className="space-y-4">
               <div>
                 <Label className="text-muted-foreground text-xs">Korisnik</Label>
-                <p className="font-medium">{selectedItem?.profiles?.full_name || 'N/A'}</p>
+                <p className="font-medium break-words">{selectedItem?.profiles?.full_name || 'N/A'}</p>
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Email</Label>
-                <p>{selectedItem?.profiles?.email || 'N/A'}</p>
+                <p className="break-all">{selectedItem?.profiles?.email || 'N/A'}</p>
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Datum</Label>
@@ -220,7 +220,7 @@ export function FeedbackManagement() {
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Utisak</Label>
-                <p className="mt-1 whitespace-pre-wrap">{selectedItem?.content}</p>
+                <p className="mt-1 whitespace-pre-wrap break-words">{selectedItem?.content}</p>
               </div>
             </div>
           </ScrollArea>
