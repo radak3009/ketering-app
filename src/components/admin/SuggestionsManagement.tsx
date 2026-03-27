@@ -99,56 +99,86 @@ export function SuggestionsManagement() {
             />
           ) : (
             <>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Korisnik</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Naziv jela</TableHead>
-                      <TableHead>Opis</TableHead>
-                      <TableHead>Napomene</TableHead>
-                      <TableHead>Datum</TableHead>
-                      <TableHead className="text-center">Obrađeno</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedSuggestions.map((item) => (
-                      <TableRow 
-                        key={item.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        <TableCell className="font-medium">
-                          {item.profiles?.full_name || 'N/A'}
-                        </TableCell>
-                        <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
-                        <TableCell className="font-medium">{item.meal_name}</TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="line-clamp-2">{item.description}</div>
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          {item.additional_notes ? (
-                            <div className="line-clamp-2">{item.additional_notes}</div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
-                        </TableCell>
-                        <TableCell className="text-center">
+              {isMobile ? (
+                <div className="space-y-3">
+                  {paginatedSuggestions.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm">{item.meal_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.profiles?.full_name || 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(item.created_at), 'dd.MM.yy', { locale: sr })}
+                          </span>
                           <Checkbox
                             checked={item.obradeno}
                             onCheckedChange={() => {}}
                             onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
                           />
-                        </TableCell>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{item.description}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Korisnik</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Naziv jela</TableHead>
+                        <TableHead>Opis</TableHead>
+                        <TableHead>Napomene</TableHead>
+                        <TableHead>Datum</TableHead>
+                        <TableHead className="text-center">Obrađeno</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedSuggestions.map((item) => (
+                        <TableRow 
+                          key={item.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedItem(item)}
+                        >
+                          <TableCell className="font-medium">
+                            {item.profiles?.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{item.meal_name}</TableCell>
+                          <TableCell className="max-w-xs">
+                            <div className="line-clamp-2">{item.description}</div>
+                          </TableCell>
+                          <TableCell className="max-w-xs">
+                            {item.additional_notes ? (
+                              <div className="line-clamp-2">{item.additional_notes}</div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={item.obradeno}
+                              onCheckedChange={() => {}}
+                              onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
               <TablePagination
                 currentPage={currentPage}
                 totalItems={filteredSuggestions.length}
