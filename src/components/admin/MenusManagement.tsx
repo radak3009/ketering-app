@@ -567,11 +567,16 @@ export function MenusManagement() {
               <div>
                 <Label>Obroke u jelovniku</Label>
                 <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
-                  {filteredMenuMeals.map(meal => (
+                  {[...filteredMenuMeals].sort((a, b) => {
+                    const aSelected = selectedMenu.meals?.some((m: any) => m.meal_id === a.id) || false;
+                    const bSelected = selectedMenu.meals?.some((m: any) => m.meal_id === b.id) || false;
+                    if (aSelected === bSelected) return 0;
+                    return aSelected ? -1 : 1;
+                  }).map(meal => (
                     <div key={meal.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded">
                       <Checkbox 
                         id={`edit-menu-meal-${meal.id}`} 
-                        checked={selectedMenu.meals?.some((m: any) => m.meal_id === meal.id) || false} 
+                        checked={selectedMenu.meals?.some((m: any) => m.meal_id === meal.id) || false}
                         onCheckedChange={checked => {
                           const currentMeals = selectedMenu.meals || [];
                           if (checked) {
