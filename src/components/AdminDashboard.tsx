@@ -146,27 +146,7 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
           
-          {/* Card 3: Danas */}
-          <Card className="bg-gradient-to-br from-primary/10 to-accent/5">
-            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                Danas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 md:p-4 pt-0">
-              <div className="text-lg md:text-2xl font-bold text-foreground">
-                {statsLoading ? "..." : stats.todayOrders}
-              </div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Porudžbina</p>
-              <div className="text-sm md:text-lg font-semibold text-foreground mt-1">
-                {statsLoading ? "..." : stats.todayPickedUp}
-              </div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Preuzeto</p>
-            </CardContent>
-          </Card>
-
-          {/* Card 4: Po smenama - Bar Chart */}
+          {/* Card 3: Po smenama - Bar Chart */}
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -202,6 +182,26 @@ export function AdminDashboard() {
                   </ResponsiveContainer>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Card 4: Danas */}
+          <Card className="bg-gradient-to-br from-primary/10 to-accent/5">
+            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                Danas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 md:p-4 pt-0">
+              <div className="text-lg md:text-2xl font-bold text-foreground">
+                {statsLoading ? "..." : stats.todayOrders}
+              </div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Porudžbina</p>
+              <div className="text-sm md:text-lg font-semibold text-foreground mt-1">
+                {statsLoading ? "..." : stats.todayPickedUp}
+              </div>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Preuzeto</p>
             </CardContent>
           </Card>
         </div>
