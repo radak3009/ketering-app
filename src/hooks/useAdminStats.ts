@@ -96,7 +96,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
       // Fetch shift breakdown for the period
       const orderIds = orders.map(o => o.id);
       let shiftBreakdown: { shift: string; count: number }[] = [];
-      
+      let topMeals: { name: string; count: number }[] = [];
       if (orderIds.length > 0) {
         // Fetch in batches if needed (Supabase .in() limit)
         const batchSize = 100;
