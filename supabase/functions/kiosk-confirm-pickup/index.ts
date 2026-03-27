@@ -72,6 +72,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if order_item is already picked up (prevents duplicates from any source)
+    if (pickupRequest.order_item_id) {
+      const { data: orderItem } = await supabase
+        .from("order_items")
+        .select("pickup_status")
+        .eq("id", pickupRequest.order_item_id)
+        .maybeSingle();
+      
+      if (orderItem?.pickup_status === "preuzeto") {
+        // Cancel this pending request since meal was already picked up
+        await supabase
+          .from("pickup_requests")
+          .update({ status: "served", served_at: new Date().toISOString(), note: "duplikat-odbijen" })
+          .eq("id", pickupRequestId);
+        
+        return new Response(
+          JSON.stringify({ success: true, message: "Obrok je već preuzet" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Determine if kitchen schedule applies to this user's tag
     let scheduleApplies = true; // default: schedule applies
 
