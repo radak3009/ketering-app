@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function FeedbackManagement() {
   const { feedback, loading, updateFeedback } = useFeedback();
