@@ -16,25 +16,41 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
       setLoading(true);
       currentDateRangeRef.current = { start: startDate, end: endDate };
       
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
+      // Paginate to bypass Supabase 1000-row default limit
+      const pageSize = 1000;
+      let allOrders: any[] = [];
+      let from = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        let query = supabase
+          .from('orders')
+          .select(`
             *,
-            meals (*)
-          )
-        `)
-        .order('delivery_date', { ascending: true });
+            order_items (
+              *,
+              meals (*)
+            )
+          `)
+          .order('delivery_date', { ascending: true })
+          .range(from, from + pageSize - 1);
 
-      if (startDate) {
-        query = query.gte('delivery_date', startDate);
-      }
-      if (endDate) {
-        query = query.lte('delivery_date', endDate);
-      }
+        if (startDate) {
+          query = query.gte('delivery_date', startDate);
+        }
+        if (endDate) {
+          query = query.lte('delivery_date', endDate);
+        }
 
-      const { data: ordersData, error: ordersError } = await query;
+        const { data: ordersData, error: ordersError } = await query;
+        if (ordersError) throw ordersError;
+        
+        if (ordersData) {
+          allOrders = allOrders.concat(ordersData);
+        }
+        hasMore = (ordersData?.length || 0) === pageSize;
+        from += pageSize;
+      }
 
       if (ordersError) throw ordersError;
       
