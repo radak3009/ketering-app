@@ -13,8 +13,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function SuggestionsManagement() {
+  const isMobile = useIsMobile();
   const { suggestions, loading, updateSuggestion } = useSuggestions();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<SuggestionWithProfile | null>(null);
