@@ -9,6 +9,7 @@ export interface AdminStats {
   avgOrderValue: number;
   todayOrders: number;
   todayPickedUp: number;
+  shiftBreakdown: { shift: string; count: number }[];
 }
 
 export function useAdminStats(startDate?: string, endDate?: string) {
