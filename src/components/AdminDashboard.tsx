@@ -166,7 +166,7 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* Card 4: Po smenama - Pie Chart */}
+          {/* Card 4: Po smenama - Bar Chart */}
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -182,26 +182,23 @@ export function AdminDashboard() {
               ) : (
                 <div className="h-[80px] md:h-[100px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={stats.shiftBreakdown.map(s => ({
-                          name: s.shift === 'prva' ? 'I' : s.shift === 'druga' ? 'II' : s.shift === 'treća' ? 'III' : s.shift,
-                          value: s.count,
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={20}
-                        outerRadius={35}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
+                    <BarChart
+                      data={stats.shiftBreakdown.map(s => ({
+                        name: s.shift === 'prva' ? 'I smena' : s.shift === 'druga' ? 'II smena' : s.shift === 'treća' ? 'III smena' : s.shift,
+                        value: s.count,
+                      }))}
+                      layout="vertical"
+                      margin={{ top: 0, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <XAxis type="number" hide />
+                      <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(value: number) => [value, 'Porudžbina']} />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))' }}>
                         {stats.shiftBreakdown.map((_, index) => (
                           <Cell key={index} fill={['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))'][index % 3]} />
                         ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number) => [value, 'Porudžbina']} />
-                    </PieChart>
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               )}
