@@ -237,16 +237,14 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
-                <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
-              </div>
-              <Button size="sm" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-1.5" />
-                Nova porudžbina
-              </Button>
+            <div>
+              <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
             </div>
+            <Button size="sm" className="w-full sm:w-auto sm:self-end" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Nova porudžbina
+            </Button>
             
             {/* View Toggle + Shift Filter */}
             <div className="flex flex-col gap-3">
