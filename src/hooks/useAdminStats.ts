@@ -74,6 +74,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           avgOrderValue: 0,
           todayOrders: todayOrdersCount || 0,
           todayPickedUp: todayPickedUpCount,
+          shiftBreakdown: [],
         });
         return;
       }
