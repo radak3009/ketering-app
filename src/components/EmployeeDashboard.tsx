@@ -31,6 +31,8 @@ export function EmployeeDashboard() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [totalMenuDays, setTotalMenuDays] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { toast } = useToast();
+  const mountedAtRef = useRef(new Date().toISOString());
 
   const {
     currentWeekOrders,
