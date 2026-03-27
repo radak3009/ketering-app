@@ -311,7 +311,20 @@ export function UsersManagement() {
     }
   };
 
+  // Mobile combined search state
+  const [mobileSearch, setMobileSearch] = useState('');
+
   const filteredUsers = users.filter(user => {
+    // On mobile, use combined search across name and ID
+    if (isMobile && mobileSearch) {
+      const lowerSearch = mobileSearch.toLowerCase();
+      const matchesMobileSearch = 
+        (user.full_name && user.full_name.toLowerCase().includes(lowerSearch)) ||
+        (user.company_card_id && user.company_card_id.toLowerCase().includes(lowerSearch)) ||
+        (user.email && user.email.toLowerCase().includes(lowerSearch));
+      if (!matchesMobileSearch) return false;
+    }
+
     const matchesId = !userFilters.id || 
       (user.company_card_id && user.company_card_id.toLowerCase().includes(userFilters.id.toLowerCase()));
     const matchesName = !userFilters.fullName || 
