@@ -115,16 +115,16 @@ export function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+          <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Users className="h-3 w-3 md:h-4 md:w-4" />
-                {t('stats.users')}
+                <ChefHat className="h-3 w-3 md:h-4 md:w-4" />
+                {t('stats.meals')}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
               <div className="text-lg md:text-2xl font-bold text-foreground">
-                {statsLoading ? "..." : users.length}
+                {statsLoading ? "..." : meals.length}
               </div>
             </CardContent>
           </Card>
