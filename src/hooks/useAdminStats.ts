@@ -108,7 +108,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
 
       // Fetch ALL order_items for the period (bypass 1000-row limit)
       const orderIds = orders.map(o => o.id);
-      const orderIdSet = new Set(orderIds);
+      
       let shiftBreakdown: { shift: string; count: number }[] = [];
       let topMeals: { name: string; count: number }[] = [];
       let totalOrders = 0;
