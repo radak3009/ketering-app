@@ -285,8 +285,6 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               </div>
             </div>
             
-
-
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
                 <ToggleGroup
@@ -302,7 +300,6 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   ))}
                 </ToggleGroup>
               </div>
-            </div>
             
             {/* Filters Row */}
             <div className="flex flex-col md:flex-row gap-2">
