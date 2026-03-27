@@ -247,8 +247,8 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
             </div>
             
             {/* View Toggle + Shift Filter */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <div className="flex gap-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={pivotView === "meals" ? "default" : "outline"} 
                   size="sm"
