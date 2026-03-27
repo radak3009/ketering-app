@@ -20,6 +20,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     avgOrderValue: 0,
     todayOrders: 0,
     todayPickedUp: 0,
+    shiftBreakdown: [],
   });
   const [loading, setLoading] = useState(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
