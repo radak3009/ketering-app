@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2, Download } from "lucide-react";
+import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2, Download, RefreshCw } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
@@ -241,10 +241,22 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
               <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
             </div>
-            <Button size="sm" className="w-full sm:w-auto sm:self-end" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nova porudžbina
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 sm:self-end">
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="w-full sm:w-auto" 
+                onClick={() => fetchOrders(orderDateRange.startDate || undefined, orderDateRange.endDate || undefined)}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                Osveži
+              </Button>
+              <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nova porudžbina
+              </Button>
+            </div>
             
             {/* View Toggle + Shift Filter */}
             <div className="flex flex-col gap-3">
