@@ -52,6 +52,8 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
   const isMobile = useIsMobile();
   const [mobilePage, setMobilePage] = useState(1);
   const [mobilePageSize, setMobilePageSize] = useState(20);
+  const [desktopPage, setDesktopPage] = useState(1);
+  const [desktopPageSize, setDesktopPageSize] = useState(20);
   const userDataMap: { [userId: string]: UserPivotData } = {};
   const dayTotals: { [dayName: string]: number } = {};
   
@@ -231,7 +233,9 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
               </TableRow>
             </TableHeader>
             <TableBody>
-              {usersArray.map((user, index) => (
+              {usersArray
+                .slice((desktopPage - 1) * desktopPageSize, desktopPage * desktopPageSize)
+                .map((user, index) => (
                 <TableRow key={`${user.company_card_id}-${index}`}>
                   <TableCell className="font-mono sticky left-0 z-10 bg-background text-xs md:text-sm p-2 md:p-4">
                     {user.company_card_id}
@@ -271,6 +275,15 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
             </TableBody>
           </Table>
         </div>
+        {usersArray.length > 0 && (
+          <TablePagination
+            currentPage={desktopPage}
+            totalItems={usersArray.length}
+            pageSize={desktopPageSize}
+            onPageChange={setDesktopPage}
+            onPageSizeChange={(size) => { setDesktopPageSize(size); setDesktopPage(1); }}
+          />
+        )}
       </CardContent>
     </Card>
   );
