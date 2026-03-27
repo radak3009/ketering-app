@@ -8,7 +8,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useMeals } from "@/hooks/useMeals";
-import { useUsers } from "@/hooks/useUsers";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfWeek, endOfWeek, addWeeks } from "date-fns";
