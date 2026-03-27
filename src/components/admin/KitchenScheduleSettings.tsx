@@ -160,11 +160,11 @@ export function KitchenScheduleSettings() {
                 <div
                   key={dayOfWeek}
                   className={cn(
-                    "flex flex-wrap items-center gap-4 p-3 rounded-lg border",
+                    "flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 rounded-lg border",
                     day.enabled ? "bg-card" : "bg-muted/50"
                   )}
                 >
-                  <div className="w-28">
+                  <div className="sm:w-28">
                     <span className="font-medium">{dayNames[dayOfWeek]}</span>
                   </div>
                   
@@ -188,7 +188,7 @@ export function KitchenScheduleSettings() {
                         onChange={(e) =>
                           handleScheduleChange(dayOfWeek, "openTime", e.target.value)
                         }
-                        className="w-28"
+                        className="flex-1 sm:w-28 sm:flex-none"
                       />
                       <span className="text-muted-foreground">-</span>
                       <Input
@@ -197,7 +197,7 @@ export function KitchenScheduleSettings() {
                         onChange={(e) =>
                           handleScheduleChange(dayOfWeek, "closeTime", e.target.value)
                         }
-                        className="w-28"
+                        className="flex-1 sm:w-28 sm:flex-none"
                       />
                     </div>
                   )}
