@@ -79,7 +79,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         return;
       }
 
-      const totalOrders = orders.length;
+      let totalOrders = orders.length;
       const totalRevenue = orders.reduce(
         (sum, order) => sum + parseFloat(order.total_amount.toString()),
         0
@@ -114,6 +114,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           shiftCounts[s] = (shiftCounts[s] || 0) + 1;
         });
         shiftBreakdown = Object.entries(shiftCounts).map(([shift, count]) => ({ shift, count }));
+        totalOrders = allShifts.length; // Use order_items count for consistency with shift breakdown
       }
 
       setStats({
