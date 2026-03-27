@@ -13,6 +13,7 @@ import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2, Down
 import { downloadCSV } from "@/lib/csv-export";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
 import { useMeals } from "@/hooks/useMeals";
