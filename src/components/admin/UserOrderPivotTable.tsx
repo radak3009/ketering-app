@@ -233,7 +233,9 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
               </TableRow>
             </TableHeader>
             <TableBody>
-              {usersArray.map((user, index) => (
+              {usersArray
+                .slice((desktopPage - 1) * desktopPageSize, desktopPage * desktopPageSize)
+                .map((user, index) => (
                 <TableRow key={`${user.company_card_id}-${index}`}>
                   <TableCell className="font-mono sticky left-0 z-10 bg-background text-xs md:text-sm p-2 md:p-4">
                     {user.company_card_id}
