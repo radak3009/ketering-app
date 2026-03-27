@@ -275,6 +275,15 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
             </TableBody>
           </Table>
         </div>
+        {usersArray.length > 0 && (
+          <TablePagination
+            currentPage={desktopPage}
+            totalItems={usersArray.length}
+            pageSize={desktopPageSize}
+            onPageChange={setDesktopPage}
+            onPageSizeChange={(size) => { setDesktopPageSize(size); setDesktopPage(1); }}
+          />
+        )}
       </CardContent>
     </Card>
   );
