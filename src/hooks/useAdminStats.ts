@@ -10,6 +10,7 @@ export interface AdminStats {
   todayOrders: number;
   todayPickedUp: number;
   shiftBreakdown: { shift: string; count: number }[];
+  topMeals: { name: string; count: number }[];
 }
 
 export function useAdminStats(startDate?: string, endDate?: string) {
