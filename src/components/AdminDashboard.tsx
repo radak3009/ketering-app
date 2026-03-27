@@ -88,6 +88,24 @@ export function AdminDashboard() {
     }
   };
 
+  const sendBroadcast = async () => {
+    const msg = broadcastMessage.trim();
+    if (!msg) return;
+    if (!confirm('Da li ste sigurni da želite poslati ovo obaveštenje svim zaposlenima?')) return;
+    try {
+      setNotificationsLoading(true);
+      const { error } = await supabase.from('admin_broadcasts' as any).insert({ message: msg, sent_by: (await supabase.auth.getUser()).data.user?.id });
+      if (error) throw error;
+      setBroadcastMessage('');
+      toast({ title: 'Uspešno', description: 'Obaveštenje je poslato svim zaposlenima' });
+    } catch (error) {
+      console.error('Error sending broadcast:', error);
+      toast({ title: 'Greška', description: 'Došlo je do greške pri slanju', variant: 'destructive' });
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
