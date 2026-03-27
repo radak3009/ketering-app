@@ -376,10 +376,14 @@ Deno.serve(async (req) => {
     // 5. Handle failure
     if (!result.Success) {
       const errors = result.Errors?.map((e: any) => e.Message || e) || ["Unknown Octopos error"];
+      const errMsg = errors.join("; ");
       await supabase
         .from("pickup_requests")
-        .update({ fiscal_status: "failed", fiscal_error: errors.join("; ") })
+        .update({ fiscal_status: "failed", fiscal_error: errMsg })
         .eq("id", pickupId);
+
+      // Send alert email on first failure
+      sendFiscalFailAlert(pickupId, errMsg, existing.meal_name_snapshot).catch(() => {});
 
       return new Response(
         JSON.stringify({ status: "failed", errors, pickupId }),
