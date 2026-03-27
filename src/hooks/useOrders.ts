@@ -192,7 +192,7 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
     fetchOrders(initialStartDate, initialEndDate);
   }, [initialStartDate, initialEndDate, fetchOrders]);
 
-  }, [fetchOrders]);
+  
 
   return {
     orders,
