@@ -28,13 +28,13 @@ export function useAdminStats(startDate?: string, endDate?: string) {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper to fetch all rows bypassing the 1000-row default limit
-  const fetchAll = async <T,>(
-    table: string,
+  const fetchAllFromTable = async (
+    table: 'orders' | 'order_items',
     selectColumns: string,
     filters: (q: any) => any
-  ): Promise<T[]> => {
+  ): Promise<any[]> => {
     const pageSize = 1000;
-    let allData: T[] = [];
+    let allData: any[] = [];
     let from = 0;
     let hasMore = true;
     while (hasMore) {
@@ -43,7 +43,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
       const { data, error } = await query;
       if (error) throw error;
       if (data) {
-        allData = allData.concat(data as T[]);
+        allData = allData.concat(data);
       }
       hasMore = (data?.length || 0) === pageSize;
       from += pageSize;
