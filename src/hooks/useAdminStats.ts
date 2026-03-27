@@ -121,7 +121,27 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           shiftCounts[s] = (shiftCounts[s] || 0) + 1;
         });
         shiftBreakdown = Object.entries(shiftCounts).map(([shift, count]) => ({ shift, count }));
-        totalOrders = allShifts.length; // Use order_items count for consistency with shift breakdown
+        totalOrders = allShifts.length;
+
+        // Top 3 meals
+        const sortedMeals = Object.entries(mealCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 3);
+        
+        if (sortedMeals.length > 0) {
+          const topMealIds = sortedMeals.map(([id]) => id);
+          const { data: mealNames } = await supabase
+            .from('meals')
+            .select('id, name')
+            .in('id', topMealIds);
+          
+          const nameMap: Record<string, string> = {};
+          mealNames?.forEach(m => { nameMap[m.id] = m.name; });
+          topMeals = sortedMeals.map(([id, count]) => ({
+            name: nameMap[id] || 'Nepoznat',
+            count,
+          }));
+        }
       }
 
       setStats({
@@ -132,6 +152,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         todayOrders: todayOrdersCount || 0,
         todayPickedUp: todayPickedUpCount,
         shiftBreakdown,
+        topMeals,
       });
     } catch (error) {
       handleError({ 
