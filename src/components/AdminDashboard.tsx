@@ -135,6 +135,7 @@ export function AdminDashboard() {
                     <BarChart
                       data={stats.topMeals.map(m => ({
                         name: m.name.length > 12 ? m.name.slice(0, 12) + '…' : m.name,
+                        fullName: m.name,
                         value: m.count,
                       }))}
                       layout="vertical"
@@ -142,6 +143,11 @@ export function AdminDashboard() {
                     >
                       <XAxis type="number" hide />
                       <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        formatter={(value: number, _name: string, props: any) => [value, props.payload.fullName]}
+                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--popover-foreground))' }}
+                        labelStyle={{ display: 'none' }}
+                      />
                       <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))' }}>
                         {stats.topMeals.map((_, i) => (
                           <Cell key={i} fill={['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))'][i] || 'hsl(var(--muted))'} />
