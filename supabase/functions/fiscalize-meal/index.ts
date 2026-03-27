@@ -2,6 +2,32 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import { sendEmail } from "../_shared/smtp.ts";
+
+const ALERT_EMAIL = "support@simpler.rs";
+
+async function sendFiscalFailAlert(pickupId: string, error: string, mealName?: string) {
+  try {
+    const today = new Date().toLocaleDateString("sr-Latn-RS", { timeZone: "Europe/Belgrade" });
+    await sendEmail({
+      to: ALERT_EMAIL,
+      subject: `⚠️ Fiskalizacija neuspešna - ${mealName || pickupId} (${today})`,
+      html: `
+        <div style="font-family:Arial,sans-serif;">
+          <h2 style="color:#c00;">⚠️ Greška pri fiskalizaciji</h2>
+          <p><strong>Obrok:</strong> ${mealName || "N/A"}</p>
+          <p><strong>Pickup ID:</strong> ${pickupId}</p>
+          <p><strong>Greška:</strong> <span style="color:#c00;">${error}</span></p>
+          <p style="color:#666;font-size:12px;">Automatski retry će pokušati ponovo do 3 puta. Ako ne uspe, biće potrebna ručna intervencija.</p>
+        </div>
+      `,
+    });
+  } catch (e) {
+    console.error("Alert email error:", e);
+  }
+}
+import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
+import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
