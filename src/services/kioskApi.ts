@@ -1,4 +1,4 @@
-import type { ShowMealResponse, GetQueueResponse, KitchenStatus } from "@/types/kiosk";
+import type { ShowMealResponse, GetQueueResponse, KitchenStatus, PreloadMealsResponse } from "@/types/kiosk";
 
 const SUPABASE_URL = "https://qqrvezuesxaappslfvrh.supabase.co";
 
