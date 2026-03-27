@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ChevronRight, ChevronDown, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Order {
@@ -52,6 +53,8 @@ const SHIFT_ROMAN: Record<string, string> = {
 
 export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
+  const [mobilePage, setMobilePage] = useState(1);
+  const [mobilePageSize, setMobilePageSize] = useState(20);
   const isMobile = useIsMobile();
 
   const toggleMeal = (mealName: string) => {
@@ -165,7 +168,9 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
         </CardHeader>
         <CardContent className="px-3">
           <Accordion type="single" collapsible className="w-full">
-            {sortedMeals.map((mealName) => {
+            {sortedMeals
+              .slice((mobilePage - 1) * mobilePageSize, mobilePage * mobilePageSize)
+              .map((mealName) => {
               const row = pivotData[mealName];
               return (
                 <AccordionItem key={mealName} value={mealName}>
@@ -216,6 +221,15 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
             <span>Ukupno</span>
             <span>{grandTotal}</span>
           </div>
+          {sortedMeals.length > 0 && (
+            <TablePagination
+              currentPage={mobilePage}
+              totalItems={sortedMeals.length}
+              pageSize={mobilePageSize}
+              onPageChange={setMobilePage}
+              onPageSizeChange={(size) => { setMobilePageSize(size); setMobilePage(1); }}
+            />
+          )}
         </CardContent>
       </Card>
     );
