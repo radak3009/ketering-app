@@ -27,23 +27,43 @@ export function useAdminStats(startDate?: string, endDate?: string) {
   const [loading, setLoading] = useState(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Helper to fetch all rows bypassing the 1000-row default limit
+  const fetchAll = async <T,>(
+    table: string,
+    selectColumns: string,
+    filters: (q: any) => any
+  ): Promise<T[]> => {
+    const pageSize = 1000;
+    let allData: T[] = [];
+    let from = 0;
+    let hasMore = true;
+    while (hasMore) {
+      let query = supabase.from(table).select(selectColumns).range(from, from + pageSize - 1);
+      query = filters(query);
+      const { data, error } = await query;
+      if (error) throw error;
+      if (data) {
+        allData = allData.concat(data as T[]);
+      }
+      hasMore = (data?.length || 0) === pageSize;
+      from += pageSize;
+    }
+    return allData;
+  };
+
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('orders')
-        .select('id, total_amount, user_id, delivery_date');
-
-      if (startDate) {
-        query = query.gte('delivery_date', startDate);
-      }
-      if (endDate) {
-        query = query.lte('delivery_date', endDate);
-      }
-
-      const { data: orders, error } = await query;
-
-      if (error) throw error;
+      // Fetch ALL orders for the period (bypass 1000-row limit)
+      const orders = await fetchAll<{ id: string; total_amount: number; user_id: string; delivery_date: string }>(
+        'orders',
+        'id, total_amount, user_id, delivery_date',
+        (q: any) => {
+          if (startDate) q = q.gte('delivery_date', startDate);
+          if (endDate) q = q.lte('delivery_date', endDate);
+          return q;
+        }
+      );
 
       // Today's stats
       const today = new Date().toISOString().split('T')[0];
@@ -51,8 +71,6 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .eq('delivery_date', today);
-
-
 
       // Count actually picked up meals (exclude auto-fiscal)
       let todayPickedUpCount = 0;
@@ -80,7 +98,6 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         return;
       }
 
-      let totalOrders = orders.length;
       const totalRevenue = orders.reduce(
         (sum, order) => sum + parseFloat(order.total_amount.toString()),
         0
@@ -89,37 +106,38 @@ export function useAdminStats(startDate?: string, endDate?: string) {
       const uniqueUsers = new Set(orders.map(order => order.user_id));
       const employeesOrdered = uniqueUsers.size;
 
-      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-      // Fetch shift breakdown for the period
+      // Fetch ALL order_items for the period (bypass 1000-row limit)
       const orderIds = orders.map(o => o.id);
+      const orderIdSet = new Set(orderIds);
       let shiftBreakdown: { shift: string; count: number }[] = [];
       let topMeals: { name: string; count: number }[] = [];
+      let totalOrders = 0;
+
       if (orderIds.length > 0) {
-        // Fetch in batches if needed (Supabase .in() limit)
+        // Fetch order_items in batches of 100 IDs, each with pagination to get ALL rows
         const batchSize = 100;
-        const allShifts: string[] = [];
-        const mealCounts: Record<string, number> = {};
+        const allItems: { shift: string; meal_id: string }[] = [];
+        
         for (let i = 0; i < orderIds.length; i += batchSize) {
           const batch = orderIds.slice(i, i + batchSize);
-          const { data: items } = await supabase
-            .from('order_items')
-            .select('shift, meal_id')
-            .in('order_id', batch);
-          if (items) {
-            allShifts.push(...items.map(it => it.shift));
-            items.forEach(it => {
-              mealCounts[it.meal_id] = (mealCounts[it.meal_id] || 0) + 1;
-            });
-          }
+          const batchItems = await fetchAll<{ shift: string; meal_id: string }>(
+            'order_items',
+            'shift, meal_id',
+            (q: any) => q.in('order_id', batch)
+          );
+          allItems.push(...batchItems);
         }
         
         const shiftCounts: Record<string, number> = {};
-        allShifts.forEach(s => {
-          shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+        const mealCounts: Record<string, number> = {};
+        
+        allItems.forEach(item => {
+          shiftCounts[item.shift] = (shiftCounts[item.shift] || 0) + 1;
+          mealCounts[item.meal_id] = (mealCounts[item.meal_id] || 0) + 1;
         });
+        
         shiftBreakdown = Object.entries(shiftCounts).map(([shift, count]) => ({ shift, count }));
-        totalOrders = allShifts.length;
+        totalOrders = allItems.length;
 
         // Top 3 meals
         const sortedMeals = Object.entries(mealCounts)
@@ -141,6 +159,8 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           }));
         }
       }
+
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       setStats({
         totalOrders,
