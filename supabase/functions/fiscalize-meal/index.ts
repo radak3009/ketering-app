@@ -2,6 +2,32 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
+import { sendEmail } from "../_shared/smtp.ts";
+
+const ALERT_EMAIL = "support@simpler.rs";
+
+async function sendFiscalFailAlert(pickupId: string, error: string, mealName?: string) {
+  try {
+    const today = new Date().toLocaleDateString("sr-Latn-RS", { timeZone: "Europe/Belgrade" });
+    await sendEmail({
+      to: ALERT_EMAIL,
+      subject: `⚠️ Fiskalizacija neuspešna - ${mealName || pickupId} (${today})`,
+      html: `
+        <div style="font-family:Arial,sans-serif;">
+          <h2 style="color:#c00;">⚠️ Greška pri fiskalizaciji</h2>
+          <p><strong>Obrok:</strong> ${mealName || "N/A"}</p>
+          <p><strong>Pickup ID:</strong> ${pickupId}</p>
+          <p><strong>Greška:</strong> <span style="color:#c00;">${error}</span></p>
+          <p style="color:#666;font-size:12px;">Automatski retry će pokušati ponovo do 3 puta. Ako ne uspe, biće potrebna ručna intervencija.</p>
+        </div>
+      `,
+    });
+  } catch (e) {
+    console.error("Alert email error:", e);
+  }
+}
+import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
+import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -166,7 +192,7 @@ Deno.serve(async (req) => {
     // 1. Idempotency check
     const { data: existing, error: fetchErr } = await supabase
       .from("pickup_requests")
-      .select("id, invoice_number, verification_url, fiscal_status, receipt_file_path, profile_id, order_item_id, receipt_text_top, receipt_text_bottom")
+      .select("id, invoice_number, verification_url, fiscal_status, receipt_file_path, profile_id, order_item_id, receipt_text_top, receipt_text_bottom, meal_name_snapshot")
       .eq("id", pickupId)
       .maybeSingle();
 
@@ -329,13 +355,17 @@ Deno.serve(async (req) => {
       });
     } catch (netErr) {
       console.error("Octopos network error:", netErr);
+      const errMsg = `Network error: ${netErr.message}`;
       await supabase
         .from("pickup_requests")
-        .update({ fiscal_status: "failed", fiscal_error: `Network error: ${netErr.message}` })
+        .update({ fiscal_status: "failed", fiscal_error: errMsg })
         .eq("id", pickupId);
 
+      // Send alert email on first failure
+      sendFiscalFailAlert(pickupId, errMsg, existing.meal_name_snapshot).catch(() => {});
+
       return new Response(
-        JSON.stringify({ status: "failed", errors: [`Network error: ${netErr.message}`], pickupId }),
+        JSON.stringify({ status: "failed", errors: [errMsg], pickupId }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -346,10 +376,14 @@ Deno.serve(async (req) => {
     // 5. Handle failure
     if (!result.Success) {
       const errors = result.Errors?.map((e: any) => e.Message || e) || ["Unknown Octopos error"];
+      const errMsg = errors.join("; ");
       await supabase
         .from("pickup_requests")
-        .update({ fiscal_status: "failed", fiscal_error: errors.join("; ") })
+        .update({ fiscal_status: "failed", fiscal_error: errMsg })
         .eq("id", pickupId);
+
+      // Send alert email on first failure
+      sendFiscalFailAlert(pickupId, errMsg, existing.meal_name_snapshot).catch(() => {});
 
       return new Response(
         JSON.stringify({ status: "failed", errors, pickupId }),
