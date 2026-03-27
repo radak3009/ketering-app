@@ -696,14 +696,17 @@ export function MealsManagement() {
               <Input
                 placeholder="Pretraži po nazivu..."
                 value={mealFilters.name}
-                onChange={(e) => setMealFilters(prev => ({...prev, name: e.target.value}))}
+                onChange={(e) => { setMealFilters(prev => ({...prev, name: e.target.value})); setMealsPage(1); }}
                 className="h-9 text-sm"
               />
               {filteredMeals.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8 text-sm">Nema obroka koji odgovaraju filterima</p>
               ) : (
+                <>
                 <div className="space-y-2">
-                  {filteredMeals.map(meal => (
+                  {filteredMeals
+                    .slice((mealsPage - 1) * mealsPageSize, mealsPage * mealsPageSize)
+                    .map(meal => (
                     <div
                       key={meal.id}
                       className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
