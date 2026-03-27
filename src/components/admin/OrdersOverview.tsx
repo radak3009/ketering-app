@@ -47,7 +47,6 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const { users } = useUsers();
   const { meals } = useMeals();
   const isMobile = useIsMobile();
-  const { meals } = useMeals();
   
   const startDate = orderDateRange?.startDate || '';
   const endDate = orderDateRange?.endDate || '';
