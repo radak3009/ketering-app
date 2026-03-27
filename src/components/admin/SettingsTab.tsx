@@ -180,7 +180,7 @@ export function SettingsTab() {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg bg-card">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-success/10">
                       <ChefHat className="h-5 w-5 text-success" />
