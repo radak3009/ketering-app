@@ -115,6 +115,7 @@ export function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+          {/* Card 1: Obroci */}
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -129,20 +130,7 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
-            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <ChefHat className="h-3 w-3 md:h-4 md:w-4" />
-                {t('stats.meals')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2 md:p-4 pt-0">
-              <div className="text-lg md:text-2xl font-bold text-foreground">
-                {statsLoading ? "..." : meals.length}
-              </div>
-            </CardContent>
-          </Card>
-          
+          {/* Card 2: Porudžbine */}
           <Card className="bg-gradient-to-br from-accent/10 to-accent/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -158,6 +146,7 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
           
+          {/* Card 3: Danas */}
           <Card className="bg-gradient-to-br from-primary/10 to-accent/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -174,6 +163,48 @@ export function AdminDashboard() {
                 {statsLoading ? "..." : stats.todayPickedUp}
               </div>
               <p className="text-[10px] md:text-xs text-muted-foreground">Preuzeto</p>
+            </CardContent>
+          </Card>
+
+          {/* Card 4: Po smenama - Pie Chart */}
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+            <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+                Po smenama
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 md:p-4 pt-0">
+              {statsLoading ? (
+                <div className="text-lg md:text-2xl font-bold text-foreground">...</div>
+              ) : stats.shiftBreakdown.length === 0 ? (
+                <div className="text-xs text-muted-foreground">Nema podataka</div>
+              ) : (
+                <div className="h-[80px] md:h-[100px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.shiftBreakdown.map(s => ({
+                          name: s.shift === 'prva' ? 'I' : s.shift === 'druga' ? 'II' : s.shift === 'treća' ? 'III' : s.shift,
+                          value: s.count,
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={20}
+                        outerRadius={35}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {stats.shiftBreakdown.map((_, index) => (
+                          <Cell key={index} fill={['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))'][index % 3]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [value, 'Porudžbina']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
