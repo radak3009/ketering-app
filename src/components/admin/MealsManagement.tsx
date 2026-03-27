@@ -72,6 +72,7 @@ const getShiftRoman = (shift: string): string => {
 
 export function MealsManagement() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
