@@ -53,12 +53,13 @@ Deno.serve(async (req) => {
 
     console.log(`[fiscalize-undelivered] Found ${orderItems.length} undelivered items`);
 
-    // Check which order_items already have a pickup_request
+    // Check which order_items already have a pickup_request for today
     const orderItemIds = orderItems.map((oi: any) => oi.id);
     const { data: existingPickups } = await supabase
       .from("pickup_requests")
       .select("order_item_id")
-      .in("order_item_id", orderItemIds);
+      .in("order_item_id", orderItemIds)
+      .eq("pickup_date", today);
 
     const existingSet = new Set((existingPickups || []).map((p: any) => p.order_item_id));
 
