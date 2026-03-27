@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,6 +15,8 @@ import { ProfileView } from './employee/ProfileView';
 import { FeedbackView } from './employee/FeedbackView';
 import { AIHelpChat } from './AIHelpChat';
 import { useUpdate } from '@/contexts/UpdateContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 type View = 'current' | 'next' | 'feedback' | 'profile';
 
