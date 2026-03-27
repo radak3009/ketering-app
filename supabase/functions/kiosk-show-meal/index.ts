@@ -142,13 +142,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if already served today
+    // Check if already served today (exclude auto-fiscal records - those are end-of-day fiscal receipts, not real pickups)
     const { data: existingServed } = await supabase
       .from("pickup_requests")
-      .select("id, served_at")
+      .select("id, served_at, served_by")
       .eq("order_item_id", orderItem.id)
       .eq("pickup_date", today)
       .eq("status", "served")
+      .neq("served_by", "auto-fiscal")
       .maybeSingle();
 
     if (existingServed) {
