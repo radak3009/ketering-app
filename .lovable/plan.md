@@ -1,66 +1,39 @@
-## Plan: Automatska fiskalizacija nepreuzetih obroka
+
+
+## Plan: Pie chart po smenama umesto kartice Korisnici
 
 ### Pregled
-
-Kreirati Edge funkciju koja se pokreće svakog dana u 23:30 i automatski fiskalizuje sve obroke koji su poručeni za taj dan ali nisu preuzeti. Na Employee panelu, status ostaje "Nije preuzet" ali se prikazuje dugme za preuzimanje fiskalnog računa.
+Ukloniti karticu "Korisnici" i na njeno mesto (četvrta pozicija, iza "Danas") dodati pie chart koji prikazuje raspodelu porudžbina po smenama za izabrani period.
 
 ### Izmene
 
-#### 1. Nova Edge funkcija: `supabase/functions/fiscalize-undelivered/index.ts`
+#### 1. `src/hooks/useAdminStats.ts`
+- Dodati `shiftBreakdown: { shift: string; count: number }[]` u `AdminStats` interfejs
+- U `fetchStats`, dohvatiti `order_items` sa `shift` za filtrirani period (JOIN preko `orders.delivery_date`):
+  ```
+  select shift, count(*) from order_items
+  join orders on orders.id = order_items.order_id
+  where orders.delivery_date between startDate and endDate
+  group by shift
+  ```
+- Pošto Supabase JS klijent ne podržava GROUP BY, dohvatiti sve `order_items.shift` za period i agregirati klijentski
 
-- Pronalazi sve `order_items` za današnji `delivery_date` sa `pickup_status = 'nije_preuzeto'`
-- Za svaki takav order_item proverava da li već postoji `pickup_request` — ako da, preskače
-- Kreira novi `pickup_request` zapis sa:
-  - `status: 'not_picked_up'`, `served_by: 'auto-fiscal'`, `served_at: now()`
-  - `fiscal_status: 'pending'`
-  - Podaci o korisniku iz `profiles` tabele
-- Poziva `fiscalize-meal` za svaki kreirani pickup_request
-- Autentifikacija: koristi `KIOSK_TOKEN_KITCHEN` (bez JWT-a, cron poziv)
+#### 2. `src/components/AdminDashboard.tsx`
+- Ukloniti prvu karticu "Korisnici" (linije 117-129)
+- Ukloniti `useUsers` import (više nije potreban za metrike)
+- Pomeriti preostale kartice (Obroci, Porudžbine, Danas) na pozicije 1-3
+- Na četvrtu poziciju dodati novu karticu sa Recharts `PieChart`:
+  - Naslov: "Po smenama"
+  - Podaci: `stats.shiftBreakdown` mapirani na pie chart segmente
+  - Boje: tri distinktne boje za I, II, III smenu
+  - Label sa procentima
+  - Koristiti `ChartContainer` iz `src/components/ui/chart.tsx`
+- Grid ostaje `grid-cols-2 md:grid-cols-4`
+- Visina kartice usklađena sa ostalim karticama
 
-#### 2. Cron job (pg_cron) — SQL insert
+### Fajlovi za izmenu
+| Fajl | Izmena |
+|------|--------|
+| `src/hooks/useAdminStats.ts` | Dodati `shiftBreakdown` u stats |
+| `src/components/AdminDashboard.tsx` | Zameniti karticu Korisnici sa pie chart karticom |
 
-```sql
-select cron.schedule(
-  'fiscalize-undelivered-daily',
-  '30 23 * * *',
-  $$ select net.http_post(
-    url:='https://qqrvezuesxaappslfvrh.supabase.co/functions/v1/fiscalize-undelivered',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
-    body:='{}'::jsonb
-  ) as request_id; $$
-);
-```
-
-#### 3. `supabase/config.toml` — dodati novu funkciju
-
-```toml
-[functions.fiscalize-undelivered]
-verify_jwt = false
-```
-
-#### 4. `src/components/employee/MealCard.tsx` — prikazivanje računa za nepreuzete obroke
-
-Trenutno (linija 155): fiskalni status se prikazuje samo kada je `pickup_status === 'preuzeto'`.
-
-Promena: prikazivati sekciju fiskalnog računa i kada je `pickup_status === 'nije_preuzeto'` ali postoji `fiscal_status === 'fiscalized'` i `pickup_request_id`. Dugme "Preuzmi račun" se prikazuje bez obzira na pickup status. 
-
-Nova logika:
-
-```tsx
-{/* Fiscal receipt - show for picked up OR auto-fiscalized */}
-{item.fiscal_status && (item.pickup_status === 'preuzeto' || item.fiscal_status === 'fiscalized' || item.fiscal_status === 'pending' || item.fiscal_status === 'failed') && (
-  <div className="pt-2 border-t mt-2">
-    {/* existing fiscal status UI */}
-  </div>
-)}
-```
-
-### Fajlovi za izmenu/kreiranje
-
-
-| Fajl                                                | Akcija                                 |
-| --------------------------------------------------- | -------------------------------------- |
-| `supabase/functions/fiscalize-undelivered/index.ts` | Kreirati — nova Edge funkcija          |
-| `supabase/config.toml`                              | Dodati konfiguraciju za novu funkciju  |
-| `src/components/employee/MealCard.tsx`              | Prikazati račun i za nepreuzete obroke |
-| SQL (pg_cron)                                       | Kreirati cron job za 23:30 svaki dan   |
