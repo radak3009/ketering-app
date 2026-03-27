@@ -90,6 +90,32 @@ export function useAdminStats(startDate?: string, endDate?: string) {
 
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+      // Fetch shift breakdown for the period
+      const orderIds = orders.map(o => o.id);
+      let shiftBreakdown: { shift: string; count: number }[] = [];
+      
+      if (orderIds.length > 0) {
+        // Fetch in batches if needed (Supabase .in() limit)
+        const batchSize = 100;
+        const allShifts: string[] = [];
+        for (let i = 0; i < orderIds.length; i += batchSize) {
+          const batch = orderIds.slice(i, i + batchSize);
+          const { data: items } = await supabase
+            .from('order_items')
+            .select('shift')
+            .in('order_id', batch);
+          if (items) {
+            allShifts.push(...items.map(it => it.shift));
+          }
+        }
+        
+        const shiftCounts: Record<string, number> = {};
+        allShifts.forEach(s => {
+          shiftCounts[s] = (shiftCounts[s] || 0) + 1;
+        });
+        shiftBreakdown = Object.entries(shiftCounts).map(([shift, count]) => ({ shift, count }));
+      }
+
       setStats({
         totalOrders,
         totalRevenue: Math.round(totalRevenue),
@@ -97,6 +123,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         avgOrderValue: Math.round(avgOrderValue),
         todayOrders: todayOrdersCount || 0,
         todayPickedUp: todayPickedUpCount,
+        shiftBreakdown,
       });
     } catch (error) {
       handleError({ 
