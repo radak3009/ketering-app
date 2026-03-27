@@ -241,25 +241,9 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               <CardTitle className="text-lg md:text-xl">Pregled porudžbina</CardTitle>
               <CardDescription className="text-xs md:text-sm">Zbirni prikaz porudžbina po danu</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:self-end">
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="w-full sm:w-auto" 
-                onClick={() => fetchOrders(orderDateRange.startDate || undefined, orderDateRange.endDate || undefined)}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-                Osveži
-              </Button>
-              <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-1.5" />
-                Nova porudžbina
-              </Button>
-            </div>
             
-            {/* View Toggle + Shift Filter */}
-            <div className="flex flex-col gap-3">
+            {/* View Toggle + Action Buttons in same row on desktop */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={pivotView === "meals" ? "default" : "outline"} 
@@ -283,7 +267,24 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   Lista
                 </Button>
               </div>
-              
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="w-full sm:w-auto" 
+                  onClick={() => fetchOrders(orderDateRange.startDate || undefined, orderDateRange.endDate || undefined)}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                  Osveži
+                </Button>
+                <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Nova porudžbina
+                </Button>
+              </div>
+            </div>
+            
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
                 <ToggleGroup
@@ -299,7 +300,6 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   ))}
                 </ToggleGroup>
               </div>
-            </div>
             
             {/* Filters Row */}
             <div className="flex flex-col md:flex-row gap-2">
