@@ -135,4 +135,23 @@ export const kioskApi = {
     
     return data;
   },
+
+  async preloadMeals(token: string): Promise<PreloadMealsResponse> {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/kiosk-preload-meals`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kioskToken: token }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Greška pri učitavanju keša");
+    }
+
+    return data;
+  },
 };

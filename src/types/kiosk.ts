@@ -46,3 +46,17 @@ export interface GetQueueResponse {
   served: QueueItem[];
   error?: string;
 }
+
+export interface PreloadMealEntry {
+  fullName: string;
+  mealName: string;
+  orderItemId: string;
+  pickupStatus: string;
+  shift: string;
+}
+
+export interface PreloadMealsResponse {
+  meals: Record<string, PreloadMealEntry>;
+  timestamp: number;
+  error?: string;
+}
