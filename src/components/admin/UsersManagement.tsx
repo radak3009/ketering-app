@@ -810,9 +810,9 @@ export function UsersManagement() {
                 <div className="space-y-2">
                   {/* Mobile search */}
                   <Input
-                    placeholder="Pretraži po imenu ili ID-u..."
-                    value={userFilters.fullName}
-                    onChange={(e) => { setUserFilters(prev => ({...prev, fullName: e.target.value})); setUsersPage(1); }}
+                    placeholder="Pretraži po imenu, ID-u ili email-u..."
+                    value={mobileSearch}
+                    onChange={(e) => { setMobileSearch(e.target.value); setUsersPage(1); }}
                     className="h-9 text-sm"
                   />
                   {filteredUsers.length === 0 ? (
