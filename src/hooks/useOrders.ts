@@ -178,22 +178,13 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
     fetchOrders(initialStartDate, initialEndDate);
   }, [initialStartDate, initialEndDate, fetchOrders]);
 
-  // Realtime subscription
+  // Auto-refresh every 5 minutes
   useEffect(() => {
-    const channel = supabase
-      .channel('order-items-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        () => {
-          fetchOrders(currentDateRangeRef.current.start, currentDateRangeRef.current.end);
-        }
-      )
-      .subscribe();
+    const interval = setInterval(() => {
+      fetchOrders(currentDateRangeRef.current.start, currentDateRangeRef.current.end);
+    }, 300000); // 5 minutes
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearInterval(interval);
   }, [fetchOrders]);
 
   return {
