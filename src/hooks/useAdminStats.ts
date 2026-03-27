@@ -30,7 +30,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     try {
       let query = supabase
         .from('orders')
-        .select('total_amount, user_id, delivery_date');
+        .select('id, total_amount, user_id, delivery_date');
 
       if (startDate) {
         query = query.gte('delivery_date', startDate);
