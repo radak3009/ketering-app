@@ -51,6 +51,32 @@ export function EmployeeDashboard() {
     }
   }, [requiresIdSetup]);
 
+  // Realtime broadcast listener
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-broadcasts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'admin_broadcasts' },
+        (payload) => {
+          const record = payload.new as { message: string; created_at: string };
+          // Only show broadcasts created after component mount
+          if (record.created_at > mountedAtRef.current) {
+            toast({
+              title: '📢 Obaveštenje',
+              description: record.message,
+              duration: 10000,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
+
   useEffect(() => {
     if (user?.id) {
       fetchTotalMenuDays();
