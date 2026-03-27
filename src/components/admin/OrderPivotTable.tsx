@@ -53,6 +53,8 @@ const SHIFT_ROMAN: Record<string, string> = {
 
 export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
+  const [mobilePage, setMobilePage] = useState(1);
+  const [mobilePageSize, setMobilePageSize] = useState(20);
   const isMobile = useIsMobile();
 
   const toggleMeal = (mealName: string) => {
