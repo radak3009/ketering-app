@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface OrderWithProfile {
   id: string;
@@ -38,6 +39,7 @@ interface UserPivotData {
 }
 
 const DAYS_OF_WEEK = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+const DAYS_SHORT = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
 
 const SHIFT_ROMAN: Record<string, string> = {
   'prva': 'I',
@@ -46,6 +48,7 @@ const SHIFT_ROMAN: Record<string, string> = {
 };
 
 export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }: UserOrderPivotTableProps) {
+  const isMobile = useIsMobile();
   const userDataMap: { [userId: string]: UserPivotData } = {};
   const dayTotals: { [dayName: string]: number } = {};
   
@@ -71,7 +74,6 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
       DAYS_OF_WEEK.forEach(day => { userDataMap[userId].meals[day] = '-'; });
     }
     
-    // Collect all items for this day
     const itemLabels: string[] = [];
     order.order_items?.forEach(item => {
       const mealName = item.meal?.name || item.meals?.name || '-';
@@ -132,8 +134,57 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
       </Card>
     );
   }
-  
 
+  // Mobile: Card view
+  if (isMobile) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-lg">Po korisnicima</CardTitle>
+              <CardDescription className="text-xs">Porudžbine po danima</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="shrink-0">
+              <Download className="h-4 w-4 mr-1.5" />
+              CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="px-3 space-y-3">
+          {usersArray.map((user, index) => (
+            <div key={`${user.company_card_id}-${index}`} className="border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{user.full_name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">ID: {user.company_card_id}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 ml-2">{user.total}</Badge>
+              </div>
+              <div className="space-y-1">
+                {DAYS_OF_WEEK.map((day, i) => {
+                  const meal = user.meals[day];
+                  if (meal === '-') return null;
+                  return (
+                    <div key={day} className="flex gap-2 text-xs">
+                      <span className="text-muted-foreground w-8 shrink-0">{DAYS_SHORT[i]}</span>
+                      <span className="font-medium">{meal}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <div className="flex justify-between items-center pt-3 border-t font-bold text-sm">
+            <span>Ukupno</span>
+            <span>{grandTotal}</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Desktop: Table view
   return (
     <Card>
       <CardHeader>

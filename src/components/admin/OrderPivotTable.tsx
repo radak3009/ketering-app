@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ChevronRight, ChevronDown, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Order {
   id: string;
@@ -35,6 +37,7 @@ interface MealPivotRow {
 }
 
 const DAYS_OF_WEEK = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+const DAYS_SHORT = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
 const SHIFTS = ['prva', 'druga', 'treća'] as const;
 const SHIFT_LABELS: Record<string, string> = {
   'prva': 'I smena',
@@ -49,6 +52,7 @@ const SHIFT_ROMAN: Record<string, string> = {
 
 export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
 
   const toggleMeal = (mealName: string) => {
     setExpandedMeals(prev => {
@@ -110,14 +114,11 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
 
   const handleExportCSV = useCallback(() => {
     const rows: (string | number)[][] = [];
-    // Header
     rows.push(['Obrok', 'Smena', ...DAYS_OF_WEEK, 'Total']);
     
     sortedMeals.forEach(mealName => {
       const row = pivotData[mealName];
-      // Parent row (total)
       rows.push([getMealDisplayName(mealName), 'Ukupno', ...DAYS_OF_WEEK.map(d => row.byDay[d]), row.total]);
-      // Shift rows
       SHIFTS.forEach(shift => {
         const sr = row.shifts[shift];
         if (sr && sr.total > 0) {
@@ -125,7 +126,6 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
         }
       });
     });
-    // Totals row
     rows.push(['Total', '', ...DAYS_OF_WEEK.map(d => dayTotals[d]), grandTotal]);
     
     downloadCSV(rows, `pivot-obroci-${new Date().toISOString().slice(0, 10)}`);
@@ -146,7 +146,82 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
       </Card>
     );
   }
-  
+
+  // Mobile: Accordion view
+  if (isMobile) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-lg">Po obrocima</CardTitle>
+              <CardDescription className="text-xs">Porudžbine po danima</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="shrink-0">
+              <Download className="h-4 w-4 mr-1.5" />
+              CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="px-3">
+          <Accordion type="single" collapsible className="w-full">
+            {sortedMeals.map((mealName) => {
+              const row = pivotData[mealName];
+              return (
+                <AccordionItem key={mealName} value={mealName}>
+                  <AccordionTrigger className="py-3 text-sm hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-2">
+                      <span className="text-left font-medium">{getMealDisplayName(mealName)}</span>
+                      <Badge variant="secondary" className="ml-2 shrink-0">{row.total}</Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-1.5 pb-1">
+                      {DAYS_OF_WEEK.map((day, i) => {
+                        const val = row.byDay[day];
+                        if (val === 0) return null;
+                        return (
+                          <div key={day} className="flex justify-between text-sm px-1">
+                            <span className="text-muted-foreground">{DAYS_SHORT[i]}</span>
+                            <span className="font-medium">{val}</span>
+                          </div>
+                        );
+                      })}
+                      {showDrillDown && SHIFTS.map(shift => {
+                        const sr = row.shifts[shift];
+                        if (!sr || sr.total === 0) return null;
+                        return (
+                          <div key={shift} className="mt-2 pt-2 border-t">
+                            <div className="text-xs text-muted-foreground font-medium mb-1 px-1">{SHIFT_LABELS[shift]}</div>
+                            {DAYS_OF_WEEK.map((day, i) => {
+                              const val = sr.byDay[day];
+                              if (val === 0) return null;
+                              return (
+                                <div key={day} className="flex justify-between text-xs px-3">
+                                  <span className="text-muted-foreground">{DAYS_SHORT[i]}</span>
+                                  <span>{val}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+          <div className="flex justify-between items-center mt-4 pt-3 border-t font-bold text-sm">
+            <span>Ukupno</span>
+            <span>{grandTotal}</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Desktop: Table view
   return (
     <Card>
       <CardHeader>
@@ -184,7 +259,6 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
                 
                 return (
                   <>
-                    {/* Parent row */}
                     <TableRow key={mealName} className={showDrillDown ? "cursor-pointer hover:bg-muted/30" : ""} onClick={() => showDrillDown && toggleMeal(mealName)}>
                       <TableCell className="font-medium sticky left-0 z-10 bg-background text-xs md:text-sm p-2 md:p-4">
                         <div className="flex items-center gap-1.5">
@@ -212,7 +286,6 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
                       </TableCell>
                     </TableRow>
                     
-                    {/* Child rows (shifts) */}
                     {showDrillDown && isExpanded && SHIFTS.map(shift => {
                       const shiftRow = row.shifts[shift];
                       if (!shiftRow || shiftRow.total === 0) return null;

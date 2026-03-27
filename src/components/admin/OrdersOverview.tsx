@@ -13,6 +13,7 @@ import { Search, Filter, ChevronDown, Tag as TagIcon, Plus, Pencil, Trash2, Down
 import { downloadCSV } from "@/lib/csv-export";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
 import { useMeals } from "@/hooks/useMeals";
@@ -45,6 +46,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const { toast } = useToast();
   const { users } = useUsers();
   const { meals } = useMeals();
+  const isMobile = useIsMobile();
   
   const startDate = orderDateRange?.startDate || '';
   const endDate = orderDateRange?.endDate || '';
@@ -431,64 +433,92 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-                <div className="min-w-[600px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs md:text-sm">Korisnik</TableHead>
-                        <TableHead className="text-xs md:text-sm">ID Kartice</TableHead>
-                        <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
-                        <TableHead className="text-xs md:text-sm">Obrok</TableHead>
-                        <TableHead className="text-xs md:text-sm">Smena</TableHead>
-                        <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {flatOrderItems.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                            Nema stavki za prikaz
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        flatOrderItems
-                          .slice((listPage - 1) * listPageSize, listPage * listPageSize)
-                          .map((item) => (
-                          <TableRow key={item.orderItemId}>
-                            <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
-                            <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
-                            <TableCell className="text-xs md:text-sm">{item.deliveryDate}</TableCell>
-                            <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
-                            <TableCell className="text-xs md:text-sm">
-                              <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex gap-1 justify-end">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => handleEditItem(item)}
-                                >
+              <CardContent>
+                {isMobile ? (
+                  /* Mobile: Card view */
+                  <div className="space-y-3">
+                    {flatOrderItems.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">Nema stavki za prikaz</div>
+                    ) : (
+                      flatOrderItems
+                        .slice((listPage - 1) * listPageSize, listPage * listPageSize)
+                        .map((item) => (
+                          <div key={item.orderItemId} className="border rounded-lg p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{item.userName}</p>
+                                <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId}</p>
+                              </div>
+                              <div className="flex gap-1 shrink-0">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                  onClick={() => setDeleteItemId(item.orderItemId)}
-                                >
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              <span className="text-muted-foreground">{item.deliveryDate}</span>
+                              <span className="font-medium">{item.mealName}</span>
+                              <Badge variant="secondary" className="text-xs">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                            </div>
+                          </div>
                         ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Desktop: Table view */
+                  <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+                    <div className="min-w-[600px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs md:text-sm">Korisnik</TableHead>
+                            <TableHead className="text-xs md:text-sm">ID Kartice</TableHead>
+                            <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
+                            <TableHead className="text-xs md:text-sm">Obrok</TableHead>
+                            <TableHead className="text-xs md:text-sm">Smena</TableHead>
+                            <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {flatOrderItems.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                Nema stavki za prikaz
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            flatOrderItems
+                              .slice((listPage - 1) * listPageSize, listPage * listPageSize)
+                              .map((item) => (
+                              <TableRow key={item.orderItemId}>
+                                <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
+                                <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
+                                <TableCell className="text-xs md:text-sm">{item.deliveryDate}</TableCell>
+                                <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
+                                <TableCell className="text-xs md:text-sm">
+                                  <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex gap-1 justify-end">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
                 {flatOrderItems.length > 0 && (
                   <TablePagination
                     currentPage={listPage}
