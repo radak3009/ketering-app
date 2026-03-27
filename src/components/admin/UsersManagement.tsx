@@ -66,6 +66,7 @@ const initialUserForm: UserFormState = {
 
 export function UsersManagement() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
   const [changingRole, setChangingRole] = useState(false);
   
