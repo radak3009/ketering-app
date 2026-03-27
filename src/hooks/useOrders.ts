@@ -52,9 +52,7 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
         from += pageSize;
       }
 
-      if (ordersError) throw ordersError;
-      
-      const userIds = [...new Set(ordersData?.map(o => o.user_id) || [])];
+      const userIds = [...new Set(allOrders.map((o: any) => o.user_id as string))];
       
       let profilesMap: Record<string, ProfileBasic> = {};
       if (userIds.length > 0) {
@@ -72,10 +70,10 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
         });
       }
       
-      const formattedOrders: OrderWithItems[] = ordersData?.map(order => ({
+      const formattedOrders: OrderWithItems[] = allOrders.map((order: any) => ({
         ...order,
         profile: profilesMap[order.user_id],
-        order_items: order.order_items?.map(oi => ({
+        order_items: order.order_items?.map((oi: any) => ({
           ...oi,
           meal: oi.meals as unknown as Meal
         }))
