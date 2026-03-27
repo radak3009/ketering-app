@@ -1,28 +1,31 @@
-## Plan: Intervalno i manuelno osvežavanje porudžbina
+
+
+## Plan: Zameniti karticu Obroci sa Top 3 Obroka (bar chart)
 
 ### Pregled
-
-Zameniti realtime Supabase pretplatu u `useOrders` hooeku sa automatskim osvežavanjem na svakih 5 minuta + dugme za manuelno osvežavanje u zaglavlju odeljka Porudžbine.
+Karticu "Obroci" (prva kartica u metrici) zameniti horizontalnim bar chart-om koji prikazuje 3 najnaručivanija obroka za odabrani period — isti vizuelni stil kao kartica "Po smenama".
 
 ### Izmene
 
-#### 1. `src/hooks/useOrders.ts`
+#### 1. `src/hooks/useAdminStats.ts`
+- Dodati `topMeals: { name: string; count: number }[]` u `AdminStats` interfejs
+- U `fetchStats`, iz već dohvaćenih `order_items` (batch petlja gde se čitaju shift-ovi), dodati i `meal_id` u select
+- Prebrojati porudžbine po `meal_id`, uzeti top 3
+- Za top 3 meal_id-jeva dohvatiti imena iz tabele `meals`
+- Postaviti u stats kao `topMeals`
 
-- Ukloniti realtime subscription (linije 182-197) — kanal `order-items-realtime`
-- Dodati `setInterval` od 5 minuta (300000ms) koji poziva `fetchOrders` sa trenutnim datumskim opsegom
-- Cleanup interval u `useEffect` return
-
-#### 2. `src/components/admin/OrdersOverview.tsx`
-
-- Dodati dugme `RefreshCw` ikonica pored naslova ili pored dugmeta "Nova porudžbina"
-- Na klik poziva `refetch()` iz `useOrders` hooka sa trenutnim datumskim opsegom
-- Tokom učitavanja dugme se rotira (animacija `animate-spin`)
-- Na mobilnom: dugme u redu sa "Nova porudžbina", oba full-width
+#### 2. `src/components/AdminDashboard.tsx`
+- Zameniti Card 1 (Obroci, linije 119-131) sa horizontalnim bar chart-om
+- Naslov: "Top 3 obroka"
+- Isti layout kao "Po smenama": `ResponsiveContainer`, `BarChart layout="vertical"`, `Bar` sa label
+- YAxis prikazuje skraćeno ime obroka (max ~12 karaktera), XAxis skriven
+- Tri distinktne boje za barove
+- Kada nema podataka: "Nema podataka" poruka
+- Ukloniti `useMeals` import ako više nije potreban na ovoj stranici
 
 ### Fajlovi za izmenu
+| Fajl | Izmena |
+|------|--------|
+| `src/hooks/useAdminStats.ts` | Dodati `topMeals` u stats, dohvatiti iz order_items |
+| `src/components/AdminDashboard.tsx` | Zameniti karticu Obroci sa Top 3 bar chart |
 
-
-| Fajl                                      | Izmena                   |
-| ----------------------------------------- | ------------------------ |
-| `src/hooks/useOrders.ts`                  | Interval umesto realtime |
-| `src/components/admin/OrdersOverview.tsx` | Dugme za osvežavanje     |
