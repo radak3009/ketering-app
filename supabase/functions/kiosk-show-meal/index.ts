@@ -110,18 +110,36 @@ Deno.serve(async (req) => {
 
     const mealName: string = (orderItem as any).meals?.name || "Nepoznat obrok";
 
-    // Step 3: Check existing pickup requests + kitchen status in parallel
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    // Step 3: PRIMARY CHECK - if order_item pickup_status is already "preuzeto", meal was picked up
+    if (orderItem.pickup_status === "preuzeto") {
+      const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
+      return new Response(
+        JSON.stringify({
+          found: true,
+          fullName: profile.full_name || "",
+          mealName,
+          alreadyServed: true,
+          message: "Obrok je već preuzet",
+          kitchenOpen: kitchenStatus.isOpen,
+          confirmationRequired: false,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
+    // Step 4: Check existing pickup requests + kitchen status in parallel
     const [pendingResult, servedResult, kitchenStatus] = await Promise.all([
+      // Check ANY pending request for this order item today (no time limit)
       supabase
         .from("pickup_requests")
         .select("id")
         .eq("order_item_id", orderItem.id)
         .eq("pickup_date", today)
         .eq("status", "pending")
-        .gte("created_at", twoMinutesAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
+      // Check ANY served request (excluding auto-fiscal)
       supabase
         .from("pickup_requests")
         .select("id, served_at, served_by")
@@ -129,11 +147,29 @@ Deno.serve(async (req) => {
         .eq("pickup_date", today)
         .eq("status", "served")
         .neq("served_by", "auto-fiscal")
+        .order("served_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
       isKitchenOpen(supabase, profile.company_id),
     ]);
 
-    // Existing pending request (dedupe)
+    // Already served today (via pickup_requests)
+    if (servedResult.data) {
+      return new Response(
+        JSON.stringify({
+          found: true,
+          fullName: profile.full_name || "",
+          mealName,
+          alreadyServed: true,
+          message: "Obrok je već preuzet",
+          kitchenOpen: kitchenStatus.isOpen,
+          confirmationRequired: false,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Existing pending request (dedupe) - return existing instead of creating new
     if (pendingResult.data) {
       return new Response(
         JSON.stringify({
@@ -149,23 +185,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Already served today
-    if (servedResult.data) {
-      return new Response(
-        JSON.stringify({
-          found: true,
-          fullName: profile.full_name || "",
-          mealName,
-          alreadyServed: true,
-          message: "Obrok je već preuzet",
-          kitchenOpen: kitchenStatus.isOpen,
-          confirmationRequired: !kitchenStatus.isOpen,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 4: Create new pickup request
+    // Step 5: Create new pickup request
     const { data: insertData, error: insertError } = await supabase
       .from("pickup_requests")
       .insert({
