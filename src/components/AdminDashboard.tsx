@@ -163,10 +163,15 @@ export function AdminDashboard() {
                 <div className="h-[80px] md:h-[100px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={stats.shiftBreakdown.map(s => ({
-                        name: s.shift === 'prva' ? 'I smena' : s.shift === 'druga' ? 'II smena' : s.shift === 'treća' ? 'III smena' : s.shift,
-                        value: s.count,
-                      }))}
+                      data={(() => {
+                        const shiftOrder = ['prva', 'druga', 'treća'];
+                        const sorted = [...stats.shiftBreakdown].sort((a, b) => shiftOrder.indexOf(a.shift) - shiftOrder.indexOf(b.shift));
+                        return sorted.map(s => ({
+                          name: s.shift === 'prva' ? 'I smena' : s.shift === 'druga' ? 'II smena' : s.shift === 'treća' ? 'III smena' : s.shift,
+                          value: s.count,
+                          shift: s.shift,
+                        }));
+                      })()}
                       layout="vertical"
                       margin={{ top: 0, right: 30, left: 0, bottom: 0 }}
                     >
@@ -174,9 +179,14 @@ export function AdminDashboard() {
                       <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                       <Tooltip formatter={(value: number) => [value, 'Porudžbina']} />
                       <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))' }}>
-                        {stats.shiftBreakdown.map((_, index) => (
-                          <Cell key={index} fill={['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))'][index % 3]} />
-                        ))}
+                        {(() => {
+                          const shiftOrder = ['prva', 'druga', 'treća'];
+                          const colors: Record<string, string> = { prva: 'hsl(var(--primary))', druga: 'hsl(var(--accent))', 'treća': 'hsl(var(--secondary))' };
+                          const sorted = [...stats.shiftBreakdown].sort((a, b) => shiftOrder.indexOf(a.shift) - shiftOrder.indexOf(b.shift));
+                          return sorted.map((s, i) => (
+                            <Cell key={i} fill={colors[s.shift] || 'hsl(var(--muted))'} />
+                          ));
+                        })()}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
