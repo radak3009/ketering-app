@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -15,7 +14,6 @@ Deno.serve(async (req) => {
   try {
     const { kioskToken, company_card_id } = await req.json();
 
-    // Validate kiosk token
     const expectedToken = Deno.env.get("KIOSK_TOKEN_EMPLOYEE");
     if (!expectedToken || kioskToken !== expectedToken) {
       return new Response(
@@ -31,131 +29,123 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Initialize Supabase with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get today's date in local timezone (Serbia - Europe/Belgrade)
     const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Belgrade" });
+    const cardId = company_card_id.trim();
 
-    // Find profile by company_card_id
-    const { data: profile, error: profileError } = await supabase
+    // Single JOIN query: profile + order + order_item + meal
+    const { data: rows, error: joinError } = await supabase
       .from("profiles")
-      .select("id, user_id, full_name, company_id")
-      .eq("company_card_id", company_card_id.trim())
-      .maybeSingle();
+      .select(`
+        id,
+        user_id,
+        full_name,
+        company_id,
+        orders!inner (
+          id,
+          delivery_date,
+          order_items (
+            id,
+            meal_id,
+            shift,
+            pickup_status,
+            meals!inner ( name )
+          )
+        )
+      `)
+      .eq("company_card_id", cardId)
+      .eq("orders.delivery_date", today);
 
-    if (profileError) {
-      console.error("Profile error:", profileError);
+    // If join error, fall back to checking if profile exists at all
+    if (joinError) {
+      console.error("Join error:", joinError);
       return new Response(
         JSON.stringify({ error: "Greška pri pretrazi" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!profile) {
-      return new Response(
-        JSON.stringify({ found: false, message: "ID nije pronađen u sistemu" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // No profile found at all — check if card ID exists without the inner join filter
+    if (!rows || rows.length === 0) {
+      const { data: profileOnly } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("company_card_id", cardId)
+        .maybeSingle();
 
-    // Find today's order for this user
-    const { data: orders, error: ordersError } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        delivery_date,
-        order_items (
-          id,
-          meal_id,
-          shift,
-          pickup_status
-        )
-      `)
-      .eq("user_id", profile.user_id)
-      .eq("delivery_date", today);
+      if (!profileOnly) {
+        return new Response(
+          JSON.stringify({ found: false, message: "ID nije pronađen u sistemu" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    if (ordersError) {
-      console.error("Orders error:", ordersError);
-      return new Response(
-        JSON.stringify({ error: "Greška pri pretrazi porudžbine" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if there are any orders for today
-    if (!orders || orders.length === 0 || !orders[0].order_items || orders[0].order_items.length === 0) {
+      // Profile exists but no order for today
       return new Response(
         JSON.stringify({ found: false, message: "Nema porudžbine za danas" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const order = orders[0];
-    const orderItem = order.order_items[0]; // Take first order item
+    const profile = rows[0];
+    const order = (profile as any).orders?.[0];
+    const orderItems = order?.order_items;
 
-    // Get meal name
-    const { data: meal, error: mealError } = await supabase
-      .from("meals")
-      .select("name")
-      .eq("id", orderItem.meal_id)
-      .single();
-
-    if (mealError) {
-      console.error("Meal error:", mealError);
+    if (!orderItems || orderItems.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Greška pri pronalaženju obroka" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ found: false, message: "Nema porudžbine za danas" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const mealName = meal?.name || "Nepoznat obrok";
+    const orderItem = orderItems[0];
+    const mealName: string = (orderItem as any).meals?.name || "Nepoznat obrok";
 
-    // Check for existing pending request in last 2 minutes (dedupe)
+    // Check existing pickup requests (pending + served) in parallel
     const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const { data: existingPending } = await supabase
-      .from("pickup_requests")
-      .select("id")
-      .eq("order_item_id", orderItem.id)
-      .eq("pickup_date", today)
-      .eq("status", "pending")
-      .gte("created_at", twoMinutesAgo)
-      .maybeSingle();
 
-    if (existingPending) {
-      // Check kitchen status
+    const [pendingResult, servedResult] = await Promise.all([
+      supabase
+        .from("pickup_requests")
+        .select("id")
+        .eq("order_item_id", orderItem.id)
+        .eq("pickup_date", today)
+        .eq("status", "pending")
+        .gte("created_at", twoMinutesAgo)
+        .maybeSingle(),
+      supabase
+        .from("pickup_requests")
+        .select("id, served_at, served_by")
+        .eq("order_item_id", orderItem.id)
+        .eq("pickup_date", today)
+        .eq("status", "served")
+        .neq("served_by", "auto-fiscal")
+        .maybeSingle(),
+    ]);
+
+    // Existing pending request (dedupe)
+    if (pendingResult.data) {
       const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
-      
       return new Response(
         JSON.stringify({
           found: true,
           fullName: profile.full_name || "",
           mealName,
-          pickupRequestId: existingPending.id,
+          pickupRequestId: pendingResult.data.id,
           message: "Zahtev je već kreiran",
           kitchenOpen: kitchenStatus.isOpen,
-          confirmationRequired: !kitchenStatus.isOpen
+          confirmationRequired: !kitchenStatus.isOpen,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if already served today (exclude auto-fiscal records - those are end-of-day fiscal receipts, not real pickups)
-    const { data: existingServed } = await supabase
-      .from("pickup_requests")
-      .select("id, served_at, served_by")
-      .eq("order_item_id", orderItem.id)
-      .eq("pickup_date", today)
-      .eq("status", "served")
-      .neq("served_by", "auto-fiscal")
-      .maybeSingle();
-
-    if (existingServed) {
-      // Check kitchen status
+    // Already served today
+    if (servedResult.data) {
       const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
-      
       return new Response(
         JSON.stringify({
           found: true,
@@ -164,51 +154,50 @@ Deno.serve(async (req) => {
           alreadyServed: true,
           message: "Obrok je već preuzet",
           kitchenOpen: kitchenStatus.isOpen,
-          confirmationRequired: !kitchenStatus.isOpen
+          confirmationRequired: !kitchenStatus.isOpen,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create new pickup request
-    const { data: pickupRequest, error: insertError } = await supabase
-      .from("pickup_requests")
-      .insert({
-        pickup_date: today,
-        employee_identifier: company_card_id.trim(),
-        company_id: profile.company_id,
-        profile_id: profile.id,
-        order_id: order.id,
-        order_item_id: orderItem.id,
-        meal_name_snapshot: mealName,
-        status: "pending"
-      })
-      .select("id")
-      .single();
+    // Create new pickup request + check kitchen status in parallel
+    const [insertResult, kitchenStatus] = await Promise.all([
+      supabase
+        .from("pickup_requests")
+        .insert({
+          pickup_date: today,
+          employee_identifier: cardId,
+          company_id: profile.company_id,
+          profile_id: profile.id,
+          order_id: order.id,
+          order_item_id: orderItem.id,
+          meal_name_snapshot: mealName,
+          status: "pending",
+        })
+        .select("id")
+        .single(),
+      isKitchenOpen(supabase, profile.company_id),
+    ]);
 
-    if (insertError) {
-      console.error("Insert error:", insertError);
+    if (insertResult.error) {
+      console.error("Insert error:", insertResult.error);
       return new Response(
         JSON.stringify({ error: "Greška pri kreiranju zahteva" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check kitchen status for new pickup request
-    const kitchenStatus = await isKitchenOpen(supabase, profile.company_id);
-
     return new Response(
       JSON.stringify({
         found: true,
         fullName: profile.full_name || "",
         mealName,
-        pickupRequestId: pickupRequest.id,
+        pickupRequestId: insertResult.data.id,
         kitchenOpen: kitchenStatus.isOpen,
-        confirmationRequired: !kitchenStatus.isOpen
+        confirmationRequired: !kitchenStatus.isOpen,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Error:", error);
     return new Response(
