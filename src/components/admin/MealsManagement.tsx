@@ -334,6 +334,10 @@ export function MealsManagement() {
     }
   };
 
+  // Pagination state for mobile
+  const [mealsPage, setMealsPage] = useState(1);
+  const [mealsPageSize, setMealsPageSize] = useState(20);
+
   const filteredMeals = meals.filter(meal => {
     const matchesCode = !mealFilters.code || 
       (meal.code && meal.code.toLowerCase().includes(mealFilters.code.toLowerCase()));
