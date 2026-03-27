@@ -201,7 +201,7 @@ export function AdminDashboard() {
                     >
                       <XAxis type="number" hide />
                       <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(value: number) => [value, 'Porudžbina']} />
+                      
                       <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))' }}>
                         {(() => {
                           const shiftOrder = ['prva', 'druga', 'treća'];
