@@ -52,10 +52,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         .select('*', { count: 'exact', head: true })
         .eq('delivery_date', today);
 
-      const { data: todayOrderIds } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('delivery_date', today);
+
 
       // Count actually picked up meals (exclude auto-fiscal)
       let todayPickedUpCount = 0;
