@@ -41,7 +41,7 @@ export function AdminDashboard() {
   const { signOut } = useAuth();
   const { toast } = useToast();
   const { meals } = useMeals();
-  const { users } = useUsers();
+  
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   
   // Date range state for filtering - defaults to current week
