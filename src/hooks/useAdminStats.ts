@@ -22,6 +22,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     todayOrders: 0,
     todayPickedUp: 0,
     shiftBreakdown: [],
+    topMeals: [],
   });
   const [loading, setLoading] = useState(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
