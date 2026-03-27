@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChefHat, Plus, Edit, Trash2, ImageIcon, Upload, Save, Loader2, Info, X, Check, ChevronDown, CheckSquare } from "lucide-react";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
@@ -333,6 +334,10 @@ export function MealsManagement() {
       setUpdatingMeal(false);
     }
   };
+
+  // Pagination state for mobile
+  const [mealsPage, setMealsPage] = useState(1);
+  const [mealsPageSize, setMealsPageSize] = useState(20);
 
   const filteredMeals = meals.filter(meal => {
     const matchesCode = !mealFilters.code || 
@@ -688,18 +693,21 @@ export function MealsManagement() {
             <div className="text-center py-8">Učitavanje...</div>
           ) : isMobile ? (
             /* Mobile card view */
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Input
                 placeholder="Pretraži po nazivu..."
                 value={mealFilters.name}
-                onChange={(e) => setMealFilters(prev => ({...prev, name: e.target.value}))}
+                onChange={(e) => { setMealFilters(prev => ({...prev, name: e.target.value})); setMealsPage(1); }}
                 className="h-9 text-sm"
               />
               {filteredMeals.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8 text-sm">Nema obroka koji odgovaraju filterima</p>
               ) : (
+                <>
                 <div className="space-y-2">
-                  {filteredMeals.map(meal => (
+                  {filteredMeals
+                    .slice((mealsPage - 1) * mealsPageSize, mealsPage * mealsPageSize)
+                    .map(meal => (
                     <div
                       key={meal.id}
                       className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
@@ -735,6 +743,14 @@ export function MealsManagement() {
                     </div>
                   ))}
                 </div>
+                <TablePagination
+                  currentPage={mealsPage}
+                  totalItems={filteredMeals.length}
+                  pageSize={mealsPageSize}
+                  onPageChange={setMealsPage}
+                  onPageSizeChange={setMealsPageSize}
+                />
+                </>
               )}
             </div>
           ) : (

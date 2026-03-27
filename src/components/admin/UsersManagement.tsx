@@ -311,7 +311,20 @@ export function UsersManagement() {
     }
   };
 
+  // Mobile combined search state
+  const [mobileSearch, setMobileSearch] = useState('');
+
   const filteredUsers = users.filter(user => {
+    // On mobile, use combined search across name and ID
+    if (isMobile && mobileSearch) {
+      const lowerSearch = mobileSearch.toLowerCase();
+      const matchesMobileSearch = 
+        (user.full_name && user.full_name.toLowerCase().includes(lowerSearch)) ||
+        (user.company_card_id && user.company_card_id.toLowerCase().includes(lowerSearch)) ||
+        (user.email && user.email.toLowerCase().includes(lowerSearch));
+      if (!matchesMobileSearch) return false;
+    }
+
     const matchesId = !userFilters.id || 
       (user.company_card_id && user.company_card_id.toLowerCase().includes(userFilters.id.toLowerCase()));
     const matchesName = !userFilters.fullName || 
@@ -797,9 +810,9 @@ export function UsersManagement() {
                 <div className="space-y-2">
                   {/* Mobile search */}
                   <Input
-                    placeholder="Pretraži po imenu ili ID-u..."
-                    value={userFilters.fullName}
-                    onChange={(e) => { setUserFilters(prev => ({...prev, fullName: e.target.value})); setUsersPage(1); }}
+                    placeholder="Pretraži po imenu, ID-u ili email-u..."
+                    value={mobileSearch}
+                    onChange={(e) => { setMobileSearch(e.target.value); setUsersPage(1); }}
                     className="h-9 text-sm"
                   />
                   {filteredUsers.length === 0 ? (
