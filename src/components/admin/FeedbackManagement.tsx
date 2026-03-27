@@ -98,46 +98,78 @@ export function FeedbackManagement() {
             />
           ) : (
             <>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Korisnik</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Utisak</TableHead>
-                      <TableHead>Datum</TableHead>
-                      <TableHead className="text-center">Obrađeno</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedFeedback.map((item) => (
-                      <TableRow 
-                        key={item.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        <TableCell className="font-medium">
-                          {item.profiles?.full_name || 'N/A'}
-                        </TableCell>
-                        <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
-                        <TableCell className="max-w-md">
-                          <div className="line-clamp-2">{item.content}</div>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
-                        </TableCell>
-                        <TableCell className="text-center">
+              {isMobile ? (
+                /* Mobile card view */
+                <div className="space-y-3">
+                  {paginatedFeedback.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm truncate">{item.profiles?.full_name || 'N/A'}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.profiles?.email || 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(item.created_at), 'dd.MM.yy', { locale: sr })}
+                          </span>
                           <Checkbox
                             checked={item.obradeno}
                             onCheckedChange={() => {}}
                             onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
                           />
-                        </TableCell>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{item.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Desktop table view */
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Korisnik</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Utisak</TableHead>
+                        <TableHead>Datum</TableHead>
+                        <TableHead className="text-center">Obrađeno</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedFeedback.map((item) => (
+                        <TableRow 
+                          key={item.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedItem(item)}
+                        >
+                          <TableCell className="font-medium">
+                            {item.profiles?.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{item.profiles?.email || 'N/A'}</TableCell>
+                          <TableCell className="max-w-md">
+                            <div className="line-clamp-2">{item.content}</div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {format(new Date(item.created_at), 'dd.MM.yyyy HH:mm', { locale: sr })}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={item.obradeno}
+                              onCheckedChange={() => {}}
+                              onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
               <TablePagination
                 currentPage={currentPage}
                 totalItems={filteredFeedback.length}
