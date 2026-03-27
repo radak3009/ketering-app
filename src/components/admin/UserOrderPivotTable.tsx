@@ -137,12 +137,12 @@ export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="min-w-0">
             <CardTitle className="text-lg md:text-xl">Pivot tabela - Po korisnicima</CardTitle>
             <CardDescription className="text-xs md:text-sm">Pregled porudžbina po korisnicima i danima</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="self-start sm:self-auto shrink-0">
             <Download className="h-4 w-4 mr-1.5" />
             CSV
           </Button>
