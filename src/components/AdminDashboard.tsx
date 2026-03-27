@@ -115,18 +115,42 @@ export function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-          {/* Card 1: Obroci */}
+          {/* Card 1: Top 3 obroka */}
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <ChefHat className="h-3 w-3 md:h-4 md:w-4" />
-                {t('stats.meals')}
+                Top 3 obroka
               </CardTitle>
             </CardHeader>
             <CardContent className="p-2 md:p-4 pt-0">
-              <div className="text-lg md:text-2xl font-bold text-foreground">
-                {statsLoading ? "..." : meals.length}
-              </div>
+              {statsLoading ? (
+                <div className="text-lg md:text-2xl font-bold text-foreground">...</div>
+              ) : stats.topMeals.length === 0 ? (
+                <div className="text-xs text-muted-foreground">Nema podataka</div>
+              ) : (
+                <div className="h-[80px] md:h-[100px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={stats.topMeals.map(m => ({
+                        name: m.name.length > 12 ? m.name.slice(0, 12) + '…' : m.name,
+                        value: m.count,
+                      }))}
+                      layout="vertical"
+                      margin={{ top: 0, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <XAxis type="number" hide />
+                      <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(value: number) => [value, 'Porudžbina']} />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--foreground))' }}>
+                        {stats.topMeals.map((_, i) => (
+                          <Cell key={i} fill={['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--secondary))'][i] || 'hsl(var(--muted))'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
           
