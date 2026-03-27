@@ -7,7 +7,7 @@ import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Setti
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
-import { useMeals } from "@/hooks/useMeals";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
