@@ -104,10 +104,13 @@ export function useAdminStats(startDate?: string, endDate?: string) {
           const batch = orderIds.slice(i, i + batchSize);
           const { data: items } = await supabase
             .from('order_items')
-            .select('shift')
+            .select('shift, meal_id')
             .in('order_id', batch);
           if (items) {
             allShifts.push(...items.map(it => it.shift));
+            items.forEach(it => {
+              mealCounts[it.meal_id] = (mealCounts[it.meal_id] || 0) + 1;
+            });
           }
         }
         
