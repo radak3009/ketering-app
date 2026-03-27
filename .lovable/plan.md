@@ -1,31 +1,54 @@
+## Plan: Custom admin notification to employees via toast
+
+### Overview
+
+Admin writes a custom message in the Notifications tab, clicks send, then confirms sending, it gets stored in a new `admin_broadcasts` table. Employee Dashboard listens via Supabase Realtime for new inserts and displays each as a toast notification.
+
+### Changes
+
+#### 1. Database migration — new `admin_broadcasts` table
+
+```sql
+CREATE TABLE public.admin_broadcasts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message text NOT NULL,
+  sent_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.admin_broadcasts ENABLE ROW LEVEL SECURITY;
+
+-- Admins can insert and view
+CREATE POLICY "Admins can manage broadcasts" ON public.admin_broadcasts
+  FOR ALL TO authenticated USING (is_admin_user(auth.uid()));
+
+-- Employees can read (needed for realtime subscription)
+CREATE POLICY "Employees can view broadcasts" ON public.admin_broadcasts
+  FOR SELECT TO authenticated USING (true);
+
+-- Enable realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_broadcasts;
+```
+
+#### 2. `src/components/AdminDashboard.tsx` — Notifications tab
+
+Add a third card "Custom obaveštenje" alongside existing menu alert and reminder cards:
+
+- Textarea for message input
+- Send button that inserts into `admin_broadcasts`
+- Success toast on send
+
+#### 3. `src/components/EmployeeDashboard.tsx` — Realtime listener
+
+- Subscribe to `admin_broadcasts` INSERT events via Supabase Realtime
+- On new broadcast, show a toast with the message text
+- Only show broadcasts created after the component mounted (prevent old messages appearing on page load)
+
+### Files to modify
 
 
-## Plan: Zameniti karticu Obroci sa Top 3 Obroka (bar chart)
-
-### Pregled
-Karticu "Obroci" (prva kartica u metrici) zameniti horizontalnim bar chart-om koji prikazuje 3 najnaručivanija obroka za odabrani period — isti vizuelni stil kao kartica "Po smenama".
-
-### Izmene
-
-#### 1. `src/hooks/useAdminStats.ts`
-- Dodati `topMeals: { name: string; count: number }[]` u `AdminStats` interfejs
-- U `fetchStats`, iz već dohvaćenih `order_items` (batch petlja gde se čitaju shift-ovi), dodati i `meal_id` u select
-- Prebrojati porudžbine po `meal_id`, uzeti top 3
-- Za top 3 meal_id-jeva dohvatiti imena iz tabele `meals`
-- Postaviti u stats kao `topMeals`
-
-#### 2. `src/components/AdminDashboard.tsx`
-- Zameniti Card 1 (Obroci, linije 119-131) sa horizontalnim bar chart-om
-- Naslov: "Top 3 obroka"
-- Isti layout kao "Po smenama": `ResponsiveContainer`, `BarChart layout="vertical"`, `Bar` sa label
-- YAxis prikazuje skraćeno ime obroka (max ~12 karaktera), XAxis skriven
-- Tri distinktne boje za barove
-- Kada nema podataka: "Nema podataka" poruka
-- Ukloniti `useMeals` import ako više nije potreban na ovoj stranici
-
-### Fajlovi za izmenu
-| Fajl | Izmena |
-|------|--------|
-| `src/hooks/useAdminStats.ts` | Dodati `topMeals` u stats, dohvatiti iz order_items |
-| `src/components/AdminDashboard.tsx` | Zameniti karticu Obroci sa Top 3 bar chart |
-
+| File                                   | Change                                               |
+| -------------------------------------- | ---------------------------------------------------- |
+| Migration SQL                          | Create `admin_broadcasts` table with RLS + realtime  |
+| `src/components/AdminDashboard.tsx`    | Add custom notification card in Notifications tab    |
+| `src/components/EmployeeDashboard.tsx` | Add Realtime subscription for broadcasts, show toast |
