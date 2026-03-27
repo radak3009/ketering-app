@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EnhancedDatePicker } from "@/components/ui/enhanced-date-picker";
 import { Users, Plus, FileText, Upload, Mail, Trash2, Save, Key, X, Download, Tag, CheckSquare, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { SendInvitationDialog } from './SendInvitationDialog';
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
