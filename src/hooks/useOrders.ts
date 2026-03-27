@@ -192,14 +192,7 @@ export function useOrders(initialStartDate?: string, initialEndDate?: string) {
     fetchOrders(initialStartDate, initialEndDate);
   }, [initialStartDate, initialEndDate, fetchOrders]);
 
-  // Auto-refresh every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchOrders(currentDateRangeRef.current.start, currentDateRangeRef.current.end);
-    }, 300000); // 5 minutes
-
-    return () => clearInterval(interval);
-  }, [fetchOrders]);
+  
 
   return {
     orders,
