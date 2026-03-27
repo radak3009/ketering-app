@@ -751,6 +751,7 @@ export function MealsManagement() {
                 />
                 </>
               )}
+            </div>
           ) : (
             <div className="rounded-md border overflow-x-auto">
               {/* Bulk action bar */}
