@@ -352,7 +352,7 @@ export function AdminDashboard() {
                 <CardDescription className="text-xs md:text-sm">{t('admin.notifications.description')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto">
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">{t('admin.notifications.menuAlert.title')}</CardTitle>
@@ -388,6 +388,33 @@ export function AdminDashboard() {
                       >
                         <Bell className="h-4 w-4 mr-2" />
                         {notificationsLoading ? t('admin.notifications.reminder.sending') : t('admin.notifications.reminder.button')}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Custom obaveštenje</CardTitle>
+                      <CardDescription className="text-xs">
+                        Pošaljite poruku svim zaposlenima u realnom vremenu
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <textarea
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="Unesite poruku..."
+                        value={broadcastMessage}
+                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                        maxLength={500}
+                      />
+                      <Button 
+                        onClick={sendBroadcast} 
+                        disabled={notificationsLoading || !broadcastMessage.trim()}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        {notificationsLoading ? 'Slanje...' : 'Pošalji obaveštenje'}
                       </Button>
                     </CardContent>
                   </Card>
