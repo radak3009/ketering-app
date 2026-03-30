@@ -125,6 +125,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
       mealId: string;
       shift: string;
       quantity: number;
+      pickupStatus: string;
     }> = [];
 
     filteredOrders.forEach(order => {
@@ -140,6 +141,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
           mealId: oi.meal_id,
           shift: oi.shift || "prva",
           quantity: oi.quantity,
+          pickupStatus: oi.pickup_status === 'preuzeto' ? 'Preuzeto' : 'Nije preuzeto',
         });
       });
     });
