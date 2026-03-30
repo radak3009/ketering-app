@@ -599,6 +599,7 @@ export type Database = {
       profiles: {
         Row: {
           company_card_id: string | null
+          company_card_serial: string | null
           company_id: string | null
           created_at: string
           date_of_birth: string | null
@@ -614,6 +615,7 @@ export type Database = {
         }
         Insert: {
           company_card_id?: string | null
+          company_card_serial?: string | null
           company_id?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -629,6 +631,7 @@ export type Database = {
         }
         Update: {
           company_card_id?: string | null
+          company_card_serial?: string | null
           company_id?: string | null
           created_at?: string
           date_of_birth?: string | null
