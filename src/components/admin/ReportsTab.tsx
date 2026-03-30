@@ -100,11 +100,12 @@ export function ReportsTab() {
             order.order_items.forEach(item => {
               const mealName = item.meal?.name || '';
               const shift = shiftLabel(item.shift || '');
+              const pickupStatus = item.pickup_status === 'preuzeto' ? 'Preuzeto' : 'Nije preuzeto';
               // Only show delivery date for items actually picked up via Kiosk
               const deliveryDate = item.pickup_status === 'preuzeto' && item.pickup_time
                 ? format(new Date(item.pickup_time), 'yyyy-MM-dd')
                 : '';
-              csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${notes}"\n`;
+              csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${pickupStatus}","${notes}"\n`;
             });
           } else {
             csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","","","","${notes}"\n`;
