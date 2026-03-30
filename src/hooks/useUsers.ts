@@ -88,7 +88,7 @@ export function useUsers() {
       } else if (updates.email) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, user_id, full_name, email, phone, company_card_id, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
+          .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
           .eq('id', id)
           .single();
 
