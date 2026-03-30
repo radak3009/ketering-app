@@ -94,17 +94,20 @@ export function ReportsTab() {
           const userName = user?.full_name || 'N/A';
           const userTag = user?.tag || '';
           const orderDate = order.order_date;
-          const deliveryDate = order.delivery_date || 'N/A';
           const notes = order.notes || '';
           
           if (order.order_items && order.order_items.length > 0) {
             order.order_items.forEach(item => {
               const mealName = item.meal?.name || '';
               const shift = shiftLabel(item.shift || '');
+              // Only show delivery date for items actually picked up via Kiosk
+              const deliveryDate = item.pickup_status === 'preuzeto' && item.pickup_time
+                ? format(new Date(item.pickup_time), 'yyyy-MM-dd')
+                : '';
               csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${notes}"\n`;
             });
           } else {
-            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","","","${notes}"\n`;
+            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","","","","${notes}"\n`;
           }
         });
         filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
