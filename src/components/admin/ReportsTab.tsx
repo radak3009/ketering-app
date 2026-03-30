@@ -88,7 +88,7 @@ export function ReportsTab() {
         const shiftLabel = (s: string) => s === 'prva' ? 'I' : s === 'druga' ? 'II' : s === 'treća' ? 'III' : s;
         
         csvContent = '\uFEFF'; // UTF-8 BOM
-        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Naziv obroka,Smena,Napomene\n';
+        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Naziv obroka,Smena,Status preuzimanja,Napomene\n';
         orders.forEach(order => {
           const user = users.find(u => u.user_id === order.user_id);
           const userName = user?.full_name || 'N/A';
@@ -100,14 +100,15 @@ export function ReportsTab() {
             order.order_items.forEach(item => {
               const mealName = item.meal?.name || '';
               const shift = shiftLabel(item.shift || '');
+              const pickupStatus = item.pickup_status === 'preuzeto' ? 'Preuzeto' : 'Nije preuzeto';
               // Only show delivery date for items actually picked up via Kiosk
               const deliveryDate = item.pickup_status === 'preuzeto' && item.pickup_time
                 ? format(new Date(item.pickup_time), 'yyyy-MM-dd')
                 : '';
-              csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${notes}"\n`;
+              csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${pickupStatus}","${notes}"\n`;
             });
           } else {
-            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","","","","${notes}"\n`;
+            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","","","","Nije preuzeto","${notes}"\n`;
           }
         });
         filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
