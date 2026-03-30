@@ -428,13 +428,14 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   </div>
                   {flatOrderItems.length > 0 && (
                     <Button variant="outline" size="sm" onClick={() => {
-                      const header = ["Korisnik", "ID Kartice", "Datum dostave", "Obrok", "Smena"];
+                      const header = ["Korisnik", "ID Kartice", "Datum dostave", "Obrok", "Smena", "Status preuzimanja"];
                       const rows: (string | number)[][] = [header, ...flatOrderItems.map(item => [
                         item.userName,
                         item.cardId,
                         item.deliveryDate,
                         item.mealName,
                         SHIFT_ROMAN[item.shift] || item.shift,
+                        item.pickupStatus,
                       ])];
                       downloadCSV(rows, `porudzbine-lista_${format(new Date(), 'yyyy-MM-dd')}`);
                       toast({ title: "CSV izvezen", description: `Izvezeno ${flatOrderItems.length} stavki` });
