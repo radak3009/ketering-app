@@ -88,7 +88,7 @@ export function ReportsTab() {
         const shiftLabel = (s: string) => s === 'prva' ? 'I' : s === 'druga' ? 'II' : s === 'treća' ? 'III' : s;
         
         csvContent = '\uFEFF'; // UTF-8 BOM
-        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Naziv obroka,Smena,Napomene\n';
+        csvContent += 'ID Porudžbine,Korisnik,Tag,Datum porudžbine,Datum dostave,Naziv obroka,Smena,Status preuzimanja,Napomene\n';
         orders.forEach(order => {
           const user = users.find(u => u.user_id === order.user_id);
           const userName = user?.full_name || 'N/A';
