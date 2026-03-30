@@ -108,7 +108,7 @@ export function ReportsTab() {
               csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","${deliveryDate}","${mealName}","${shift}","${pickupStatus}","${notes}"\n`;
             });
           } else {
-            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","","","","${notes}"\n`;
+            csvContent += `"${order.id}","${userName}","${userTag}","${orderDate}","","","","Nije preuzeto","${notes}"\n`;
           }
         });
         filename = `porudzbine_${reportDateRange.startDate}_${reportDateRange.endDate}.csv`;
