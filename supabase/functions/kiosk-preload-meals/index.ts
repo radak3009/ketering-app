@@ -64,9 +64,8 @@ Deno.serve(async (req) => {
     // Fetch profiles for these users
     const { data: profiles, error: profileError } = await supabase
       .from("profiles")
-      .select("id, user_id, full_name, company_card_id")
-      .in("user_id", userIds)
-      .not("company_card_id", "is", null);
+      .select("id, user_id, full_name, company_card_id, company_card_serial")
+      .in("user_id", userIds);
 
     if (profileError) {
       console.error("Profiles error:", profileError);
