@@ -19,8 +19,9 @@ Deno.serve(async (req) => {
     const employeeToken = Deno.env.get("KIOSK_TOKEN_EMPLOYEE");
     const kitchenToken = Deno.env.get("KIOSK_TOKEN_KITCHEN");
 
+    // Employee token takes priority if both tokens are the same value
     const isEmployeeKiosk = employeeToken && kioskToken === employeeToken;
-    const isKitchenKiosk = kitchenToken && kioskToken === kitchenToken;
+    const isKitchenKiosk = kitchenToken && kioskToken === kitchenToken && !isEmployeeKiosk;
 
     if (!isEmployeeKiosk && !isKitchenKiosk) {
       return new Response(
