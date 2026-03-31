@@ -105,14 +105,23 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
     });
   }, [orders, users, tagFilter]);
 
-  // Filter orders by shift
+  // Filter orders by shift and pickup status
   const filteredOrders = useMemo(() => {
-    if (shiftFilter === "all") return tagFilteredOrders;
-    return tagFilteredOrders.map(order => ({
-      ...order,
-      order_items: order.order_items?.filter(item => item.shift === shiftFilter)
-    })).filter(order => (order.order_items?.length ?? 0) > 0);
-  }, [tagFilteredOrders, shiftFilter]);
+    let result = tagFilteredOrders;
+    if (shiftFilter !== "all") {
+      result = result.map(order => ({
+        ...order,
+        order_items: order.order_items?.filter(item => item.shift === shiftFilter)
+      })).filter(order => (order.order_items?.length ?? 0) > 0);
+    }
+    if (pickupStatusFilter !== "all") {
+      result = result.map(order => ({
+        ...order,
+        order_items: order.order_items?.filter(item => item.pickup_status === pickupStatusFilter)
+      })).filter(order => (order.order_items?.length ?? 0) > 0);
+    }
+    return result;
+  }, [tagFilteredOrders, shiftFilter, pickupStatusFilter]);
 
   // Flat list of order items for list view
   const flatOrderItems = useMemo(() => {
