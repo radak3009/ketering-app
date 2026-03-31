@@ -1146,6 +1146,20 @@ export function UsersManagement() {
                   <p className="text-xs text-destructive mt-1">ID je obavezno polje</p>
                 )}
               </div>
+
+              <div>
+                <Label htmlFor="edit-user-card-serial">Broj kartice</Label>
+                <Input 
+                  id="edit-user-card-serial" 
+                  type="text"
+                  value={selectedUser.company_card_serial || ''} 
+                  onChange={e => setSelectedUser({ ...selectedUser, company_card_serial: e.target.value })}
+                  placeholder="Serijski broj RFID kartice"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Serijski broj kartice za identifikaciju na Kiosku
+                </p>
+              </div>
               
                <div>
                  <Label htmlFor="edit-user-tag">Tag</Label>
