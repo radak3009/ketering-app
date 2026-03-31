@@ -499,7 +499,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                         <TableBody>
                           {flatOrderItems.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                                 Nema stavki za prikaz
                               </TableCell>
                             </TableRow>
