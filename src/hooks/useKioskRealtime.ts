@@ -33,6 +33,7 @@ interface PickupRequestPayload {
   meal_name_snapshot: string | null;
   status: string;
   served_at: string | null;
+  served_by: string | null;
 }
 
 const FALLBACK_POLLING_INTERVAL = 45000; // 45 seconds
