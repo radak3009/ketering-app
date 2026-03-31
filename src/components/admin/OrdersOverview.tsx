@@ -475,6 +475,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                               <span className="text-muted-foreground">{item.deliveryDate}</span>
                               <span className="font-medium">{item.mealName}</span>
                               <Badge variant="secondary" className="text-xs">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                              <Badge variant={item.pickupStatus === 'Preuzeto' ? 'default' : 'outline'} className="text-xs">{item.pickupStatus}</Badge>
                             </div>
                           </div>
                         ))
@@ -492,13 +493,14 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                             <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
                             <TableHead className="text-xs md:text-sm">Obrok</TableHead>
                             <TableHead className="text-xs md:text-sm">Smena</TableHead>
+                            <TableHead className="text-xs md:text-sm">Status</TableHead>
                             <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {flatOrderItems.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                                 Nema stavki za prikaz
                               </TableCell>
                             </TableRow>
@@ -513,6 +515,11 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
                                 <TableCell className="text-xs md:text-sm">
                                   <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                                </TableCell>
+                                <TableCell className="text-xs md:text-sm">
+                                  <Badge variant={item.pickupStatus === 'Preuzeto' ? 'default' : 'outline'}>
+                                    {item.pickupStatus}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
