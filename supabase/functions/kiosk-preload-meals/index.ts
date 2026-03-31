@@ -64,9 +64,8 @@ Deno.serve(async (req) => {
     // Fetch profiles for these users
     const { data: profiles, error: profileError } = await supabase
       .from("profiles")
-      .select("id, user_id, full_name, company_card_id")
-      .in("user_id", userIds)
-      .not("company_card_id", "is", null);
+      .select("id, user_id, full_name, company_card_id, company_card_serial")
+      .in("user_id", userIds);
 
     if (profileError) {
       console.error("Profiles error:", profileError);
@@ -79,7 +78,7 @@ Deno.serve(async (req) => {
     // Build user_id -> profile map
     const profileMap = new Map<string, any>();
     for (const p of (profiles || [])) {
-      if (p.company_card_id) {
+      if (p.company_card_id || p.company_card_serial) {
         profileMap.set(p.user_id, p);
       }
     }
@@ -95,7 +94,8 @@ Deno.serve(async (req) => {
 
     for (const order of orders) {
       const profile = profileMap.get((order as any).user_id);
-      if (!profile || !profile.company_card_id) continue;
+      if (!profile) continue;
+      if (!profile.company_card_id && !profile.company_card_serial) continue;
 
       const items = (order as any).order_items;
       if (!items || items.length === 0) continue;
@@ -103,13 +103,22 @@ Deno.serve(async (req) => {
       const item = items[0];
       const mealName = item.meals?.name || "Nepoznat obrok";
 
-      meals[profile.company_card_id] = {
+      const entry = {
         fullName: profile.full_name || "",
         mealName,
         orderItemId: item.id,
         pickupStatus: item.pickup_status,
         shift: item.shift,
       };
+
+      // Map by company_card_id
+      if (profile.company_card_id) {
+        meals[profile.company_card_id] = entry;
+      }
+      // Also map by company_card_serial for RFID lookup
+      if (profile.company_card_serial) {
+        meals[profile.company_card_serial] = entry;
+      }
     }
 
     return new Response(

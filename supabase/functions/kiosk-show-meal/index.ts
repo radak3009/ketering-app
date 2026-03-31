@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id, user_id, full_name, company_id")
-      .eq("company_card_id", cardId)
+      .or(`company_card_id.eq.${cardId},company_card_serial.eq.${cardId}`)
       .maybeSingle();
 
     if (profileError) {

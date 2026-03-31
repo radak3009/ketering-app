@@ -247,7 +247,7 @@ export default function KioskPickup() {
             <div className="text-center mb-8">
               <Utensils className="h-16 w-16 text-primary mx-auto mb-4" />
               <h1 className="text-3xl font-bold text-foreground">KETERING</h1>
-              <p className="text-muted-foreground mt-2">Unesite svoj ID za prikaz obroka</p>
+              <p className="text-muted-foreground mt-2">Unesite ID ili skenirajte karticu</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -255,11 +255,9 @@ export default function KioskPickup() {
                 <Input
                   ref={inputRef}
                   type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
                   value={cardId}
                   onChange={(e) => setCardId(e.target.value)}
-                  placeholder="Unesite ID"
+                  placeholder="Unesite ID ili skenirajte karticu"
                   className="text-center text-2xl h-16 font-mono"
                   autoComplete="off"
                 />

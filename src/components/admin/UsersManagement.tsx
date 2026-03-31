@@ -25,6 +25,7 @@ interface UserFormState {
   email: string;
   phone: string;
   company_card_id: string;
+  company_card_serial: string;
   tag: string;
   date_of_birth: Date | undefined;
   role: Role;
@@ -57,6 +58,7 @@ const initialUserForm: UserFormState = {
   email: "",
   phone: "",
   company_card_id: "",
+  company_card_serial: "",
   tag: "",
   date_of_birth: undefined,
   role: "employee",
@@ -127,8 +129,8 @@ export function UsersManagement() {
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ['Ime i prezime', 'Email', 'ID', 'Tag', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
-    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'VIP', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
+    const headers = ['Ime i prezime', 'Email', 'ID', 'Broj kartice', 'Tag', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
+    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'ABC123', 'VIP', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
     
     const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -218,6 +220,7 @@ export function UsersManagement() {
         email: userToSave.email,
         phone: userToSave.phone,
         company_card_id: userToSave.company_card_id,
+        company_card_serial: userToSave.company_card_serial || null,
         tag: userToSave.tag && userToSave.tag.trim() !== '' ? userToSave.tag.trim() : null,
         date_of_birth: userToSave.date_of_birth || null
       });
@@ -270,10 +273,14 @@ export function UsersManagement() {
             userData.phone = value;
           }
           // ID (company_card_id) - samo cifre, max 10, bez @
-          if (header.includes('company_card_id') || header === 'id' || header.includes('kartica')) {
+          if (header.includes('company_card_id') || header === 'id') {
             if (!value.includes('@')) {
               userData.company_card_id = value.replace(/\D/g, '').slice(0, 10);
             }
+          }
+          // Broj kartice (company_card_serial)
+          if (header.includes('broj kartice') || header.includes('company_card_serial') || header.includes('serial')) {
+            userData.company_card_serial = value;
           }
           // Datum rođenja
           if (header.includes('datum') || header.includes('date') || header.includes('dob') || header.includes('rodjenja') || header.includes('rođenja')) {
@@ -569,6 +576,20 @@ export function UsersManagement() {
                     </div>
                     
                     <div>
+                      <Label htmlFor="user-card-serial">Broj kartice</Label>
+                      <Input 
+                        id="user-card-serial" 
+                        type="text"
+                        value={userForm.company_card_serial} 
+                        onChange={e => setUserForm({ ...userForm, company_card_serial: e.target.value })}
+                        placeholder="Serijski broj RFID kartice"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Serijski broj kartice za identifikaciju na Kiosku
+                      </p>
+                    </div>
+                    
+                    <div>
                       <Label htmlFor="user-tag">Tag</Label>
                       {showCustomTagInput ? (
                         <div className="flex gap-2">
@@ -853,6 +874,9 @@ export function UsersManagement() {
                             {user.company_card_id && (
                               <span className="font-mono">ID: {user.company_card_id}</span>
                             )}
+                            {user.company_card_serial && (
+                              <span className="font-mono">Kartice: {user.company_card_serial}</span>
+                            )}
                             {user.tag && (
                               <Badge variant="secondary" className="text-xs h-5">{user.tag}</Badge>
                             )}
@@ -1125,6 +1149,20 @@ export function UsersManagement() {
                 {!selectedUser.company_card_id && (
                   <p className="text-xs text-destructive mt-1">ID je obavezno polje</p>
                 )}
+              </div>
+
+              <div>
+                <Label htmlFor="edit-user-card-serial">Broj kartice</Label>
+                <Input 
+                  id="edit-user-card-serial" 
+                  type="text"
+                  value={selectedUser.company_card_serial || ''} 
+                  onChange={e => setSelectedUser({ ...selectedUser, company_card_serial: e.target.value })}
+                  placeholder="Serijski broj RFID kartice"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Serijski broj kartice za identifikaciju na Kiosku
+                </p>
               </div>
               
                <div>
