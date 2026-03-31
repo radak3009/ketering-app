@@ -273,10 +273,14 @@ export function UsersManagement() {
             userData.phone = value;
           }
           // ID (company_card_id) - samo cifre, max 10, bez @
-          if (header.includes('company_card_id') || header === 'id' || header.includes('kartica')) {
+          if (header.includes('company_card_id') || header === 'id') {
             if (!value.includes('@')) {
               userData.company_card_id = value.replace(/\D/g, '').slice(0, 10);
             }
+          }
+          // Broj kartice (company_card_serial)
+          if (header.includes('broj kartice') || header.includes('company_card_serial') || header.includes('serial')) {
+            userData.company_card_serial = value;
           }
           // Datum rođenja
           if (header.includes('datum') || header.includes('date') || header.includes('dob') || header.includes('rodjenja') || header.includes('rođenja')) {
