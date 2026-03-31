@@ -58,6 +58,7 @@ const initialUserForm: UserFormState = {
   email: "",
   phone: "",
   company_card_id: "",
+  company_card_serial: "",
   tag: "",
   date_of_birth: undefined,
   role: "employee",
