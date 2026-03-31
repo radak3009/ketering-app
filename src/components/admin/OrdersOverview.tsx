@@ -492,6 +492,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                             <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
                             <TableHead className="text-xs md:text-sm">Obrok</TableHead>
                             <TableHead className="text-xs md:text-sm">Smena</TableHead>
+                            <TableHead className="text-xs md:text-sm">Status</TableHead>
                             <TableHead className="text-xs md:text-sm text-right">Akcije</TableHead>
                           </TableRow>
                         </TableHeader>
