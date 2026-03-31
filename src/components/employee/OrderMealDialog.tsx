@@ -393,21 +393,20 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
                           />
                         )}
                         <div className="p-3">
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium">{meal.name}</h3>
-                            <Badge variant="outline">{meal.category}</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {meal.description}
-                          </p>
+                          <h3 className="font-medium">{meal.name}</h3>
                           {meal.allergens && meal.allergens.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1 mt-1.5">
                               {meal.allergens.map((allergen, idx) => (
                                 <Badge key={idx} variant="secondary" className="text-xs">
                                   {allergen}
                                 </Badge>
                               ))}
                             </div>
+                          )}
+                          {meal.description && meal.description.trim() !== '' && (
+                            <p className="text-sm text-muted-foreground mt-1.5">
+                              {meal.description}
+                            </p>
                           )}
                         </div>
                       </div>
