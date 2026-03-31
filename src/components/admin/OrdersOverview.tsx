@@ -297,20 +297,35 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               </div>
             </div>
             
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
-                <ToggleGroup
-                  type="single"
-                  value={shiftFilter}
-                  onValueChange={(val) => val && setShiftFilter(val)}
-                  size="sm"
-                >
-                  {SHIFT_OPTIONS.map(opt => (
-                    <ToggleGroupItem key={opt.value} value={opt.value} className="text-xs px-3">
-                      {opt.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={shiftFilter}
+                    onValueChange={(val) => val && setShiftFilter(val)}
+                    size="sm"
+                  >
+                    {SHIFT_OPTIONS.map(opt => (
+                      <ToggleGroupItem key={opt.value} value={opt.value} className="text-xs px-3">
+                        {opt.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Status:</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={pickupStatusFilter}
+                    onValueChange={(val) => val && setPickupStatusFilter(val)}
+                    size="sm"
+                  >
+                    <ToggleGroupItem value="all" className="text-xs px-3">Sve</ToggleGroupItem>
+                    <ToggleGroupItem value="preuzeto" className="text-xs px-3">Preuzeto</ToggleGroupItem>
+                    <ToggleGroupItem value="nije_preuzeto" className="text-xs px-3">Nije preuzeto</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
               </div>
             
             {/* Filters Row */}
