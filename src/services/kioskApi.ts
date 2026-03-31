@@ -98,13 +98,13 @@ export const kioskApi = {
     return data;
   },
 
-  async confirmPickup(token: string, pickupRequestId: string): Promise<{ success: boolean }> {
+  async confirmPickup(token: string, pickupRequestId: string, kioskType: 'employee' | 'kitchen' = 'employee'): Promise<{ success: boolean }> {
     const response = await fetch(
       `${SUPABASE_URL}/functions/v1/kiosk-confirm-pickup`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kioskToken: token, pickupRequestId }),
+        body: JSON.stringify({ kioskToken: token, pickupRequestId, kioskType }),
       }
     );
 

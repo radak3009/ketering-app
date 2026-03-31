@@ -26,8 +26,6 @@ async function sendFiscalFailAlert(pickupId: string, error: string, mealName?: s
     console.error("Alert email error:", e);
   }
 }
-import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
-import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

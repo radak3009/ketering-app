@@ -13,15 +13,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { kioskToken, pickupRequestId } = await req.json();
+    const { kioskToken, pickupRequestId, kioskType } = await req.json();
 
-    // Determine token type
+    // Determine token type - use explicit kioskType from client when tokens are identical
     const employeeToken = Deno.env.get("KIOSK_TOKEN_EMPLOYEE");
     const kitchenToken = Deno.env.get("KIOSK_TOKEN_KITCHEN");
 
-    // Employee token takes priority if both tokens are the same value
-    const isEmployeeKiosk = employeeToken && kioskToken === employeeToken;
-    const isKitchenKiosk = kitchenToken && kioskToken === kitchenToken && !isEmployeeKiosk;
+    const tokensAreIdentical = employeeToken && kitchenToken && employeeToken === kitchenToken;
+    
+    let isEmployeeKiosk: boolean;
+    let isKitchenKiosk: boolean;
+    
+    if (tokensAreIdentical && kioskToken === employeeToken) {
+      // When tokens are the same, rely on explicit kioskType from the client
+      isEmployeeKiosk = kioskType === 'employee' || !kioskType; // default to employee for backward compat
+      isKitchenKiosk = kioskType === 'kitchen';
+    } else {
+      // Different tokens - determine by matching
+      isEmployeeKiosk = !!(employeeToken && kioskToken === employeeToken);
+      isKitchenKiosk = !!(kitchenToken && kioskToken === kitchenToken) && !isEmployeeKiosk;
+    }
 
     if (!isEmployeeKiosk && !isKitchenKiosk) {
       return new Response(
