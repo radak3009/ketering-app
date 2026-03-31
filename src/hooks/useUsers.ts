@@ -14,7 +14,7 @@ export function useUsers() {
       setLoading(true);
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, user_id, full_name, email, phone, company_card_id, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
+        .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
