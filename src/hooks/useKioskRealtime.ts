@@ -33,6 +33,7 @@ interface PickupRequestPayload {
   meal_name_snapshot: string | null;
   status: string;
   served_at: string | null;
+  served_by: string | null;
 }
 
 const FALLBACK_POLLING_INTERVAL = 45000; // 45 seconds
@@ -110,6 +111,9 @@ export function useKioskRealtime({ token, onAuthError }: UseKioskRealtimeOptions
       // Only process if it's for today
       if (newRecord.pickup_date !== today) return;
       
+      // Skip employee-kiosk served items (self-service outside kitchen hours)
+      if (newRecord.served_by === 'employee-kiosk') return;
+      
       const newItem: QueueItem = {
         id: newRecord.id,
         created_at: newRecord.created_at,
@@ -142,6 +146,14 @@ export function useKioskRealtime({ token, onAuthError }: UseKioskRealtimeOptions
       const updatedRecord = payload.new as PickupRequestPayload;
       
       if (updatedRecord.pickup_date !== today) return;
+      
+      // If updated to employee-kiosk served, remove from kitchen queue entirely
+      if (updatedRecord.served_by === 'employee-kiosk') {
+        setPending(prev => prev.filter(p => p.id !== updatedRecord.id));
+        setServed(prev => prev.filter(s => s.id !== updatedRecord.id));
+        setLastUpdate(new Date());
+        return;
+      }
       
       // Remove from both lists first
       setPending(prev => prev.filter(p => p.id !== updatedRecord.id));

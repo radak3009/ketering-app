@@ -153,12 +153,14 @@ Deno.serve(async (req) => {
     }
     // If scheduleApplies is false → skip kitchen status check, allow both kiosk types
 
-    // Update pickup request to served
+    // Update pickup request to served, tracking which kiosk type confirmed it
+    const servedByValue = isEmployeeKiosk ? "employee-kiosk" : "kitchen";
     const { error: updateError } = await supabase
       .from("pickup_requests")
       .update({
         status: "served",
         served_at: new Date().toISOString(),
+        served_by: servedByValue,
       })
       .eq("id", pickupRequestId);
 

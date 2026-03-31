@@ -66,12 +66,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update pickup request to served
+    // Update pickup request to served (kitchen kiosk)
     const { error: updateError } = await supabase
       .from("pickup_requests")
       .update({
         status: "served",
-        served_at: new Date().toISOString()
+        served_at: new Date().toISOString(),
+        served_by: "kitchen"
       })
       .eq("id", pickupRequestId);
 

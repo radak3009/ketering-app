@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch served requests ordered by served_at DESC (exclude auto-fiscal)
+    // Fetch served requests ordered by served_at DESC (exclude auto-fiscal and employee-kiosk)
     const { data: servedData, error: servedError } = await supabase
       .from("pickup_requests")
       .select(`
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       `)
       .eq("pickup_date", targetDate)
       .eq("status", "served")
-      .or("served_by.is.null,served_by.neq.auto-fiscal")
+      .or("served_by.is.null,served_by.eq.kitchen")
       .order("served_at", { ascending: false });
 
     if (servedError) {
