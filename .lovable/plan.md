@@ -1,47 +1,56 @@
-
-
-## Plan: Disable automatic end-of-day fiscalization workflow
+## Plan: Add RFID card serial support (company_card_serial)
 
 ### Overview
 
-Remove the `fiscalize-undelivered` edge function and its associated cron job. This function automatically creates pickup requests with `served_by: 'auto-fiscal'` and fiscalizes all undelivered meals at 23:30 daily. The existing Kiosk-based fiscalization (real-time at pickup) and admin-initiated fiscalization remain completely unaffected.
-
-### Impact analysis
-
-Components that reference `auto-fiscal` and will need cleanup:
-
-| Location | What it does | Action |
-|---|---|---|
-| `fiscalize-undelivered/index.ts` | Creates fake pickup_requests and calls fiscalize-meal | **Delete** |
-| `supabase/config.toml` | JWT config for the function | **Remove entry** |
-| `kiosk-show-meal/index.ts` | Filters out `auto-fiscal` records when checking pickup | **Keep** (harmless, defensive) |
-| `kiosk-get-queue/index.ts` | Excludes `auto-fiscal` from kitchen queue display | **Keep** (harmless, defensive) |
-| `useAdminStats.ts` | Excludes `auto-fiscal` from picked-up count | **Keep** (harmless, defensive) |
-| `retry-failed-fiscalizations/index.ts` | Retries failed fiscalizations (including auto-fiscal ones) | **Keep** (still needed for kiosk/admin failures) |
-
-The `auto-fiscal` filters in kiosk and admin stats are safe to keep — they act as defensive guards and cost nothing. Removing them would be riskier if any old `auto-fiscal` records exist in the database.
+Add `company_card_serial` ("Broj kartice") field to Admin user management and enable Kiosk pickup by either `company_card_id` (ID) or `company_card_serial` (RFID card serial).
 
 ### Changes
 
-#### 1. Remove cron job (SQL via Supabase)
-Unschedule the `fiscalize-undelivered` cron job if it exists:
-```sql
-SELECT cron.unschedule('fiscalize-undelivered-daily');
+#### 1. Admin Panel — UsersManagement.tsx
+
+**Create user form**: Add "Broj kartice" input field below the ID field. Free-text, optional, no validation constraints.
+
+**Edit user form**: Add "Broj kartice" input below the ID field in the edit sheet.
+
+**Mobile cards**: Show `company_card_serial` alongside `company_card_id` if present.
+
+**CSV template/import**: Add "Broj kartice" to template and import logic.
+
+#### 2. Kiosk Preload — `kiosk-preload-meals/index.ts`
+
+Update profiles query to also fetch `company_card_serial`. Build a **second key** in the meals map: if a profile has `company_card_serial`, also map `serial → meal entry`. This way the local cache supports lookup by either identifier.
+
+#### 3. Kiosk Show Meal — `kiosk-show-meal/index.ts`
+
+Change the profile lookup from `.eq("company_card_id", cardId)` to an `.or()` filter:
+
 ```
-Note: Need to verify the exact job name first. If no cron job exists for this function (none was found in migrations), this step is skipped.
+.or(`company_card_id.eq.${cardId},company_card_serial.eq.${cardId}`)
+```
 
-#### 2. Delete edge function
-Remove `supabase/functions/fiscalize-undelivered/index.ts` entirely.
+This finds the user whether they scan an RFID card (serial) or type their numeric ID.
 
-#### 3. Update `supabase/config.toml`
-Remove the `[functions.fiscalize-undelivered]` section.
+#### 4. Kiosk Pickup UI — `KioskPickup.tsx`
 
-#### 4. Fix existing build error
-The current build is failing. Will investigate and fix alongside these changes (likely a type issue in `useUsers.ts` missing `company_card_serial` in the select query on line 17).
+- Change`pattern="[0-9]*"` constraint to [0-11]
+- Update placeholder to `"Unesite ID ili skenirajte karticu"`
+- Update subtitle text accordingly
+- Cache lookup: check both `cacheRef.current[trimmedId]` keys (already handled by preload changes)
 
-### What remains untouched
-- **Kiosk fiscalization**: `kiosk-serve` → `fiscalize-meal` flow (real-time at pickup)
-- **Admin fiscalization**: `useAdminOrders` → `fiscalize-meal` flow
-- **Retry mechanism**: `retry-failed-fiscalizations` cron (every 15 min)
-- **Receipt generation**: `fiscalize-meal`, `receipt-download`, `receipt-link`
+#### 5. useUsers hook — `src/hooks/useUsers.ts`
 
+Already includes `company_card_serial` in the select query. No changes needed.
+
+#### 6. Types — `src/integrations/supabase/types.ts`
+
+Already has `company_card_serial` in the profiles type (confirmed from previous edits). No changes needed.
+
+### Files modified
+
+
+| File                                              | Change                                                                       |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/components/admin/UsersManagement.tsx`        | Add Broj kartice field to create/edit forms, table column, mobile cards, CSV |
+| `supabase/functions/kiosk-preload-meals/index.ts` | Fetch serial, dual-key cache map                                             |
+| `supabase/functions/kiosk-show-meal/index.ts`     | OR-based profile lookup                                                      |
+| `src/pages/KioskPickup.tsx`                       | Update input constraints and placeholder                                     |
