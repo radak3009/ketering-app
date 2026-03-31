@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     // Build user_id -> profile map
     const profileMap = new Map<string, any>();
     for (const p of (profiles || [])) {
-      if (p.company_card_id) {
+      if (p.company_card_id || p.company_card_serial) {
         profileMap.set(p.user_id, p);
       }
     }
