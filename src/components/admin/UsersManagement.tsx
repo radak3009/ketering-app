@@ -25,6 +25,7 @@ interface UserFormState {
   email: string;
   phone: string;
   company_card_id: string;
+  company_card_serial: string;
   tag: string;
   date_of_birth: Date | undefined;
   role: Role;
