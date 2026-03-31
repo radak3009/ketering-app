@@ -1,54 +1,47 @@
-## Plan: Custom admin notification to employees via toast
+
+
+## Plan: Disable automatic end-of-day fiscalization workflow
 
 ### Overview
 
-Admin writes a custom message in the Notifications tab, clicks send, then confirms sending, it gets stored in a new `admin_broadcasts` table. Employee Dashboard listens via Supabase Realtime for new inserts and displays each as a toast notification.
+Remove the `fiscalize-undelivered` edge function and its associated cron job. This function automatically creates pickup requests with `served_by: 'auto-fiscal'` and fiscalizes all undelivered meals at 23:30 daily. The existing Kiosk-based fiscalization (real-time at pickup) and admin-initiated fiscalization remain completely unaffected.
+
+### Impact analysis
+
+Components that reference `auto-fiscal` and will need cleanup:
+
+| Location | What it does | Action |
+|---|---|---|
+| `fiscalize-undelivered/index.ts` | Creates fake pickup_requests and calls fiscalize-meal | **Delete** |
+| `supabase/config.toml` | JWT config for the function | **Remove entry** |
+| `kiosk-show-meal/index.ts` | Filters out `auto-fiscal` records when checking pickup | **Keep** (harmless, defensive) |
+| `kiosk-get-queue/index.ts` | Excludes `auto-fiscal` from kitchen queue display | **Keep** (harmless, defensive) |
+| `useAdminStats.ts` | Excludes `auto-fiscal` from picked-up count | **Keep** (harmless, defensive) |
+| `retry-failed-fiscalizations/index.ts` | Retries failed fiscalizations (including auto-fiscal ones) | **Keep** (still needed for kiosk/admin failures) |
+
+The `auto-fiscal` filters in kiosk and admin stats are safe to keep — they act as defensive guards and cost nothing. Removing them would be riskier if any old `auto-fiscal` records exist in the database.
 
 ### Changes
 
-#### 1. Database migration — new `admin_broadcasts` table
-
+#### 1. Remove cron job (SQL via Supabase)
+Unschedule the `fiscalize-undelivered` cron job if it exists:
 ```sql
-CREATE TABLE public.admin_broadcasts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message text NOT NULL,
-  sent_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.admin_broadcasts ENABLE ROW LEVEL SECURITY;
-
--- Admins can insert and view
-CREATE POLICY "Admins can manage broadcasts" ON public.admin_broadcasts
-  FOR ALL TO authenticated USING (is_admin_user(auth.uid()));
-
--- Employees can read (needed for realtime subscription)
-CREATE POLICY "Employees can view broadcasts" ON public.admin_broadcasts
-  FOR SELECT TO authenticated USING (true);
-
--- Enable realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE public.admin_broadcasts;
+SELECT cron.unschedule('fiscalize-undelivered-daily');
 ```
+Note: Need to verify the exact job name first. If no cron job exists for this function (none was found in migrations), this step is skipped.
 
-#### 2. `src/components/AdminDashboard.tsx` — Notifications tab
+#### 2. Delete edge function
+Remove `supabase/functions/fiscalize-undelivered/index.ts` entirely.
 
-Add a third card "Custom obaveštenje" alongside existing menu alert and reminder cards:
+#### 3. Update `supabase/config.toml`
+Remove the `[functions.fiscalize-undelivered]` section.
 
-- Textarea for message input
-- Send button that inserts into `admin_broadcasts`
-- Success toast on send
+#### 4. Fix existing build error
+The current build is failing. Will investigate and fix alongside these changes (likely a type issue in `useUsers.ts` missing `company_card_serial` in the select query on line 17).
 
-#### 3. `src/components/EmployeeDashboard.tsx` — Realtime listener
+### What remains untouched
+- **Kiosk fiscalization**: `kiosk-serve` → `fiscalize-meal` flow (real-time at pickup)
+- **Admin fiscalization**: `useAdminOrders` → `fiscalize-meal` flow
+- **Retry mechanism**: `retry-failed-fiscalizations` cron (every 15 min)
+- **Receipt generation**: `fiscalize-meal`, `receipt-download`, `receipt-link`
 
-- Subscribe to `admin_broadcasts` INSERT events via Supabase Realtime
-- On new broadcast, show a toast with the message text
-- Only show broadcasts created after the component mounted (prevent old messages appearing on page load)
-
-### Files to modify
-
-
-| File                                   | Change                                               |
-| -------------------------------------- | ---------------------------------------------------- |
-| Migration SQL                          | Create `admin_broadcasts` table with RLS + realtime  |
-| `src/components/AdminDashboard.tsx`    | Add custom notification card in Notifications tab    |
-| `src/components/EmployeeDashboard.tsx` | Add Realtime subscription for broadcasts, show toast |
