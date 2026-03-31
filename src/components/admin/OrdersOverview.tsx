@@ -515,6 +515,11 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 <TableCell className="text-xs md:text-sm">
                                   <Badge variant="secondary">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
                                 </TableCell>
+                                <TableCell className="text-xs md:text-sm">
+                                  <Badge variant={item.pickupStatus === 'Preuzeto' ? 'default' : 'outline'}>
+                                    {item.pickupStatus}
+                                  </Badge>
+                                </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
