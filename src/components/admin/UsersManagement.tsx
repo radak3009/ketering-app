@@ -220,6 +220,7 @@ export function UsersManagement() {
         email: userToSave.email,
         phone: userToSave.phone,
         company_card_id: userToSave.company_card_id,
+        company_card_serial: userToSave.company_card_serial || null,
         tag: userToSave.tag && userToSave.tag.trim() !== '' ? userToSave.tag.trim() : null,
         date_of_birth: userToSave.date_of_birth || null
       });
