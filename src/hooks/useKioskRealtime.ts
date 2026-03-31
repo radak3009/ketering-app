@@ -111,6 +111,9 @@ export function useKioskRealtime({ token, onAuthError }: UseKioskRealtimeOptions
       // Only process if it's for today
       if (newRecord.pickup_date !== today) return;
       
+      // Skip employee-kiosk served items (self-service outside kitchen hours)
+      if (newRecord.served_by === 'employee-kiosk') return;
+      
       const newItem: QueueItem = {
         id: newRecord.id,
         created_at: newRecord.created_at,
