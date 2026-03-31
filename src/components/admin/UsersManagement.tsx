@@ -571,6 +571,20 @@ export function UsersManagement() {
                     </div>
                     
                     <div>
+                      <Label htmlFor="user-card-serial">Broj kartice</Label>
+                      <Input 
+                        id="user-card-serial" 
+                        type="text"
+                        value={userForm.company_card_serial} 
+                        onChange={e => setUserForm({ ...userForm, company_card_serial: e.target.value })}
+                        placeholder="Serijski broj RFID kartice"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Serijski broj kartice za identifikaciju na Kiosku
+                      </p>
+                    </div>
+                    
+                    <div>
                       <Label htmlFor="user-tag">Tag</Label>
                       {showCustomTagInput ? (
                         <div className="flex gap-2">
