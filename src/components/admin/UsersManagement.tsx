@@ -869,6 +869,9 @@ export function UsersManagement() {
                             {user.company_card_id && (
                               <span className="font-mono">ID: {user.company_card_id}</span>
                             )}
+                            {user.company_card_serial && (
+                              <span className="font-mono">Kartice: {user.company_card_serial}</span>
+                            )}
                             {user.tag && (
                               <Badge variant="secondary" className="text-xs h-5">{user.tag}</Badge>
                             )}
