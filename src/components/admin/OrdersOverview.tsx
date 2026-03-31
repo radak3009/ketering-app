@@ -65,6 +65,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [pivotView, setPivotView] = useState<"meals" | "users" | "list">("meals");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
+  const [pickupStatusFilter, setPickupStatusFilter] = useState<string>("all");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
 
@@ -104,14 +105,23 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
     });
   }, [orders, users, tagFilter]);
 
-  // Filter orders by shift
+  // Filter orders by shift and pickup status
   const filteredOrders = useMemo(() => {
-    if (shiftFilter === "all") return tagFilteredOrders;
-    return tagFilteredOrders.map(order => ({
-      ...order,
-      order_items: order.order_items?.filter(item => item.shift === shiftFilter)
-    })).filter(order => (order.order_items?.length ?? 0) > 0);
-  }, [tagFilteredOrders, shiftFilter]);
+    let result = tagFilteredOrders;
+    if (shiftFilter !== "all") {
+      result = result.map(order => ({
+        ...order,
+        order_items: order.order_items?.filter(item => item.shift === shiftFilter)
+      })).filter(order => (order.order_items?.length ?? 0) > 0);
+    }
+    if (pickupStatusFilter !== "all") {
+      result = result.map(order => ({
+        ...order,
+        order_items: order.order_items?.filter(item => item.pickup_status === pickupStatusFilter)
+      })).filter(order => (order.order_items?.length ?? 0) > 0);
+    }
+    return result;
+  }, [tagFilteredOrders, shiftFilter, pickupStatusFilter]);
 
   // Flat list of order items for list view
   const flatOrderItems = useMemo(() => {
@@ -287,20 +297,35 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
               </div>
             </div>
             
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
-                <ToggleGroup
-                  type="single"
-                  value={shiftFilter}
-                  onValueChange={(val) => val && setShiftFilter(val)}
-                  size="sm"
-                >
-                  {SHIFT_OPTIONS.map(opt => (
-                    <ToggleGroupItem key={opt.value} value={opt.value} className="text-xs px-3">
-                      {opt.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Smena:</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={shiftFilter}
+                    onValueChange={(val) => val && setShiftFilter(val)}
+                    size="sm"
+                  >
+                    {SHIFT_OPTIONS.map(opt => (
+                      <ToggleGroupItem key={opt.value} value={opt.value} className="text-xs px-3">
+                        {opt.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Status:</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={pickupStatusFilter}
+                    onValueChange={(val) => val && setPickupStatusFilter(val)}
+                    size="sm"
+                  >
+                    <ToggleGroupItem value="all" className="text-xs px-3">Sve</ToggleGroupItem>
+                    <ToggleGroupItem value="preuzeto" className="text-xs px-3">Preuzeto</ToggleGroupItem>
+                    <ToggleGroupItem value="nije_preuzeto" className="text-xs px-3">Nije preuzeto</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
               </div>
             
             {/* Filters Row */}
