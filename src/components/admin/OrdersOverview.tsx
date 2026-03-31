@@ -475,6 +475,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                               <span className="text-muted-foreground">{item.deliveryDate}</span>
                               <span className="font-medium">{item.mealName}</span>
                               <Badge variant="secondary" className="text-xs">{SHIFT_ROMAN[item.shift] || item.shift}</Badge>
+                              <Badge variant={item.pickupStatus === 'Preuzeto' ? 'default' : 'outline'} className="text-xs">{item.pickupStatus}</Badge>
                             </div>
                           </div>
                         ))
