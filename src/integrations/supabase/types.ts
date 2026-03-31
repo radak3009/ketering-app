@@ -753,7 +753,6 @@ export type Database = {
           name: string | null
           nutritional_info: Json | null
           price: number | null
-          purchase_price: number | null
           shifts: string[] | null
           status: string | null
           updated_at: string | null
@@ -772,7 +771,6 @@ export type Database = {
           name?: string | null
           nutritional_info?: Json | null
           price?: number | null
-          purchase_price?: never
           shifts?: string[] | null
           status?: string | null
           updated_at?: string | null
@@ -791,7 +789,6 @@ export type Database = {
           name?: string | null
           nutritional_info?: Json | null
           price?: number | null
-          purchase_price?: never
           shifts?: string[] | null
           status?: string | null
           updated_at?: string | null
