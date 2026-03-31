@@ -147,6 +147,14 @@ export function useKioskRealtime({ token, onAuthError }: UseKioskRealtimeOptions
       
       if (updatedRecord.pickup_date !== today) return;
       
+      // If updated to employee-kiosk served, remove from kitchen queue entirely
+      if (updatedRecord.served_by === 'employee-kiosk') {
+        setPending(prev => prev.filter(p => p.id !== updatedRecord.id));
+        setServed(prev => prev.filter(s => s.id !== updatedRecord.id));
+        setLastUpdate(new Date());
+        return;
+      }
+      
       // Remove from both lists first
       setPending(prev => prev.filter(p => p.id !== updatedRecord.id));
       setServed(prev => prev.filter(s => s.id !== updatedRecord.id));
