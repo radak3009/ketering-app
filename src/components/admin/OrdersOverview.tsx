@@ -65,6 +65,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [pivotView, setPivotView] = useState<"meals" | "users" | "list">("meals");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
+  const [pickupStatusFilter, setPickupStatusFilter] = useState<string>("all");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyMealOrders, setDailyMealOrders] = useState<any[]>([]);
 
