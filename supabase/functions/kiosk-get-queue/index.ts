@@ -84,33 +84,39 @@ Deno.serve(async (req) => {
     const allItems = [...(pendingData || []), ...(servedData || [])];
     const profileIds = [...new Set(allItems.filter(item => item.profile_id).map(item => item.profile_id))];
 
-    // Fetch profile names
+    // Fetch profile names and tags - filter to only Proizvodnja organization
     let profileMap: Record<string, string> = {};
+    const allowedProfileIds = new Set<string>();
     if (profileIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, tag")
         .in("id", profileIds);
 
       if (profiles) {
-        profileMap = profiles.reduce((acc, p) => {
-          acc[p.id] = p.full_name || "";
-          return acc;
-        }, {} as Record<string, string>);
+        for (const p of profiles) {
+          // Only include profiles with tag 'Proizvodnja' (case-insensitive)
+          if (p.tag && p.tag.toLowerCase() === "proizvodnja") {
+            profileMap[p.id] = p.full_name || "";
+            allowedProfileIds.add(p.id);
+          }
+        }
       }
     }
 
-    // Map items with full names
-    const mapItems = (items: typeof pendingData) =>
-      (items || []).map(item => ({
-        id: item.id,
-        created_at: item.created_at,
-        employee_identifier: item.employee_identifier,
-        fullName: item.profile_id ? profileMap[item.profile_id] || null : null,
-        meal_name_snapshot: item.meal_name_snapshot,
-        status: item.status,
-        served_at: item.served_at
-      }));
+    // Filter items to only Proizvodnja users, then map
+    const filterAndMap = (items: typeof pendingData) =>
+      (items || [])
+        .filter(item => item.profile_id && allowedProfileIds.has(item.profile_id))
+        .map(item => ({
+          id: item.id,
+          created_at: item.created_at,
+          employee_identifier: item.employee_identifier,
+          fullName: item.profile_id ? profileMap[item.profile_id] || null : null,
+          meal_name_snapshot: item.meal_name_snapshot,
+          status: item.status,
+          served_at: item.served_at
+        }));
 
     return new Response(
       JSON.stringify({
