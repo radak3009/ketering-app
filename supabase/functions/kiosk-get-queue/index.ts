@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        pending: mapItems(pendingData),
-        served: mapItems(servedData)
+        pending: filterAndMap(pendingData),
+        served: filterAndMap(servedData)
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
