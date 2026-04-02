@@ -258,7 +258,7 @@ export function AdminDashboard() {
               <div className="text-lg md:text-2xl font-bold text-foreground">
                 {statsLoading ? "..." : stats.todayOrders}
               </div>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Porudžbina</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Obroka</p>
               <div className="text-sm md:text-lg font-semibold text-foreground mt-1">
                 {statsLoading ? "..." : stats.todayPickedUp}
               </div>
