@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isKitchenOpen } from "../_shared/kitchen-schedule.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
     // Check if pickup request exists and is for today
     const { data: pickupRequest, error: fetchError } = await supabase
       .from("pickup_requests")
-      .select("id, pickup_date, status, order_item_id")
+      .select("id, pickup_date, status, order_item_id, company_id, profile_id")
       .eq("id", pickupRequestId)
       .maybeSingle();
 
@@ -84,6 +85,46 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ success: true, message: "Obrok je već preuzet" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Check kitchen schedule - kitchen kiosk should only serve during operating hours
+    let scheduleApplies = true;
+
+    if (pickupRequest.profile_id) {
+      const [profileRes, settingRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("tag")
+          .eq("id", pickupRequest.profile_id)
+          .maybeSingle(),
+        supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "kitchen_schedule_tags")
+          .maybeSingle(),
+      ]);
+
+      const userTag = profileRes.data?.tag || null;
+      const scheduleTags: string[] = (settingRes.data?.value as string[]) || [];
+
+      if (scheduleTags.length > 0) {
+        scheduleApplies = userTag !== null && scheduleTags.includes(userTag);
+      }
+    }
+
+    if (scheduleApplies) {
+      const kitchenStatus = await isKitchenOpen(supabase, pickupRequest.company_id);
+
+      if (!kitchenStatus.isOpen) {
+        return new Response(
+          JSON.stringify({
+            error: "Kuhinja trenutno ne radi",
+            kitchenOpen: false,
+            schedule: { open: kitchenStatus.openTime, close: kitchenStatus.closeTime },
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
