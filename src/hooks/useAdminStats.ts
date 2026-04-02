@@ -65,23 +65,42 @@ export function useAdminStats(startDate?: string, endDate?: string) {
         }
       );
 
-      // Today's stats
+      // Today's stats - count order_items (consistent with pivot tables)
       const today = new Date().toISOString().split('T')[0];
-      const { count: todayOrdersCount } = await supabase
+      
+      // Fetch today's order IDs first
+      const { data: todayOrders } = await supabase
         .from('orders')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('delivery_date', today);
-
-      // Count actually picked up meals (exclude auto-fiscal)
+      
+      let todayOrdersCount = 0;
       let todayPickedUpCount = 0;
-      {
-        const { count } = await supabase
-          .from('pickup_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('pickup_date', today)
-          .eq('status', 'served')
-          .or('served_by.is.null,served_by.neq.auto-fiscal');
-        todayPickedUpCount = count || 0;
+      
+      if (todayOrders && todayOrders.length > 0) {
+        const todayOrderIds = todayOrders.map(o => o.id);
+        
+        // Count all order_items for today (matches pivot table total)
+        const batchSize = 100;
+        for (let i = 0; i < todayOrderIds.length; i += batchSize) {
+          const batch = todayOrderIds.slice(i, i + batchSize);
+          const { count: itemsCount } = await supabase
+            .from('order_items')
+            .select('*', { count: 'exact', head: true })
+            .in('order_id', batch);
+          todayOrdersCount += itemsCount || 0;
+        }
+        
+        // Count picked up order_items for today
+        for (let i = 0; i < todayOrderIds.length; i += batchSize) {
+          const batch = todayOrderIds.slice(i, i + batchSize);
+          const { count: pickedCount } = await supabase
+            .from('order_items')
+            .select('*', { count: 'exact', head: true })
+            .in('order_id', batch)
+            .eq('pickup_status', 'preuzeto');
+          todayPickedUpCount += pickedCount || 0;
+        }
       }
 
       if (!orders || orders.length === 0) {
