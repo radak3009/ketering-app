@@ -255,6 +255,8 @@ export default function KioskPickup() {
                 <Input
                   ref={inputRef}
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={cardId}
                   onChange={(e) => setCardId(e.target.value)}
                   placeholder="Unesite ID ili skenirajte karticu"
