@@ -371,6 +371,20 @@ export function MenusManagement() {
                       onChange={e => setMenuMealSearch(e.target.value)} 
                     />
                   </div>
+
+                  <div>
+                    <Label>Filtriraj po grupi</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                      value={menuGroupFilter}
+                      onChange={e => setMenuGroupFilter(e.target.value)}
+                    >
+                      <option value="">Sve grupe</option>
+                      {mealGroups.map(g => (
+                        <option key={g} value={g!}>{g}</option>
+                      ))}
+                    </select>
+                  </div>
                   
                   <div>
                     <Label>Odaberi obroke ({activeOrgTab === 'proizvodnja' ? 'Proizvodnja' : 'Hogo'})</Label>
