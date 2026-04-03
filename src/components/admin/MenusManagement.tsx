@@ -305,6 +305,7 @@ export function MenusManagement() {
     // Reset form when switching tabs
     setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
     setMenuMealSearch("");
+    setMenuGroupFilter("");
   };
 
   return (
