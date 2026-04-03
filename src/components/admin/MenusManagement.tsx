@@ -44,6 +44,7 @@ export function MenusManagement() {
   const [creatingMenu, setCreatingMenu] = useState(false);
   const [updatingMenu, setUpdatingMenu] = useState(false);
   const [menuMealSearch, setMenuMealSearch] = useState("");
+  const [menuGroupFilter, setMenuGroupFilter] = useState("");
   
   const [menuForm, setMenuForm] = useState<MenuFormState>({
     description: "",
@@ -72,8 +73,10 @@ export function MenusManagement() {
   };
 
   const tabMeals = getFilteredMealsForTab(activeOrgTab);
+  const mealGroups = [...new Set(tabMeals.map(m => m.meal_group).filter(Boolean))].sort();
   const filteredMenuMeals = tabMeals.filter(
-    meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
+    meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase()) &&
+      (!menuGroupFilter || meal.meal_group === menuGroupFilter)
   );
 
   // Filter menus by active org tab
@@ -302,6 +305,7 @@ export function MenusManagement() {
     // Reset form when switching tabs
     setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
     setMenuMealSearch("");
+    setMenuGroupFilter("");
   };
 
   return (
@@ -366,6 +370,20 @@ export function MenusManagement() {
                       value={menuMealSearch} 
                       onChange={e => setMenuMealSearch(e.target.value)} 
                     />
+                  </div>
+
+                  <div>
+                    <Label>Filtriraj po grupi</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                      value={menuGroupFilter}
+                      onChange={e => setMenuGroupFilter(e.target.value)}
+                    >
+                      <option value="">Sve grupe</option>
+                      {mealGroups.map(g => (
+                        <option key={g} value={g!}>{g}</option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div>
@@ -569,6 +587,20 @@ export function MenusManagement() {
                   onChange={e => setMenuMealSearch(e.target.value)} 
                 />
               </div>
+
+              <div>
+                <Label>Filtriraj po grupi</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                  value={menuGroupFilter}
+                  onChange={e => setMenuGroupFilter(e.target.value)}
+                >
+                  <option value="">Sve grupe</option>
+                  {mealGroups.map(g => (
+                    <option key={g} value={g!}>{g}</option>
+                  ))}
+                </select>
+              </div>
               
               <div>
                 <Label>Obroke u jelovniku</Label>
@@ -611,6 +643,13 @@ export function MenusManagement() {
                         <label htmlFor={`edit-menu-meal-${meal.id}`} className="text-sm font-medium cursor-pointer">
                           {meal.name}
                         </label>
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {meal.shifts?.map(shift => (
+                            <Badge key={shift} variant="outline" className="text-[10px] px-1.5 py-0">
+                              {shift === 'prva' ? 'I' : shift === 'druga' ? 'II' : shift === 'treća' ? 'III' : shift}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
