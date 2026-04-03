@@ -73,8 +73,10 @@ export function MenusManagement() {
   };
 
   const tabMeals = getFilteredMealsForTab(activeOrgTab);
+  const mealGroups = [...new Set(tabMeals.map(m => m.meal_group).filter(Boolean))].sort();
   const filteredMenuMeals = tabMeals.filter(
-    meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase())
+    meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase()) &&
+      (!menuGroupFilter || meal.meal_group === menuGroupFilter)
   );
 
   // Filter menus by active org tab
