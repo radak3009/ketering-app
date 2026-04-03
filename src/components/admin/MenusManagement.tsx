@@ -44,6 +44,7 @@ export function MenusManagement() {
   const [creatingMenu, setCreatingMenu] = useState(false);
   const [updatingMenu, setUpdatingMenu] = useState(false);
   const [menuMealSearch, setMenuMealSearch] = useState("");
+  const [menuGroupFilter, setMenuGroupFilter] = useState("");
   
   const [menuForm, setMenuForm] = useState<MenuFormState>({
     description: "",
