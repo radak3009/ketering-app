@@ -397,7 +397,13 @@ export function MenusManagement() {
                             <label htmlFor={`menu-meal-${meal.id}`} className="text-sm font-medium cursor-pointer">
                               {meal.name}
                             </label>
-                            <p className="text-xs text-muted-foreground">{meal.price} RSD</p>
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {meal.shifts?.map(shift => (
+                                <Badge key={shift} variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {shift === 'prva' ? 'I' : shift === 'druga' ? 'II' : shift === 'treća' ? 'III' : shift}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       ))}
