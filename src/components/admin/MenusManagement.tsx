@@ -620,6 +620,20 @@ export function MenusManagement() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <Label>Filtriraj po smeni</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                  value={menuShiftFilter}
+                  onChange={e => setMenuShiftFilter(e.target.value)}
+                >
+                  <option value="">Sve smene</option>
+                  <option value="prva">I smena</option>
+                  <option value="druga">II smena</option>
+                  <option value="treća">III smena</option>
+                </select>
+              </div>
               
               <div>
                 <Label>Obroke u jelovniku</Label>
