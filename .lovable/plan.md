@@ -1,30 +1,31 @@
 
 
-## Plan: Update meal card display in OrderMealDialog
+## Plan: Prikaz "Kuhinja ne radi" na Kitchen Kiosku van radnog vremena
 
-### What changes
+### Problem
+Kitchen Kiosk trenutno prikazuje listu porudzbina i tokom i van radnog vremena kuhinje. Potrebno je da van radnog vremena prikaže poruku "Kuhinja ne radi" sa informacijom o radnom vremenu.
 
-In `src/components/employee/OrderMealDialog.tsx`, update the meal card rendering:
+### Pristup
+Dodati periodičnu proveru statusa kuhinje (`kiosk-get-kitchen-status`) na Kitchen Kiosk stranici. Kada kuhinja nije otvorena, umesto liste porudzbina prikazati full-screen poruku.
 
-1. **Remove** the `Badge` showing `meal.category` ("Glavno jelo") from the top-right corner
-2. **Add allergens** below the meal name — only shown if `meal.allergens` is non-empty
-3. **Add description** below allergens — only shown if `meal.description` is non-empty/non-blank
+### Izmene
 
-### File modified
+**1. `src/pages/KioskKitchen.tsx`**
+- Dodati state za `kitchenOpen`, `openTime`, `closeTime`
+- Na mount i svakih ~60s pozivati `kioskApi.getKitchenStatus(token)` da proveri status
+- Kada `isOpen === false`, prikazati ekran sa:
+  - Ikona `ChefHat` ili `Clock`
+  - Naslov: **"Kuhinja ne radi"**
+  - Tekst: **"Radno vreme kuhinje od {openTime} do {closeTime}"**
+  - Ako su `openTime`/`closeTime` null (npr. zatvoreno ceo dan): prikazati "Kuhinja danas ne radi"
+- Kada `isOpen === true`, prikazati postojeći interfejs sa listom porudzbina
+- Header sa datumom i connection statusom ostaje vidljiv u oba slučaja
 
-| File | Change |
-|---|---|
-| `src/components/employee/OrderMealDialog.tsx` | Update meal card layout in the render section (~lines 260-290) |
+**2. `src/types/kiosk.ts`**
+- Dodati `tag_excluded` u `KitchenStatus.reason` union type (za kompatibilnost sa edge function odgovorom)
 
-### Layout change
-
-```text
-Before:                          After:
-┌─────────────────────┐          ┌─────────────────────┐
-│ [image]             │          │ [image]             │
-│ Name      [Glavno…] │          │ Name                │
-│ Description         │          │ 🏷 Allergen badges   │
-│ 🏷 Allergen badges   │          │ Description text    │
-└─────────────────────┘          └─────────────────────┘
-```
+### Ponašanje
+- Polling interval: 60 sekundi (dovoljno brzo da uhvati prelaz u/iz radnog vremena)
+- Dok se status učitava prvi put, prikazuje se loading spinner (postojeći)
+- Kuhinjsko osoblje vidi jasnu poruku i ne može izdavati obroke van radnog vremena (backend ionako blokira, ali sada i UI to jasno komunicira)
 
