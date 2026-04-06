@@ -45,6 +45,7 @@ export function MenusManagement() {
   const [updatingMenu, setUpdatingMenu] = useState(false);
   const [menuMealSearch, setMenuMealSearch] = useState("");
   const [menuGroupFilter, setMenuGroupFilter] = useState("");
+  const [menuShiftFilter, setMenuShiftFilter] = useState("");
   
   const [menuForm, setMenuForm] = useState<MenuFormState>({
     description: "",
@@ -76,7 +77,8 @@ export function MenusManagement() {
   const mealGroups = [...new Set(tabMeals.map(m => m.meal_group).filter(Boolean))].sort();
   const filteredMenuMeals = tabMeals.filter(
     meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase()) &&
-      (!menuGroupFilter || meal.meal_group === menuGroupFilter)
+      (!menuGroupFilter || meal.meal_group === menuGroupFilter) &&
+      (!menuShiftFilter || meal.shifts?.includes(menuShiftFilter))
   );
 
   // Filter menus by active org tab
@@ -169,6 +171,9 @@ export function MenusManagement() {
       });
       
       setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
+      setMenuMealSearch("");
+      setMenuGroupFilter("");
+      setMenuShiftFilter("");
     } catch (error) {
       console.error('Error creating menu:', error);
     } finally {
@@ -306,6 +311,7 @@ export function MenusManagement() {
     setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
     setMenuMealSearch("");
     setMenuGroupFilter("");
+    setMenuShiftFilter("");
   };
 
   return (
