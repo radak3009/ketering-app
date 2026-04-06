@@ -45,6 +45,7 @@ export function MenusManagement() {
   const [updatingMenu, setUpdatingMenu] = useState(false);
   const [menuMealSearch, setMenuMealSearch] = useState("");
   const [menuGroupFilter, setMenuGroupFilter] = useState("");
+  const [menuShiftFilter, setMenuShiftFilter] = useState("");
   
   const [menuForm, setMenuForm] = useState<MenuFormState>({
     description: "",
@@ -76,7 +77,8 @@ export function MenusManagement() {
   const mealGroups = [...new Set(tabMeals.map(m => m.meal_group).filter(Boolean))].sort();
   const filteredMenuMeals = tabMeals.filter(
     meal => meal.name.toLowerCase().includes(menuMealSearch.toLowerCase()) &&
-      (!menuGroupFilter || meal.meal_group === menuGroupFilter)
+      (!menuGroupFilter || meal.meal_group === menuGroupFilter) &&
+      (!menuShiftFilter || meal.shifts?.includes(menuShiftFilter))
   );
 
   // Filter menus by active org tab
@@ -169,6 +171,9 @@ export function MenusManagement() {
       });
       
       setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
+      setMenuMealSearch("");
+      setMenuGroupFilter("");
+      setMenuShiftFilter("");
     } catch (error) {
       console.error('Error creating menu:', error);
     } finally {
@@ -306,6 +311,7 @@ export function MenusManagement() {
     setMenuForm({ description: "", menu_date: "", selectedMeals: [] });
     setMenuMealSearch("");
     setMenuGroupFilter("");
+    setMenuShiftFilter("");
   };
 
   return (
@@ -385,7 +391,20 @@ export function MenusManagement() {
                       ))}
                     </select>
                   </div>
-                  
+
+                  <div>
+                    <Label>Filtriraj po smeni</Label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                      value={menuShiftFilter}
+                      onChange={e => setMenuShiftFilter(e.target.value)}
+                    >
+                      <option value="">Sve smene</option>
+                      <option value="prva">I smena</option>
+                      <option value="druga">II smena</option>
+                      <option value="treća">III smena</option>
+                    </select>
+                  </div>
                   <div>
                     <Label>Odaberi obroke ({activeOrgTab === 'proizvodnja' ? 'Proizvodnja' : 'Hogo'})</Label>
                     <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-2 mt-2">
@@ -549,7 +568,7 @@ export function MenusManagement() {
       </Card>
 
       {/* Edit Menu Sheet */}
-      <Sheet open={!!selectedMenu} onOpenChange={() => setSelectedMenu(null)}>
+      <Sheet open={!!selectedMenu} onOpenChange={(open) => { if (!open) { setSelectedMenu(null); setMenuMealSearch(""); setMenuGroupFilter(""); setMenuShiftFilter(""); } }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Detalji jelovnika</SheetTitle>
@@ -599,6 +618,20 @@ export function MenusManagement() {
                   {mealGroups.map(g => (
                     <option key={g} value={g!}>{g}</option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <Label>Filtriraj po smeni</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                  value={menuShiftFilter}
+                  onChange={e => setMenuShiftFilter(e.target.value)}
+                >
+                  <option value="">Sve smene</option>
+                  <option value="prva">I smena</option>
+                  <option value="druga">II smena</option>
+                  <option value="treća">III smena</option>
                 </select>
               </div>
               
