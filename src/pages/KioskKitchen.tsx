@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   WifiOff,
   RefreshCw
 } from "lucide-react";
-import type { QueueItem } from "@/types/kiosk";
+import type { QueueItem, KitchenStatus } from "@/types/kiosk";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -41,6 +41,28 @@ export default function KioskKitchen() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<QueueItem | null>(null);
+  const [kitchenStatus, setKitchenStatus] = useState<KitchenStatus | null>(null);
+
+  // Poll kitchen status every 60s
+  useEffect(() => {
+    if (!token) return;
+
+    const checkStatus = async () => {
+      try {
+        const status = await kioskApi.getKitchenStatus(token);
+        setKitchenStatus(status);
+        if (authorized === null && status) {
+          setAuthorized(true);
+        }
+      } catch (err) {
+        console.error("Kitchen status check failed:", err);
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 60000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   const handleAuthError = useCallback(() => {
     setAuthorized(false);
@@ -220,160 +242,178 @@ export default function KioskKitchen() {
       </div>
 
       {/* Main Content */}
-      <Card>
-        <CardHeader className="pb-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 h-12">
-              <TabsTrigger value="pending" className="text-base flex items-center justify-center gap-2">
-                <span>Za izdavanje</span>
-                {pending.length > 0 && (
-                  <Badge variant="destructive">
-                    {pending.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="served" className="text-base flex items-center justify-center gap-2">
-                <span>Izdato danas</span>
-                {served.length > 0 && (
-                  <Badge variant="secondary">
-                    {served.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardHeader>
+      {kitchenStatus && !kitchenStatus.isOpen ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+            <Clock className="w-20 h-20 text-muted-foreground mb-6" />
+            <h2 className="text-4xl font-bold text-foreground mb-4">Kuhinja ne radi</h2>
+            {kitchenStatus.openTime && kitchenStatus.closeTime ? (
+              <p className="text-2xl text-muted-foreground">
+                Radno vreme kuhinje od {kitchenStatus.openTime} do {kitchenStatus.closeTime}
+              </p>
+            ) : (
+              <p className="text-2xl text-muted-foreground">
+                Kuhinja danas ne radi
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader className="pb-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2 h-12">
+                <TabsTrigger value="pending" className="text-base flex items-center justify-center gap-2">
+                  <span>Za izdavanje</span>
+                  {pending.length > 0 && (
+                    <Badge variant="destructive">
+                      {pending.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="served" className="text-base flex items-center justify-center gap-2">
+                  <span>Izdato danas</span>
+                  {served.length > 0 && (
+                    <Badge variant="secondary">
+                      {served.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
 
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            {/* Pending Tab */}
-            <TabsContent value="pending" className="mt-0">
-              {pending.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-success" />
-                  <p className="text-lg">Nema zahteva za izdavanje</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pending.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                        index === 0 
-                          ? "bg-primary/10 border-primary/30" 
-                          : "bg-card border-border"
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="font-mono text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-                          {item.employee_identifier}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="font-medium truncate">
-                              {item.fullName || "—"}
-                            </span>
-                          </div>
-                          <p className="text-primary font-semibold truncate">
-                            {item.meal_name_snapshot || "Nepoznat obrok"}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                          <Clock className="h-4 w-4" />
-                          {formatTime(item.created_at)}
-                        </div>
-                      </div>
-                      <Button
-                        size="lg"
-                        variant="success"
-                        onClick={() => handleServe(item)}
-                        disabled={processingId === item.id}
-                        className="ml-4 h-12 px-6"
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              {/* Pending Tab */}
+              <TabsContent value="pending" className="mt-0">
+                {pending.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-success" />
+                    <p className="text-lg">Nema zahteva za izdavanje</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pending.map((item, index) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                          index === 0 
+                            ? "bg-primary/10 border-primary/30" 
+                            : "bg-card border-border"
+                        }`}
                       >
-                        {processingId === item.id ? (
-                          <LoadingSpinner size="sm" />
-                        ) : (
-                          <>
-                            <CheckCircle className="h-5 w-5 mr-2" />
-                            Izdato
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Served Tab */}
-            <TabsContent value="served" className="mt-0">
-              {served.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <p className="text-lg">Još nije izdato nijedan obrok danas</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {served.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-success/5 border-success/20"
-                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="font-mono text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-                          {item.employee_identifier}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="font-medium truncate">
-                              {item.fullName || "—"}
-                            </span>
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="font-mono text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                            {item.employee_identifier}
                           </div>
-                          <p className="text-success font-semibold truncate">
-                            {item.meal_name_snapshot || "Nepoznat obrok"}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium truncate">
+                                {item.fullName || "—"}
+                              </span>
+                            </div>
+                            <p className="text-primary font-semibold truncate">
+                              {item.meal_name_snapshot || "Nepoznat obrok"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                            <Clock className="h-4 w-4" />
+                            {formatTime(item.created_at)}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-success text-sm">
-                          <CheckCircle className="h-4 w-4" />
-                          {item.served_at ? formatTime(item.served_at) : "--:--"}
-                        </div>
-                      </div>
-                      <div className="flex gap-2 ml-4">
                         <Button
                           size="lg"
-                          variant="outline"
-                          onClick={() => handleUndo(item)}
+                          variant="success"
+                          onClick={() => handleServe(item)}
                           disabled={processingId === item.id}
-                          className="h-12"
+                          className="ml-4 h-12 px-6"
                         >
                           {processingId === item.id ? (
                             <LoadingSpinner size="sm" />
                           ) : (
                             <>
-                              <Undo2 className="h-5 w-5 mr-2" />
-                              Poništi
+                              <CheckCircle className="h-5 w-5 mr-2" />
+                              Izdato
                             </>
                           )}
                         </Button>
-                        <Button
-                          size="lg"
-                          variant="destructive"
-                          onClick={() => handleDeleteClick(item)}
-                          disabled={processingId === item.id}
-                          className="h-12"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </Button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Served Tab */}
+              <TabsContent value="served" className="mt-0">
+                {served.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="text-lg">Još nije izdato nijedan obrok danas</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {served.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-4 rounded-lg border bg-success/5 border-success/20"
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="font-mono text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                            {item.employee_identifier}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium truncate">
+                                {item.fullName || "—"}
+                              </span>
+                            </div>
+                            <p className="text-success font-semibold truncate">
+                              {item.meal_name_snapshot || "Nepoznat obrok"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-success text-sm">
+                            <CheckCircle className="h-4 w-4" />
+                            {item.served_at ? formatTime(item.served_at) : "--:--"}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            size="lg"
+                            variant="outline"
+                            onClick={() => handleUndo(item)}
+                            disabled={processingId === item.id}
+                            className="h-12"
+                          >
+                            {processingId === item.id ? (
+                              <LoadingSpinner size="sm" />
+                            ) : (
+                              <>
+                                <Undo2 className="h-5 w-5 mr-2" />
+                                Poništi
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="lg"
+                            variant="destructive"
+                            onClick={() => handleDeleteClick(item)}
+                            disabled={processingId === item.id}
+                            className="h-12"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

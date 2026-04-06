@@ -38,7 +38,7 @@ export interface KitchenStatus {
   openTime: string | null;
   closeTime: string | null;
   currentTime: string;
-  reason: 'open' | 'exception_closed' | 'weekly_closed' | 'outside_hours';
+  reason: 'open' | 'exception_closed' | 'weekly_closed' | 'outside_hours' | 'tag_excluded';
 }
 
 export interface GetQueueResponse {
