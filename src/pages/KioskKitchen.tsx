@@ -7,18 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { kioskApi } from "@/services/kioskApi";
 import { useKioskRealtime } from "@/hooks/useKioskRealtime";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Undo2, 
-  Trash2, 
-  ChefHat,
-  Clock,
-  User,
-  Wifi,
-  WifiOff,
-  RefreshCw
-} from "lucide-react";
+import { CheckCircle, XCircle, Undo2, Trash2, ChefHat, Clock, User, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import type { QueueItem, KitchenStatus } from "@/types/kiosk";
 import { format } from "date-fns";
 import {
@@ -35,7 +24,7 @@ import {
 export default function KioskKitchen() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("t") || "";
-  
+
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("pending");
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -68,38 +57,33 @@ export default function KioskKitchen() {
     setAuthorized(false);
   }, []);
 
-  const {
-    pending,
-    served,
-    loading,
-    connectionStatus,
-    isProcessing,
-    setIsProcessing,
-    setPending,
-    setServed,
-    refetch
-  } = useKioskRealtime({
-    token,
-    onAuthError: handleAuthError
-  });
+  const { pending, served, loading, connectionStatus, isProcessing, setIsProcessing, setPending, setServed, refetch } =
+    useKioskRealtime({
+      token,
+      onAuthError: handleAuthError,
+    });
 
   // Set authorized to true once we get data
-  if (authorized === null && !loading && (pending.length > 0 || served.length > 0 || connectionStatus === 'connected')) {
+  if (
+    authorized === null &&
+    !loading &&
+    (pending.length > 0 || served.length > 0 || connectionStatus === "connected")
+  ) {
     setAuthorized(true);
   }
 
   // Handle initial load - if loading completed without auth error, we're authorized
-  if (authorized === null && !loading && connectionStatus !== 'disconnected') {
+  if (authorized === null && !loading && connectionStatus !== "disconnected") {
     setAuthorized(true);
   }
 
   const handleServe = async (item: QueueItem) => {
     setProcessingId(item.id);
     setIsProcessing(true);
-    
+
     // Optimistic update
-    setPending(prev => prev.filter(p => p.id !== item.id));
-    setServed(prev => [{ ...item, status: 'served', served_at: new Date().toISOString() }, ...prev]);
+    setPending((prev) => prev.filter((p) => p.id !== item.id));
+    setServed((prev) => [{ ...item, status: "served", served_at: new Date().toISOString() }, ...prev]);
 
     try {
       await kioskApi.serve(token, item.id);
@@ -117,10 +101,10 @@ export default function KioskKitchen() {
   const handleUndo = async (item: QueueItem) => {
     setProcessingId(item.id);
     setIsProcessing(true);
-    
+
     // Optimistic update
-    setServed(prev => prev.filter(s => s.id !== item.id));
-    setPending(prev => [...prev, { ...item, status: 'pending', served_at: null }]);
+    setServed((prev) => prev.filter((s) => s.id !== item.id));
+    setPending((prev) => [...prev, { ...item, status: "pending", served_at: null }]);
 
     try {
       await kioskApi.undo(token, item.id);
@@ -145,10 +129,10 @@ export default function KioskKitchen() {
     setProcessingId(itemToDelete.id);
     setIsProcessing(true);
     setDeleteDialogOpen(false);
-    
+
     // Optimistic update
-    setServed(prev => prev.filter(s => s.id !== itemToDelete.id));
-    setPending(prev => prev.filter(p => p.id !== itemToDelete.id));
+    setServed((prev) => prev.filter((s) => s.id !== itemToDelete.id));
+    setPending((prev) => prev.filter((p) => p.id !== itemToDelete.id));
 
     try {
       await kioskApi.delete(token, itemToDelete.id);
@@ -173,7 +157,7 @@ export default function KioskKitchen() {
 
   // Connection status indicator component
   const ConnectionIndicator = () => {
-    if (connectionStatus === 'connected') {
+    if (connectionStatus === "connected") {
       return (
         <div className="flex items-center gap-2 text-sm text-success">
           <Wifi className="h-4 w-4" />
@@ -181,8 +165,8 @@ export default function KioskKitchen() {
         </div>
       );
     }
-    
-    if (connectionStatus === 'connecting') {
+
+    if (connectionStatus === "connecting") {
       return (
         <div className="flex items-center gap-2 text-sm text-warning">
           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -190,7 +174,7 @@ export default function KioskKitchen() {
         </div>
       );
     }
-    
+
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <WifiOff className="h-4 w-4" />
@@ -235,9 +219,7 @@ export default function KioskKitchen() {
         </div>
         <div className="flex items-center gap-4">
           <ConnectionIndicator />
-          <div className="text-muted-foreground">
-            {today}
-          </div>
+          <div className="text-muted-foreground">{today}</div>
         </div>
       </div>
 
@@ -252,9 +234,7 @@ export default function KioskKitchen() {
                 Radno vreme kuhinje od {kitchenStatus.openTime} do {kitchenStatus.closeTime}
               </p>
             ) : (
-              <p className="text-2xl text-muted-foreground">
-                Kuhinja danas ne radi
-              </p>
+              <p className="text-2xl text-muted-foreground">Kuhinja danas ne radi</p>
             )}
           </CardContent>
         </Card>
@@ -265,19 +245,11 @@ export default function KioskKitchen() {
               <TabsList className="grid w-full grid-cols-2 h-12">
                 <TabsTrigger value="pending" className="text-base flex items-center justify-center gap-2">
                   <span>Za izdavanje</span>
-                  {pending.length > 0 && (
-                    <Badge variant="destructive">
-                      {pending.length}
-                    </Badge>
-                  )}
+                  {pending.length > 0 && <Badge variant="destructive">{pending.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="served" className="text-base flex items-center justify-center gap-2">
                   <span>Izdato danas</span>
-                  {served.length > 0 && (
-                    <Badge variant="secondary">
-                      {served.length}
-                    </Badge>
-                  )}
+                  {served.length > 0 && <Badge variant="secondary">{served.length}</Badge>}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -298,9 +270,7 @@ export default function KioskKitchen() {
                       <div
                         key={item.id}
                         className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                          index === 0 
-                            ? "bg-primary/10 border-primary/30" 
-                            : "bg-card border-border"
+                          index === 0 ? "bg-primary/10 border-primary/30" : "bg-card border-border"
                         }`}
                       >
                         <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -310,9 +280,7 @@ export default function KioskKitchen() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="font-medium truncate">
-                                {item.fullName || "—"}
-                              </span>
+                              <span className="font-medium truncate">{item.fullName || "—"}</span>
                             </div>
                             <p className="text-primary font-semibold truncate">
                               {item.meal_name_snapshot || "Nepoznat obrok"}
@@ -349,7 +317,7 @@ export default function KioskKitchen() {
               <TabsContent value="served" className="mt-0">
                 {served.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-lg">Još nije izdato nijedan obrok danas</p>
+                    <p className="text-lg">Još nije izdat nijedan obrok danas</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -365,9 +333,7 @@ export default function KioskKitchen() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="font-medium truncate">
-                                {item.fullName || "—"}
-                              </span>
+                              <span className="font-medium truncate">{item.fullName || "—"}</span>
                             </div>
                             <p className="text-success font-semibold truncate">
                               {item.meal_name_snapshot || "Nepoznat obrok"}
@@ -424,8 +390,12 @@ export default function KioskKitchen() {
               Da li ste sigurni da želite da obrišete ovaj zapis? Ova akcija se ne može poništiti.
               {itemToDelete && (
                 <div className="mt-2 p-2 bg-muted rounded">
-                  <p><strong>ID:</strong> {itemToDelete.employee_identifier}</p>
-                  <p><strong>Obrok:</strong> {itemToDelete.meal_name_snapshot}</p>
+                  <p>
+                    <strong>ID:</strong> {itemToDelete.employee_identifier}
+                  </p>
+                  <p>
+                    <strong>Obrok:</strong> {itemToDelete.meal_name_snapshot}
+                  </p>
                 </div>
               )}
             </AlertDialogDescription>
