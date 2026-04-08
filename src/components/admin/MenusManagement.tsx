@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,15 +295,17 @@ export function MenusManagement() {
       .sort((a, b) => a[0].localeCompare(b[0]));
   };
 
-  const groupedMenus = groupMenusByWeek(filteredMenus).filter(([key, weekData]) => {
-    const firstMenuDate = weekData.menus[0]?.menu_date;
-    if (!firstMenuDate) return false;
-    
-    const weekStart = startOfWeek(new Date(firstMenuDate), { weekStartsOn: 1 });
-    const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-    
-    return weekStart >= currentWeekStart;
-  });
+  const groupedMenus = groupMenusByWeek(filteredMenus);
+
+  const currentWeekRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (currentWeekRef.current) {
+      setTimeout(() => {
+        currentWeekRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [groupedMenus.length]);
 
   const handleTabChange = (tab: string) => {
     setActiveOrgTab(tab as OrgTab);
@@ -491,9 +493,10 @@ export function MenusManagement() {
               {groupedMenus.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
               ) : (
-                <div className="space-y-2">
+                <div className="max-h-[600px] overflow-y-auto p-1 space-y-2">
                   {groupedMenus.map(([key, weekData]) => (
                     <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
+                      <div ref={weekData.isCurrentWeek ? currentWeekRef : undefined}>
                       <div className="flex items-center gap-2">
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" className="flex-1 justify-between p-4 h-auto hover:bg-accent/50 group">
