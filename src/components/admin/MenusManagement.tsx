@@ -276,7 +276,7 @@ export function MenusManagement() {
       const date = new Date(menu.menu_date);
       const weekNumber = getWeek(date, { weekStartsOn: 1 });
       const year = getYear(date);
-      const key = `${year}-W${weekNumber}`;
+      const key = `${year}-W${String(weekNumber).padStart(2, '0')}`;
       
       if (!grouped.has(key)) {
         grouped.set(key, {
