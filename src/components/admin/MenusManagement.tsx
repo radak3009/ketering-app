@@ -561,6 +561,7 @@ export function MenusManagement() {
                           ))}
                         </div>
                       </CollapsibleContent>
+                      </div>
                     </Collapsible>
                   ))}
                 </div>
