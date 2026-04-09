@@ -488,7 +488,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                             <div className="flex items-center justify-between">
                               <div className="min-w-0">
                                 <p className="font-medium text-sm truncate">{item.userName}</p>
-                                <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId}</p>
+                                <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId} · {item.tag}</p>
                               </div>
                               <div className="flex gap-1 shrink-0">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
