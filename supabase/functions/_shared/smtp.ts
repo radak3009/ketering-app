@@ -62,7 +62,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       from: `${fromName} <${fromEmail}>`,
       to: recipients,
       subject: options.subject,
-      content: "Ovaj email zahteva HTML prikaz.",
+      content: "auto",
       html: options.html,
     });
 
