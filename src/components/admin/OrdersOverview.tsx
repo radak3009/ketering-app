@@ -130,6 +130,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
       userId: string;
       userName: string;
       cardId: string;
+      tag: string;
       deliveryDate: string;
       mealName: string;
       mealId: string;
@@ -146,6 +147,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
           userId: order.user_id,
           userName: user?.full_name || order.profile?.full_name || "Nepoznat",
           cardId: user?.company_card_id || order.profile?.company_card_id || "-",
+          tag: user?.tag || "-",
           deliveryDate: order.delivery_date || "",
           mealName: (oi as any).meal?.name || "Nepoznat",
           mealId: oi.meal_id,
@@ -453,10 +455,11 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   </div>
                   {flatOrderItems.length > 0 && (
                     <Button variant="outline" size="sm" onClick={() => {
-                      const header = ["Korisnik", "ID Kartice", "Datum dostave", "Obrok", "Smena", "Status preuzimanja"];
+                      const header = ["Korisnik", "ID Kartice", "Organizacija", "Datum dostave", "Obrok", "Smena", "Status preuzimanja"];
                       const rows: (string | number)[][] = [header, ...flatOrderItems.map(item => [
                         item.userName,
                         item.cardId,
+                        item.tag,
                         item.deliveryDate,
                         item.mealName,
                         SHIFT_ROMAN[item.shift] || item.shift,
@@ -485,7 +488,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                             <div className="flex items-center justify-between">
                               <div className="min-w-0">
                                 <p className="font-medium text-sm truncate">{item.userName}</p>
-                                <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId}</p>
+                                <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId} · {item.tag}</p>
                               </div>
                               <div className="flex gap-1 shrink-0">
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
@@ -515,6 +518,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                           <TableRow>
                             <TableHead className="text-xs md:text-sm">Korisnik</TableHead>
                             <TableHead className="text-xs md:text-sm">ID Kartice</TableHead>
+                            <TableHead className="text-xs md:text-sm">Organizacija</TableHead>
                             <TableHead className="text-xs md:text-sm">Datum dostave</TableHead>
                             <TableHead className="text-xs md:text-sm">Obrok</TableHead>
                             <TableHead className="text-xs md:text-sm">Smena</TableHead>
@@ -525,7 +529,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                         <TableBody>
                           {flatOrderItems.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                                 Nema stavki za prikaz
                               </TableCell>
                             </TableRow>
@@ -536,6 +540,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                               <TableRow key={item.orderItemId}>
                                 <TableCell className="text-xs md:text-sm font-medium">{item.userName}</TableCell>
                                 <TableCell className="text-xs md:text-sm font-mono">{item.cardId}</TableCell>
+                                <TableCell className="text-xs md:text-sm">{item.tag}</TableCell>
                                 <TableCell className="text-xs md:text-sm">{item.deliveryDate}</TableCell>
                                 <TableCell className="text-xs md:text-sm">{item.mealName}</TableCell>
                                 <TableCell className="text-xs md:text-sm">
