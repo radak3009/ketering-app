@@ -1,29 +1,54 @@
 
 
-## Plan: Prikaži sve jelovnike sa scroll i auto-fokus na tekuću nedelju
+## Plan: Offline podrška za Kiosk (Queue & Sync)
 
 ### Problem
-Trenutno se filtriraju jelovnici stariji od tekuće nedelje (`weekStart >= currentWeekStart` na liniji 305). Nema prikaza istorije, nema scroll containera, i nema auto-scroll na tekuću nedelju.
+Kada WiFi konekcija padne, kiosk ne može da potvrdi preuzimanje obroka jer sve operacije (serve, confirm-pickup) zahtevaju mrežni poziv ka Edge funkcijama.
+
+### Rešenje
+Implementirati **offline queue** sistem koji lokalno skladišti neuspele operacije i automatski ih sinhronizuje kada se konekcija ponovo uspostavi.
 
 ### Izmene
 
-**`src/components/admin/MenusManagement.tsx`**
+**1. Novi servis: `src/services/offlineQueue.ts`**
+- IndexedDB skladište za čuvanje neuspelih operacija (preživljava refresh/reboot)
+- Svaka operacija se čuva kao `{ id, type, token, pickupRequestId, kioskType, timestamp }`
+- Tipovi operacija: `serve`, `confirm-pickup`
+- Funkcija `enqueue()` za dodavanje u red
+- Funkcija `processQueue()` koja redom šalje zahteve i briše uspešne
+- Slušač na `navigator.onLine` event za automatski retry pri ponovnom povezivanju
+- Periodic retry svakih 10 sekundi dok postoje stavke u redu
+- Dedup logika: ne dodaje istu operaciju dva puta
 
-1. **Ukloni filter koji sakriva prošle nedelje** (linije 298-306) — koristi `groupMenusByWeek(filteredMenus)` direktno umesto filtriranja samo budućih nedelja.
+**2. Izmena: `src/pages/KioskPickup.tsx`**
+- U `handleConfirmPickup`: ako `fetch` padne sa network greškom, sačuvaj u offline queue
+- Prikaži korisniku "confirmed" ekran sa napomenom "Biće sinhronizovano" umesto greške
+- Dodaj indikator broja stavki u offline redu (badge na ekranu)
+- Dodaj online/offline status indikator
 
-2. **Naslov po broju kalendarske nedelje** — već postoji na liniji 506 (`Nedelja ${weekData.weekNumber}`). Prošle nedelje će koristiti isti format. Tekuća i sledeća zadržavaju posebne nazive.
+**3. Izmena: `src/pages/KioskKitchen.tsx`**
+- U `handleServe`: ako `fetch` padne sa network greškom, sačuvaj u offline queue
+- Zadrži optimistički UI update (već postoji) — korisnik vidi da je obrok izdat
+- Dodaj badge sa brojem stavki čekaju sinhronizaciju
+- Dodaj online/offline status indikator
 
-3. **Dodaj scroll container sa max visinom** — umotaj listu nedelja u `div` sa `max-h-[600px] overflow-y-auto` i padding.
+**4. Izmena: `src/services/kioskApi.ts`**
+- Pomoćna funkcija `isNetworkError(error)` za razlikovanje mrežnih grešaka od serverskih
 
-4. **Auto-scroll na tekuću nedelju** — dodaj `useRef` + `useEffect` koji nakon renderovanja skroluje do elementa tekuće nedelje koristeći `scrollIntoView`. Dodaj `ref` na `Collapsible` element koji je `isCurrentWeek`.
+### Ključni detalji
 
-5. **defaultOpen** — zadrži `defaultOpen` samo za tekuću i sledeću nedelju (već implementirano na liniji 496).
-
-### Ključne promene
+- **IndexedDB** umesto localStorage jer je pouzdaniji za strukturirane podatke i preživljava sve scenarije
+- **Optimistički UI** već postoji na Kitchen kiosku — offline queue samo osigurava da se podaci zaista pošalju
+- **Deduplikacija na serveru** već postoji (provera `pickup_status === 'preuzeto'`) — dupli zahtevi su bezbedni
+- **Vizuelni feedback**: offline badge prikazuje koliko operacija čeka sync, nestaje kad se sve pošalje
 
 ```text
-Linija 298-306: Ukloni .filter() — prikaži sve nedelje
-Linija 494:     Dodaj max-h-[600px] overflow-y-auto p-1 na wrapper div
-Novi:           useRef za current-week element + useEffect scrollIntoView
+Tok rada:
+1. Korisnik potvrdi obrok
+2. Pokušaj slanja na server
+3a. Uspeh → normalan tok
+3b. Network error → sačuvaj u IndexedDB, prikaži "sačuvano offline"
+4. Kad se WiFi vrati → automatski pošalji sve iz reda
+5. Badge prikazuje preostale stavke
 ```
 
