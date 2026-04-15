@@ -4,8 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Badge } from "@/components/ui/badge";
 import { kioskApi } from "@/services/kioskApi";
-import { CheckCircle, XCircle, AlertCircle, Utensils, UserCheck } from "lucide-react";
+import { enqueue, isNetworkError } from "@/services/offlineQueue";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { CheckCircle, XCircle, AlertCircle, Utensils, UserCheck, WifiOff, CloudUpload } from "lucide-react";
 import type { ShowMealResponse, PreloadMealEntry } from "@/types/kiosk";
 
 const PRELOAD_INTERVAL_MS = 30_000; // refresh cache every 30s
@@ -27,6 +30,8 @@ export default function KioskPickup() {
   
   const [screenState, setScreenState] = useState<ScreenState>(token ? "input" : "unauthorized");
   const [cardId, setCardId] = useState("");
+  const [offlineConfirmed, setOfflineConfirmed] = useState(false);
+  const { pendingCount } = useOfflineQueue();
   const [result, setResult] = useState<ShowMealResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [countdown, setCountdown] = useState(8);
@@ -134,6 +139,7 @@ export default function KioskPickup() {
     setErrorMessage("");
     setScreenState("input");
     setCountdown(8);
+    setOfflineConfirmed(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
@@ -204,6 +210,7 @@ export default function KioskPickup() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     
     setScreenState("confirming");
+    setOfflineConfirmed(false);
 
     try {
       await kioskApi.confirmPickup(token, result.pickupRequestId);
@@ -212,6 +219,22 @@ export default function KioskPickup() {
       refreshCache();
     } catch (error) {
       console.error("Confirm error:", error);
+      
+      if (isNetworkError(error)) {
+        // Save to offline queue
+        await enqueue({
+          id: `confirm-${result.pickupRequestId}-${Date.now()}`,
+          type: "confirm-pickup",
+          token,
+          pickupRequestId: result.pickupRequestId,
+          kioskType: "employee",
+          timestamp: Date.now(),
+        });
+        setOfflineConfirmed(true);
+        setScreenState("confirmed");
+        return;
+      }
+      
       const message = error instanceof Error ? error.message : "Greška pri potvrdi";
       
       if (message.includes("Kuhinja radi")) {
@@ -240,6 +263,24 @@ export default function KioskPickup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
+      {/* Offline indicators */}
+      {(pendingCount > 0 || !navigator.onLine) && (
+        <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
+          {!navigator.onLine && (
+            <Badge variant="destructive" className="flex items-center gap-1 text-sm py-1 px-3">
+              <WifiOff className="h-4 w-4" />
+              Offline
+            </Badge>
+          )}
+          {pendingCount > 0 && (
+            <Badge variant="secondary" className="flex items-center gap-1 text-sm py-1 px-3 animate-pulse">
+              <CloudUpload className="h-4 w-4" />
+              Čeka sync: {pendingCount}
+            </Badge>
+          )}
+        </div>
+      )}
+
       {/* Input Screen */}
       {screenState === "input" && (
         <Card className="w-full max-w-lg">
@@ -408,6 +449,15 @@ export default function KioskPickup() {
                   {result.mealName}
                 </p>
               </div>
+
+              {offlineConfirmed && (
+                <div className="bg-warning/10 rounded-lg p-3 mb-4 border border-warning/30">
+                  <p className="text-sm text-warning flex items-center justify-center gap-2">
+                    <CloudUpload className="h-4 w-4" />
+                    Sačuvano lokalno — biće sinhronizovano
+                  </p>
+                </div>
+              )}
 
               <Button 
                 onClick={handleReset}

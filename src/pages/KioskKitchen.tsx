@@ -6,8 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { kioskApi } from "@/services/kioskApi";
+import { enqueue, isNetworkError } from "@/services/offlineQueue";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useKioskRealtime } from "@/hooks/useKioskRealtime";
-import { CheckCircle, XCircle, Undo2, Trash2, ChefHat, Clock, User, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, Undo2, Trash2, ChefHat, Clock, User, Wifi, WifiOff, RefreshCw, CloudUpload } from "lucide-react";
 import type { QueueItem, KitchenStatus } from "@/types/kiosk";
 import { format } from "date-fns";
 import {
@@ -31,6 +33,7 @@ export default function KioskKitchen() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<QueueItem | null>(null);
   const [kitchenStatus, setKitchenStatus] = useState<KitchenStatus | null>(null);
+  const { pendingCount: offlineQueueCount } = useOfflineQueue();
 
   // Poll kitchen status every 60s
   useEffect(() => {
@@ -87,11 +90,24 @@ export default function KioskKitchen() {
 
     try {
       await kioskApi.serve(token, item.id);
-      // Realtime will confirm the update, but fetch as backup
       await refetch();
     } catch (error) {
       console.error("Serve error:", error);
-      await refetch();
+      
+      if (isNetworkError(error)) {
+        // Save to offline queue — keep optimistic UI
+        await enqueue({
+          id: `serve-${item.id}-${Date.now()}`,
+          type: "serve",
+          token,
+          pickupRequestId: item.id,
+          timestamp: Date.now(),
+        });
+        console.log(`[Kitchen] Serve queued offline for ${item.id}`);
+      } else {
+        // Server error — revert optimistic update
+        await refetch();
+      }
     } finally {
       setProcessingId(null);
       setIsProcessing(false);
@@ -176,9 +192,9 @@ export default function KioskKitchen() {
     }
 
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-destructive">
         <WifiOff className="h-4 w-4" />
-        <span className="hidden sm:inline">Sinhronizacija (45s)</span>
+        <span className="hidden sm:inline">Offline</span>
       </div>
     );
   };
@@ -218,6 +234,12 @@ export default function KioskKitchen() {
           <h1 className="text-2xl font-bold text-foreground">KUHINJA</h1>
         </div>
         <div className="flex items-center gap-4">
+          {offlineQueueCount > 0 && (
+            <Badge variant="secondary" className="flex items-center gap-1 text-sm py-1 px-3 animate-pulse">
+              <CloudUpload className="h-4 w-4" />
+              Čeka sync: {offlineQueueCount}
+            </Badge>
+          )}
           <ConnectionIndicator />
           <div className="text-muted-foreground">{today}</div>
         </div>
