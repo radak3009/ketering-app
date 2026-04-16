@@ -241,7 +241,7 @@ export default function KioskPickup() {
   };
 
   const handleConfirmPickup = async () => {
-    if (!result?.pickupRequestId) return;
+    const hasPickupRequestId = !!result?.pickupRequestId;
     
     // Clear the auto-reset timeout
     if (countdownRef.current) clearInterval(countdownRef.current);
@@ -250,8 +250,30 @@ export default function KioskPickup() {
     setScreenState("confirming");
     setOfflineConfirmed(false);
 
+    // If we don't have a pickupRequestId (came from cache while offline),
+    // go straight to offline queue with show-and-confirm
+    if (!hasPickupRequestId) {
+      const trimmedId = cardId.trim();
+      await enqueue({
+        id: `show-confirm-${trimmedId}-${Date.now()}`,
+        type: "show-and-confirm",
+        token,
+        pickupRequestId: trimmedId, // store cardId as reference
+        companyCardId: trimmedId,
+        kioskType: "employee",
+        timestamp: Date.now(),
+      });
+      // Mark as picked up in local cache
+      if (cacheRef.current[trimmedId]) {
+        cacheRef.current[trimmedId] = { ...cacheRef.current[trimmedId], pickupStatus: "preuzeto" };
+      }
+      setOfflineConfirmed(true);
+      setScreenState("confirmed");
+      return;
+    }
+
     try {
-      await kioskApi.confirmPickup(token, result.pickupRequestId);
+      await kioskApi.confirmPickup(token, result!.pickupRequestId!);
       setScreenState("confirmed");
       // Refresh cache after successful pickup
       refreshCache();
@@ -261,10 +283,10 @@ export default function KioskPickup() {
       if (isNetworkError(error)) {
         // Save to offline queue
         await enqueue({
-          id: `confirm-${result.pickupRequestId}-${Date.now()}`,
+          id: `confirm-${result!.pickupRequestId}-${Date.now()}`,
           type: "confirm-pickup",
           token,
-          pickupRequestId: result.pickupRequestId,
+          pickupRequestId: result!.pickupRequestId!,
           kioskType: "employee",
           timestamp: Date.now(),
         });
