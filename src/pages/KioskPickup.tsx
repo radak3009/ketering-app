@@ -56,7 +56,6 @@ export default function KioskPickup() {
       window.removeEventListener("offline", goOffline);
     };
   }, []);
-  const cacheTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Preload today's meals into local cache
   const refreshCache = useCallback(async () => {
