@@ -324,9 +324,9 @@ export default function KioskPickup() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
       {/* Offline indicators */}
-      {(pendingCount > 0 || !navigator.onLine) && (
+      {(pendingCount > 0 || !isOnline) && (
         <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
-          {!navigator.onLine && (
+          {!isOnline && (
             <Badge variant="destructive" className="flex items-center gap-1 text-sm py-1 px-3">
               <WifiOff className="h-4 w-4" />
               Offline
