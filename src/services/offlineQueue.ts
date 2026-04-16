@@ -14,9 +14,11 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface OfflineOperation {
   id: string;
-  type: "serve" | "confirm-pickup";
+  type: "serve" | "confirm-pickup" | "show-and-confirm";
   token: string;
   pickupRequestId: string;
+  /** Used by show-and-confirm to identify the employee */
+  companyCardId?: string;
   kioskType?: "employee" | "kitchen";
   timestamp: number;
   retries: number;
@@ -137,10 +139,19 @@ export async function processQueue(): Promise<void> {
           await kioskApi.serve(op.token, op.pickupRequestId);
         } else if (op.type === "confirm-pickup") {
           await kioskApi.confirmPickup(op.token, op.pickupRequestId, op.kioskType || "employee");
+        } else if (op.type === "show-and-confirm" && op.companyCardId) {
+          // Two-step: create pickup request then confirm it
+          const showResult = await kioskApi.showMeal(op.token, op.companyCardId);
+          if (showResult.pickupRequestId) {
+            await kioskApi.confirmPickup(op.token, showResult.pickupRequestId, "employee");
+          } else if (showResult.alreadyServed) {
+            // Already handled — just remove from queue
+            console.log(`[OfflineQueue] Already served for ${op.companyCardId}, removing`);
+          }
         }
         // Success - remove from queue
         await removeOp(op.id);
-        console.log(`[OfflineQueue] Synced ${op.type} for ${op.pickupRequestId}`);
+        console.log(`[OfflineQueue] Synced ${op.type} for ${op.pickupRequestId || op.companyCardId}`);
       } catch (err) {
         // If it's a network error, stop processing (still offline)
         if (isNetworkError(err)) {
