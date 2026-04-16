@@ -31,6 +31,7 @@ export default function KioskPickup() {
   const [screenState, setScreenState] = useState<ScreenState>(token ? "input" : "unauthorized");
   const [cardId, setCardId] = useState("");
   const [offlineConfirmed, setOfflineConfirmed] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { pendingCount } = useOfflineQueue();
   const [result, setResult] = useState<ShowMealResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -43,6 +44,18 @@ export default function KioskPickup() {
   // Preload cache
   const cacheRef = useRef<Record<string, PreloadMealEntry>>({});
   const cacheTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reactive online/offline tracking
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   // Preload today's meals into local cache
   const refreshCache = useCallback(async () => {
@@ -168,6 +181,18 @@ export default function KioskPickup() {
         setScreenState("already-served");
         return;
       }
+
+      // If offline — use cache to show confirm screen directly
+      if (!navigator.onLine) {
+        setResult({
+          found: true,
+          fullName: cached.fullName,
+          mealName: cached.mealName,
+          confirmationRequired: true,
+        });
+        setScreenState("confirm");
+        return;
+      }
     } else if (Object.keys(cacheRef.current).length > 0) {
       // Cache is loaded but this card ID not found - show error instantly
       setErrorMessage("Nema porudžbine za danas");
@@ -197,13 +222,26 @@ export default function KioskPickup() {
       }
     } catch (error) {
       console.error("Kiosk error:", error);
+      
+      // If network error and we have cached data, show confirm screen
+      if (isNetworkError(error) && cached) {
+        setResult({
+          found: true,
+          fullName: cached.fullName,
+          mealName: cached.mealName,
+          confirmationRequired: true,
+        });
+        setScreenState("confirm");
+        return;
+      }
+      
       setErrorMessage(error instanceof Error ? error.message : "Greška pri povezivanju");
       setScreenState("error");
     }
   };
 
   const handleConfirmPickup = async () => {
-    if (!result?.pickupRequestId) return;
+    const hasPickupRequestId = !!result?.pickupRequestId;
     
     // Clear the auto-reset timeout
     if (countdownRef.current) clearInterval(countdownRef.current);
@@ -212,8 +250,30 @@ export default function KioskPickup() {
     setScreenState("confirming");
     setOfflineConfirmed(false);
 
+    // If we don't have a pickupRequestId (came from cache while offline),
+    // go straight to offline queue with show-and-confirm
+    if (!hasPickupRequestId) {
+      const trimmedId = cardId.trim();
+      await enqueue({
+        id: `show-confirm-${trimmedId}-${Date.now()}`,
+        type: "show-and-confirm",
+        token,
+        pickupRequestId: trimmedId, // store cardId as reference
+        companyCardId: trimmedId,
+        kioskType: "employee",
+        timestamp: Date.now(),
+      });
+      // Mark as picked up in local cache
+      if (cacheRef.current[trimmedId]) {
+        cacheRef.current[trimmedId] = { ...cacheRef.current[trimmedId], pickupStatus: "preuzeto" };
+      }
+      setOfflineConfirmed(true);
+      setScreenState("confirmed");
+      return;
+    }
+
     try {
-      await kioskApi.confirmPickup(token, result.pickupRequestId);
+      await kioskApi.confirmPickup(token, result!.pickupRequestId!);
       setScreenState("confirmed");
       // Refresh cache after successful pickup
       refreshCache();
@@ -223,10 +283,10 @@ export default function KioskPickup() {
       if (isNetworkError(error)) {
         // Save to offline queue
         await enqueue({
-          id: `confirm-${result.pickupRequestId}-${Date.now()}`,
+          id: `confirm-${result!.pickupRequestId}-${Date.now()}`,
           type: "confirm-pickup",
           token,
-          pickupRequestId: result.pickupRequestId,
+          pickupRequestId: result!.pickupRequestId!,
           kioskType: "employee",
           timestamp: Date.now(),
         });
@@ -264,9 +324,9 @@ export default function KioskPickup() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
       {/* Offline indicators */}
-      {(pendingCount > 0 || !navigator.onLine) && (
+      {(pendingCount > 0 || !isOnline) && (
         <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
-          {!navigator.onLine && (
+          {!isOnline && (
             <Badge variant="destructive" className="flex items-center gap-1 text-sm py-1 px-3">
               <WifiOff className="h-4 w-4" />
               Offline
