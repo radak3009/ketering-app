@@ -181,6 +181,18 @@ export default function KioskPickup() {
         setScreenState("already-served");
         return;
       }
+
+      // If offline — use cache to show confirm screen directly
+      if (!navigator.onLine) {
+        setResult({
+          found: true,
+          fullName: cached.fullName,
+          mealName: cached.mealName,
+          confirmationRequired: true,
+        });
+        setScreenState("confirm");
+        return;
+      }
     } else if (Object.keys(cacheRef.current).length > 0) {
       // Cache is loaded but this card ID not found - show error instantly
       setErrorMessage("Nema porudžbine za danas");
@@ -210,6 +222,19 @@ export default function KioskPickup() {
       }
     } catch (error) {
       console.error("Kiosk error:", error);
+      
+      // If network error and we have cached data, show confirm screen
+      if (isNetworkError(error) && cached) {
+        setResult({
+          found: true,
+          fullName: cached.fullName,
+          mealName: cached.mealName,
+          confirmationRequired: true,
+        });
+        setScreenState("confirm");
+        return;
+      }
+      
       setErrorMessage(error instanceof Error ? error.message : "Greška pri povezivanju");
       setScreenState("error");
     }
