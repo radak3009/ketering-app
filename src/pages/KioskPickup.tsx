@@ -31,6 +31,7 @@ export default function KioskPickup() {
   const [screenState, setScreenState] = useState<ScreenState>(token ? "input" : "unauthorized");
   const [cardId, setCardId] = useState("");
   const [offlineConfirmed, setOfflineConfirmed] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { pendingCount } = useOfflineQueue();
   const [result, setResult] = useState<ShowMealResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -42,6 +43,19 @@ export default function KioskPickup() {
   
   // Preload cache
   const cacheRef = useRef<Record<string, PreloadMealEntry>>({});
+  const cacheTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reactive online/offline tracking
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
   const cacheTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Preload today's meals into local cache
