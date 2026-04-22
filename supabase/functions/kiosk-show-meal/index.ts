@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Step 1: Find profile by card ID
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, user_id, full_name, company_id")
+      .select("id, user_id, full_name, company_id, tag")
       .or(`company_card_id.eq.${cardId},company_card_serial.eq.${cardId}`)
       .maybeSingle();
 
