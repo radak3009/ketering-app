@@ -127,8 +127,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 4: Check existing pickup requests + kitchen status in parallel
-    const [pendingResult, servedResult, kitchenStatus] = await Promise.all([
+    // Step 4: Check existing pickup requests + kitchen status + schedule tags in parallel
+    const [pendingResult, servedResult, kitchenStatus, settingResult] = await Promise.all([
       // Check ANY pending request for this order item today (no time limit)
       supabase
         .from("pickup_requests")
@@ -151,7 +151,22 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle(),
       isKitchenOpen(supabase, profile.company_id),
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "kitchen_schedule_tags")
+        .maybeSingle(),
     ]);
+
+    // Determine if kitchen schedule applies to this user's tag
+    const scheduleTags: string[] = (settingResult.data?.value as string[]) || [];
+    const userTag = profile.tag || null;
+    const scheduleApplies = scheduleTags.length === 0
+      ? true
+      : userTag !== null && scheduleTags.includes(userTag);
+
+    // If schedule doesn't apply → user is always self-service (always show confirm button)
+    const confirmationRequired = !scheduleApplies ? true : !kitchenStatus.isOpen;
 
     // Already served today (via pickup_requests)
     if (servedResult.data) {
@@ -179,7 +194,7 @@ Deno.serve(async (req) => {
           pickupRequestId: pendingResult.data.id,
           message: "Zahtev je već kreiran",
           kitchenOpen: kitchenStatus.isOpen,
-          confirmationRequired: !kitchenStatus.isOpen,
+          confirmationRequired,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -216,7 +231,7 @@ Deno.serve(async (req) => {
         mealName,
         pickupRequestId: insertData.id,
         kitchenOpen: kitchenStatus.isOpen,
-        confirmationRequired: !kitchenStatus.isOpen,
+        confirmationRequired,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
