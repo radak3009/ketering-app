@@ -1,54 +1,31 @@
 
 
-## Plan: Offline podrška za Kiosk (Queue & Sync)
+## Plan: Tag-aware "confirmationRequired" za Kiosk Pickup
 
 ### Problem
-Kada WiFi konekcija padne, kiosk ne može da potvrdi preuzimanje obroka jer sve operacije (serve, confirm-pickup) zahtevaju mrežni poziv ka Edge funkcijama.
+Korisnici čiji TAG NIJE u `kitchen_schedule_tags` listi (npr. "Hogo hotel") na Kiosk Pickup-u, dok je kuhinja otvorena, dobijaju ekran "Preuzmite obrok na šalteru kuhinje" (success screen) umesto dugmeta za potvrdu preuzimanja. Ovi korisnici ne preuzimaju obrok preko kuhinje i moraju uvek imati self-service flow — bez obzira na status kuhinje.
 
-### Rešenje
-Implementirati **offline queue** sistem koji lokalno skladišti neuspele operacije i automatski ih sinhronizuje kada se konekcija ponovo uspostavi.
+### Uzrok
+`supabase/functions/kiosk-show-meal/index.ts` postavlja `confirmationRequired: !kitchenStatus.isOpen` isključivo na osnovu globalnog statusa kuhinje, ignorišući korisnikov tag. Logika koja proverava `kitchen_schedule_tags` (već postoji u `kiosk-confirm-pickup` i `kiosk-get-kitchen-status`) nije primenjena ovde.
 
-### Izmene
+### Izmena
 
-**1. Novi servis: `src/services/offlineQueue.ts`**
-- IndexedDB skladište za čuvanje neuspelih operacija (preživljava refresh/reboot)
-- Svaka operacija se čuva kao `{ id, type, token, pickupRequestId, kioskType, timestamp }`
-- Tipovi operacija: `serve`, `confirm-pickup`
-- Funkcija `enqueue()` za dodavanje u red
-- Funkcija `processQueue()` koja redom šalje zahteve i briše uspešne
-- Slušač na `navigator.onLine` event za automatski retry pri ponovnom povezivanju
-- Periodic retry svakih 10 sekundi dok postoje stavke u redu
-- Dedup logika: ne dodaje istu operaciju dva puta
+**Jedan fajl: `supabase/functions/kiosk-show-meal/index.ts`**
 
-**2. Izmena: `src/pages/KioskPickup.tsx`**
-- U `handleConfirmPickup`: ako `fetch` padne sa network greškom, sačuvaj u offline queue
-- Prikaži korisniku "confirmed" ekran sa napomenom "Biće sinhronizovano" umesto greške
-- Dodaj indikator broja stavki u offline redu (badge na ekranu)
-- Dodaj online/offline status indikator
+Pre formiranja odgovora dodati istu `scheduleApplies` proveru koja postoji u `kiosk-confirm-pickup`:
 
-**3. Izmena: `src/pages/KioskKitchen.tsx`**
-- U `handleServe`: ako `fetch` padne sa network greškom, sačuvaj u offline queue
-- Zadrži optimistički UI update (već postoji) — korisnik vidi da je obrok izdat
-- Dodaj badge sa brojem stavki čekaju sinhronizaciju
-- Dodaj online/offline status indikator
+1. Učitati `profiles.tag` (već imamo `profile.id`) i `app_settings` ključ `kitchen_schedule_tags` (paralelno sa već postojećim Promise.all blokom radi performansi).
+2. Izračunati `scheduleApplies`:
+   - Ako je `kitchen_schedule_tags` prazan → `scheduleApplies = true` (raspored važi za sve, ponašanje kao danas).
+   - Ako lista ima vrednosti → `scheduleApplies = userTag !== null && scheduleTags.includes(userTag)`.
+3. Izračunati `confirmationRequired`:
+   - Ako `scheduleApplies === false` → uvek `true` (korisnik uvek vidi self-service confirm dugme).
+   - Ako `scheduleApplies === true` → zadržati postojeću logiku `!kitchenStatus.isOpen`.
+4. Primeniti istu logiku na sva tri response branch-a u `kiosk-show-meal` koja vraćaju `confirmationRequired` (postojeći pending request, novi pickup request, kao i `alreadyServed` koji ostaje `false`).
 
-**4. Izmena: `src/services/kioskApi.ts`**
-- Pomoćna funkcija `isNetworkError(error)` za razlikovanje mrežnih grešaka od serverskih
-
-### Ključni detalji
-
-- **IndexedDB** umesto localStorage jer je pouzdaniji za strukturirane podatke i preživljava sve scenarije
-- **Optimistički UI** već postoji na Kitchen kiosku — offline queue samo osigurava da se podaci zaista pošalju
-- **Deduplikacija na serveru** već postoji (provera `pickup_status === 'preuzeto'`) — dupli zahtevi su bezbedni
-- **Vizuelni feedback**: offline badge prikazuje koliko operacija čeka sync, nestaje kad se sve pošalje
-
-```text
-Tok rada:
-1. Korisnik potvrdi obrok
-2. Pokušaj slanja na server
-3a. Uspeh → normalan tok
-3b. Network error → sačuvaj u IndexedDB, prikaži "sačuvano offline"
-4. Kad se WiFi vrati → automatski pošalji sve iz reda
-5. Badge prikazuje preostale stavke
-```
+### Rezultat
+- "Proizvodnja"/Hogo (tagovi u `kitchen_schedule_tags`): nepromenjeno ponašanje — kada kuhinja radi vide success ekran sa porukom da preuzmu na šalteru.
+- "Hogo hotel" i ostali korisnici van liste: uvek dobijaju confirm ekran sa dugmetom "DA, PREUZIMAM", bilo da je kuhinja otvorena ili zatvorena.
+- `kiosk-confirm-pickup` već ispravno dozvoljava potvrdu za ove korisnike (`scheduleApplies` skip), tako da tu nije potrebna promena.
+- Frontend (`KioskPickup.tsx`) ne menjamo — već ispravno reaguje na `confirmationRequired` flag iz response-a.
 
