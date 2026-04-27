@@ -1,0 +1,1 @@
+ALTER TABLE public.menu_templates ADD COLUMN status TEXT NOT NULL DEFAULT 'aktivan';
