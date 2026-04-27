@@ -537,6 +537,17 @@ export function MenusManagement() {
                 <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
               ) : (
                 <div className="max-h-[600px] overflow-y-auto p-1 space-y-2">
+                  {hasMoreHistory && (
+                    <div className="flex justify-center pb-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setHistoryWeeksBack(w => w + 5)}
+                      >
+                        Učitaj još (5 nedelja unazad)
+                      </Button>
+                    </div>
+                  )}
                   {groupedMenus.map(([key, weekData]) => (
                     <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
                       <div ref={weekData.isCurrentWeek ? currentWeekRef : undefined}>
