@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,14 @@ export function AssignMenuDialog({
   open, onOpenChange, activeOrgTab, existingMenus, assignTemplate,
 }: AssignMenuDialogProps) {
   const { toast } = useToast();
-  const { templates, loading } = useMenuTemplates();
+  const { templates, loading, refetch } = useMenuTemplates();
+
+  // Refetch templates whenever the dialog opens to ensure freshness
+  useEffect(() => {
+    if (open) {
+      refetch();
+    }
+  }, [open, refetch]);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);

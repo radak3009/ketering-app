@@ -25,6 +25,8 @@ export function useMenuTemplates() {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('[useMenuTemplates] fetch result:', { count: data?.length, error });
+
       if (error) throw error;
 
       const formatted = (data || []).map((t: any) => ({
@@ -37,6 +39,7 @@ export function useMenuTemplates() {
 
       setTemplates(formatted);
     } catch (error) {
+      console.error('[useMenuTemplates] fetch error:', error);
       handleError({ category: 'fetch', entity: 'jelovnik', error });
     } finally {
       setLoading(false);
