@@ -42,7 +42,9 @@ export function AssignMenuDialog({
   const filteredTemplates = useMemo(() => {
     return templates.filter(t => {
       const isProizvodnja = t.organization_tag === "Proizvodnja";
-      return activeOrgTab === "proizvodnja" ? isProizvodnja : !isProizvodnja;
+      if (activeOrgTab === "proizvodnja" ? !isProizvodnja : isProizvodnja) return false;
+      const status = (t as any).status || "aktivan";
+      return status === "aktivan";
     });
   }, [templates, activeOrgTab]);
 
