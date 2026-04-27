@@ -381,14 +381,15 @@ export function MenuTemplatesTab() {
               <TableHead>Grupa</TableHead>
               <TableHead>Broj obroka</TableHead>
               <TableHead>Smene</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Akcije</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Učitavanje...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Učitavanje...</TableCell></TableRow>
             ) : pageItems.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Nema kreiranih jelovnika</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Nema kreiranih jelovnika</TableCell></TableRow>
             ) : (
               pageItems.map(tpl => {
                 const shifts = new Set<string>();
@@ -414,6 +415,13 @@ export function MenuTemplatesTab() {
                           <Badge key={s} variant="outline" className="text-[10px]">{shiftLabel(s)}</Badge>
                         ))}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {((tpl as any).status === "neaktivan") ? (
+                        <Badge variant="outline">Neaktivan</Badge>
+                      ) : (
+                        <Badge variant="default">Aktivan</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
