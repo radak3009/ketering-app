@@ -28,6 +28,7 @@ type FormState = {
   name: string;
   description: string;
   organization_tag: "Proizvodnja" | "Hogo";
+  status: "aktivan" | "neaktivan";
   selectedMeals: string[];
 };
 
@@ -35,6 +36,7 @@ const emptyForm = (): FormState => ({
   name: "",
   description: "",
   organization_tag: "Hogo",
+  status: "aktivan",
   selectedMeals: [],
 });
 
@@ -46,6 +48,7 @@ export function MenuTemplatesTab() {
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("");
   const [shiftFilter, setShiftFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -73,9 +76,13 @@ export function MenuTemplatesTab() {
         const hasShift = t.meals?.some(m => m.meal?.shifts?.includes(shiftFilter));
         if (!hasShift) return false;
       }
+      if (statusFilter) {
+        const tplStatus = (t as any).status || "aktivan";
+        if (tplStatus !== statusFilter) return false;
+      }
       return true;
     });
-  }, [templates, search, groupFilter, shiftFilter]);
+  }, [templates, search, groupFilter, shiftFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -224,6 +231,7 @@ export function MenuTemplatesTab() {
       name: tpl.name,
       description: tpl.description || "",
       organization_tag: tpl.organization_tag === "Proizvodnja" ? "Proizvodnja" : "Hogo",
+      status: ((tpl as any).status === "neaktivan" ? "neaktivan" : "aktivan"),
       selectedMeals: tpl.meals?.map(m => m.meal_id) || [],
     });
     resetMealFilters();
@@ -246,6 +254,7 @@ export function MenuTemplatesTab() {
         name: editForm.name.trim(),
         description: editForm.description.trim() || null,
         organization_tag: editForm.organization_tag === "Proizvodnja" ? "Proizvodnja" : null,
+        status: editForm.status,
         meal_ids: editForm.selectedMeals,
       });
       setEditing(null);
@@ -287,6 +296,15 @@ export function MenuTemplatesTab() {
             <option value="prva">I smena</option>
             <option value="druga">II smena</option>
             <option value="treća">III smena</option>
+          </select>
+          <select
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">Svi statusi</option>
+            <option value="aktivan">Aktivan</option>
+            <option value="neaktivan">Neaktivan</option>
           </select>
         </div>
 
@@ -363,14 +381,15 @@ export function MenuTemplatesTab() {
               <TableHead>Grupa</TableHead>
               <TableHead>Broj obroka</TableHead>
               <TableHead>Smene</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Akcije</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Učitavanje...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Učitavanje...</TableCell></TableRow>
             ) : pageItems.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Nema kreiranih jelovnika</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Nema kreiranih jelovnika</TableCell></TableRow>
             ) : (
               pageItems.map(tpl => {
                 const shifts = new Set<string>();
@@ -396,6 +415,13 @@ export function MenuTemplatesTab() {
                           <Badge key={s} variant="outline" className="text-[10px]">{shiftLabel(s)}</Badge>
                         ))}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {((tpl as any).status === "neaktivan") ? (
+                        <Badge variant="outline">Neaktivan</Badge>
+                      ) : (
+                        <Badge variant="default">Aktivan</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -468,6 +494,17 @@ export function MenuTemplatesTab() {
                 >
                   <option value="Hogo">Hogo</option>
                   <option value="Proizvodnja">Proizvodnja</option>
+                </select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                  value={editForm.status}
+                  onChange={e => setEditForm({ ...editForm, status: e.target.value as "aktivan" | "neaktivan" })}
+                >
+                  <option value="aktivan">Aktivan</option>
+                  <option value="neaktivan">Neaktivan</option>
                 </select>
               </div>
               <div>
