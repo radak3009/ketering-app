@@ -54,6 +54,7 @@ export function useMenuTemplates() {
           name: data.name,
           description: data.description ?? null,
           organization_tag: data.organization_tag ?? null,
+          status: data.status ?? 'aktivan',
         }])
         .select()
         .single();
@@ -87,6 +88,7 @@ export function useMenuTemplates() {
       if (data.name !== undefined) updates.name = data.name;
       if (data.description !== undefined) updates.description = data.description;
       if (data.organization_tag !== undefined) updates.organization_tag = data.organization_tag;
+      if (data.status !== undefined) updates.status = data.status;
 
       if (Object.keys(updates).length > 0) {
         const { error } = await supabase

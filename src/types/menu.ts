@@ -31,6 +31,7 @@ export interface MenuTemplateCreateData {
   name: string;
   description?: string | null;
   organization_tag?: string | null;
+  status?: string;
   meal_ids: string[];
 }
 
@@ -38,6 +39,7 @@ export interface MenuTemplateUpdateData {
   name?: string;
   description?: string | null;
   organization_tag?: string | null;
+  status?: string;
   meal_ids?: string[];
 }
 
