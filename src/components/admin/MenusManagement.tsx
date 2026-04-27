@@ -595,6 +595,17 @@ export function MenusManagement() {
           </Tabs>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
+
+      <AssignMenuDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        activeOrgTab={activeOrgTab}
+        existingMenus={filteredMenus}
+        assignTemplate={assignTemplate}
+      />
+
 
       {/* Edit Menu Sheet */}
       <Sheet open={!!selectedMenu} onOpenChange={(open) => { if (!open) { setSelectedMenu(null); setMenuMealSearch(""); setMenuGroupFilter(""); setMenuShiftFilter(""); } }}>
