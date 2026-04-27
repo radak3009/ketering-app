@@ -19,9 +19,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
-      // React UpdateProvider registers the SW through virtual:pwa-register/react.
-      // Avoid a second script-based registration because it cannot update needRefresh state.
-      injectRegister: false,
+      injectRegister: "script-defer",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
         name: "Ketering Hogo",
@@ -54,6 +52,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
