@@ -299,7 +299,25 @@ export function MenusManagement() {
       .sort((a, b) => a[0].localeCompare(b[0]));
   };
 
-  const groupedMenus = groupMenusByWeek(filteredMenus);
+  const allGroupedMenus = groupMenusByWeek(filteredMenus);
+
+  const [historyWeeksBack, setHistoryWeeksBack] = useState(3);
+
+  const visibleGroupedMenus = (() => {
+    const now = new Date();
+    const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const cutoff = addWeeks(currentWeekStart, -historyWeeksBack);
+    return allGroupedMenus.filter(([, w]) => {
+      // Reconstruct first day of that week from any menu in it
+      const anyDate = new Date(w.menus[0].menu_date);
+      const weekStart = startOfWeek(anyDate, { weekStartsOn: 1 });
+      return weekStart >= cutoff;
+    });
+  })();
+
+  const groupedMenus = visibleGroupedMenus;
+
+  const hasMoreHistory = allGroupedMenus.length > visibleGroupedMenus.length;
 
   const currentWeekRef = useRef<HTMLDivElement>(null);
 
@@ -519,6 +537,17 @@ export function MenusManagement() {
                 <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
               ) : (
                 <div className="max-h-[600px] overflow-y-auto p-1 space-y-2">
+                  {hasMoreHistory && (
+                    <div className="flex justify-center pb-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setHistoryWeeksBack(w => w + 5)}
+                      >
+                        Učitaj još (5 nedelja unazad)
+                      </Button>
+                    </div>
+                  )}
                   {groupedMenus.map(([key, weekData]) => (
                     <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
                       <div ref={weekData.isCurrentWeek ? currentWeekRef : undefined}>
