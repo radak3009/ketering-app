@@ -497,6 +497,17 @@ export function MenuTemplatesTab() {
                 </select>
               </div>
               <div>
+                <Label>Status</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                  value={editForm.status}
+                  onChange={e => setEditForm({ ...editForm, status: e.target.value as "aktivan" | "neaktivan" })}
+                >
+                  <option value="aktivan">Aktivan</option>
+                  <option value="neaktivan">Neaktivan</option>
+                </select>
+              </div>
+              <div>
                 <Label htmlFor="edit-tpl-desc">Opis</Label>
                 <Textarea
                   id="edit-tpl-desc"
