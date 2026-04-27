@@ -12,12 +12,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2, Factory, Building2 } from "lucide-react";
+import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2, Factory, Building2, ListChecks } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
 import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval, isSameDay } from "date-fns";
 import { WEEK_DAYS } from "@/constants";
+import { MenuTemplatesTab } from "./MenuTemplatesTab";
+import { AssignMenuDialog } from "./AssignMenuDialog";
 
 interface MenuFormState {
   description: string;
@@ -36,8 +38,10 @@ function menuMatchesTab(menu: MenuWithMeals, tab: OrgTab): boolean {
 export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
-  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu } = useMenus();
+  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu, assignTemplate } = useMenus();
   
+  const [mainTab, setMainTab] = useState<'templates' | 'assignments'>('assignments');
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
@@ -318,19 +322,40 @@ export function MenusManagement() {
 
   return (
     <>
+      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'templates' | 'assignments')} className="w-full">
+        <TabsList className="grid grid-cols-2 w-full max-w-md">
+          <TabsTrigger value="templates" className="gap-2">
+            <ListChecks className="h-4 w-4" />
+            <span>Jelovnici</span>
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            <span>Dodela Jelovnika</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates" className="mt-4">
+          <MenuTemplatesTab />
+        </TabsContent>
+
+        <TabsContent value="assignments" className="mt-4">
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                 <Calendar className="h-4 w-4 md:h-5 md:w-5" />
-                Upravljanje jelovnicima
+                Dodela jelovnika
               </CardTitle>
-              <CardDescription className="text-xs md:text-sm">Kreiranje i pregled dnevnih jelovnika po nedeljama</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Pregled dodeljenih jelovnika po nedeljama i datumima</CardDescription>
             </div>
+            <Button className="w-full md:w-auto" onClick={() => setAssignDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Dodeli jelovnik
+            </Button>
             <Sheet open={isCreateMenuOpen} onOpenChange={setIsCreateMenuOpen}>
               <SheetTrigger asChild>
-                <Button className="w-full md:w-auto">
+                <Button className="hidden">
                   <Plus className="h-4 w-4 mr-2" />
                   Kreiraj jelovnik
                 </Button>
@@ -570,6 +595,17 @@ export function MenusManagement() {
           </Tabs>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
+
+      <AssignMenuDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        activeOrgTab={activeOrgTab}
+        existingMenus={filteredMenus}
+        assignTemplate={assignTemplate}
+      />
+
 
       {/* Edit Menu Sheet */}
       <Sheet open={!!selectedMenu} onOpenChange={(open) => { if (!open) { setSelectedMenu(null); setMenuMealSearch(""); setMenuGroupFilter(""); setMenuShiftFilter(""); } }}>

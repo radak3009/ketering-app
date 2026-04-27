@@ -325,6 +325,79 @@ export type Database = {
           },
         ]
       }
+      menu_template_meals: {
+        Row: {
+          created_at: string
+          id: string
+          meal_id: string
+          quantity: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meal_id: string
+          quantity?: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meal_id?: string
+          quantity?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_template_meals_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_template_meals_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals_secure"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_template_meals_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "menu_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          organization_tag: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          organization_tag?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organization_tag?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menus: {
         Row: {
           created_at: string
@@ -334,6 +407,7 @@ export type Database = {
           menu_date: string
           name: string
           organization_tag: string | null
+          template_id: string | null
           updated_at: string
         }
         Insert: {
@@ -344,6 +418,7 @@ export type Database = {
           menu_date: string
           name: string
           organization_tag?: string | null
+          template_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -354,9 +429,18 @@ export type Database = {
           menu_date?: string
           name?: string
           organization_tag?: string | null
+          template_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "menus_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "menu_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_preferences: {
         Row: {
