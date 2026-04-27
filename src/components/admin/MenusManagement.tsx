@@ -322,19 +322,40 @@ export function MenusManagement() {
 
   return (
     <>
+      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'templates' | 'assignments')} className="w-full">
+        <TabsList className="grid grid-cols-2 w-full max-w-md">
+          <TabsTrigger value="templates" className="gap-2">
+            <ListChecks className="h-4 w-4" />
+            <span>Jelovnici</span>
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            <span>Dodela Jelovnika</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates" className="mt-4">
+          <MenuTemplatesTab />
+        </TabsContent>
+
+        <TabsContent value="assignments" className="mt-4">
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
                 <Calendar className="h-4 w-4 md:h-5 md:w-5" />
-                Upravljanje jelovnicima
+                Dodela jelovnika
               </CardTitle>
-              <CardDescription className="text-xs md:text-sm">Kreiranje i pregled dnevnih jelovnika po nedeljama</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Pregled dodeljenih jelovnika po nedeljama i datumima</CardDescription>
             </div>
+            <Button className="w-full md:w-auto" onClick={() => setAssignDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Dodeli jelovnik
+            </Button>
             <Sheet open={isCreateMenuOpen} onOpenChange={setIsCreateMenuOpen}>
               <SheetTrigger asChild>
-                <Button className="w-full md:w-auto">
+                <Button className="hidden">
                   <Plus className="h-4 w-4 mr-2" />
                   Kreiraj jelovnik
                 </Button>
