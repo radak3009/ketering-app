@@ -254,6 +254,7 @@ export function MenuTemplatesTab() {
         name: editForm.name.trim(),
         description: editForm.description.trim() || null,
         organization_tag: editForm.organization_tag === "Proizvodnja" ? "Proizvodnja" : null,
+        status: editForm.status,
         meal_ids: editForm.selectedMeals,
       });
       setEditing(null);
@@ -295,6 +296,15 @@ export function MenuTemplatesTab() {
             <option value="prva">I smena</option>
             <option value="druga">II smena</option>
             <option value="treća">III smena</option>
+          </select>
+          <select
+            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">Svi statusi</option>
+            <option value="aktivan">Aktivan</option>
+            <option value="neaktivan">Neaktivan</option>
           </select>
         </div>
 
