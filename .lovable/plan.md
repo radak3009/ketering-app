@@ -1,31 +1,88 @@
+## Plan: Razdvajanje Jelovnika (template) od Dodele (datumi)
 
+### Koncept
+Trenutno jedan zapis u `menus` = jedan dan + lista obroka. Nova logika:
+- **Jelovnik (template)** = imenovani skup obroka bez datuma (može se ponovo dodeljivati).
+- **Dodela** = vezivanje template-a za jedan ili više datuma (ostaje u tabeli `menus`, kao i do sada).
 
-## Plan: Tag-aware "confirmationRequired" za Kiosk Pickup
+### 1. Promene u bazi (migracija)
 
-### Problem
-Korisnici čiji TAG NIJE u `kitchen_schedule_tags` listi (npr. "Hogo hotel") na Kiosk Pickup-u, dok je kuhinja otvorena, dobijaju ekran "Preuzmite obrok na šalteru kuhinje" (success screen) umesto dugmeta za potvrdu preuzimanja. Ovi korisnici ne preuzimaju obrok preko kuhinje i moraju uvek imati self-service flow — bez obzira na status kuhinje.
+**Nova tabela `menu_templates`:**
+- `id` uuid PK
+- `name` text NOT NULL (obavezno polje)
+- `description` text nullable
+- `organization_tag` text nullable (Proizvodnja / NULL=Hogo)
+- `created_at`, `updated_at`
 
-### Uzrok
-`supabase/functions/kiosk-show-meal/index.ts` postavlja `confirmationRequired: !kitchenStatus.isOpen` isključivo na osnovu globalnog statusa kuhinje, ignorišući korisnikov tag. Logika koja proverava `kitchen_schedule_tags` (već postoji u `kiosk-confirm-pickup` i `kiosk-get-kitchen-status`) nije primenjena ovde.
+**Nova tabela `menu_template_meals`** (junction template ↔ obroci):
+- `id` uuid PK
+- `template_id` uuid → `menu_templates.id` ON DELETE CASCADE
+- `meal_id` uuid → `meals.id`
+- `quantity` int default 1
+- UNIQUE (template_id, meal_id)
 
-### Izmena
+**Izmena tabele `menus` (dodela):**
+- Dodati `template_id` uuid nullable (FK na `menu_templates.id`, ON DELETE SET NULL).
+- Postojeći redovi ostaju kao "istorijske dodele" sa `template_id = NULL`.
 
-**Jedan fajl: `supabase/functions/kiosk-show-meal/index.ts`**
+**RLS:** identično kao za `menus` / `menu_meals` (admini full, svi authenticated mogu SELECT za potrebe prikaza).
 
-Pre formiranja odgovora dodati istu `scheduleApplies` proveru koja postoji u `kiosk-confirm-pickup`:
+**Bez auto-migracije** postojećih podataka.
 
-1. Učitati `profiles.tag` (već imamo `profile.id`) i `app_settings` ključ `kitchen_schedule_tags` (paralelno sa već postojećim Promise.all blokom radi performansi).
-2. Izračunati `scheduleApplies`:
-   - Ako je `kitchen_schedule_tags` prazan → `scheduleApplies = true` (raspored važi za sve, ponašanje kao danas).
-   - Ako lista ima vrednosti → `scheduleApplies = userTag !== null && scheduleTags.includes(userTag)`.
-3. Izračunati `confirmationRequired`:
-   - Ako `scheduleApplies === false` → uvek `true` (korisnik uvek vidi self-service confirm dugme).
-   - Ako `scheduleApplies === true` → zadržati postojeću logiku `!kitchenStatus.isOpen`.
-4. Primeniti istu logiku na sva tri response branch-a u `kiosk-show-meal` koja vraćaju `confirmationRequired` (postojeći pending request, novi pickup request, kao i `alreadyServed` koji ostaje `false`).
+### 2. Frontend struktura
 
-### Rezultat
-- "Proizvodnja"/Hogo (tagovi u `kitchen_schedule_tags`): nepromenjeno ponašanje — kada kuhinja radi vide success ekran sa porukom da preuzmu na šalteru.
-- "Hogo hotel" i ostali korisnici van liste: uvek dobijaju confirm ekran sa dugmetom "DA, PREUZIMAM", bilo da je kuhinja otvorena ili zatvorena.
-- `kiosk-confirm-pickup` već ispravno dozvoljava potvrdu za ove korisnike (`scheduleApplies` skip), tako da tu nije potrebna promena.
-- Frontend (`KioskPickup.tsx`) ne menjamo — već ispravno reaguje na `confirmationRequired` flag iz response-a.
+**`MenusManagement.tsx`** dobija unutrašnje tabove:
 
+```
+┌─ Jelovnici ─┬─ Dodela Jelovnika ─┐
+```
+
+#### Tab "Jelovnici" (NOVO — lista template-a)
+- Lista svih `menu_templates` u tabeli (slično `MealsManagement`):
+  - Kolone: Naziv, Grupa (organization_tag), Broj obroka, Smene (izvedeno iz `shifts` polja povezanih obroka — unija), Akcije.
+- Pretraga po: **nazivu** (input), **grupi** (select: Sve / Proizvodnja / Hogo), **smeni** (select: Sve / I / II / III — filtrira template-e koji sadrže bar jedan obrok te smene).
+- Paginacija (`TablePagination`, 20/50/100) — prati `mem://ux/admin-table-patterns`.
+- Dugme **"Kreiraj jelovnik"** otvara Sheet sa formom:
+  - **Naziv** (obavezno, validacija `nonempty`, max 100)
+  - **Grupa** (select: Proizvodnja / Hogo)
+  - **Opis** (opciono)
+  - Pretraga obroka (po nazivu, grupi, smeni — kao sada), checkbox lista
+  - Submit → INSERT u `menu_templates` + `menu_template_meals`
+- Akcije po redu: **Izmeni** (Sheet sa istom formom, prepopulated), **Obriši** (AlertDialog confirm — kaskadno briše i `menu_template_meals`; postojeće dodele u `menus` ostaju jer je FK SET NULL).
+
+#### Tab "Dodela Jelovnika" (postojeći prikaz)
+- Identičan trenutnom prikazu (nedeljni grouping, kloniranje, edit/delete dodele).
+- Dugme se menja iz "Kreiraj jelovnik" u **"Dodeli jelovnik"**, otvara novi dijalog (vidi #3).
+- Postojeći inline edit dodele ostaje (datum, obroci, opis).
+
+### 3. Novi dijalog "Dodela Jelovnika"
+
+Sheet/Dialog sa:
+- **Select template-a** (dropdown sa svim `menu_templates`, filtriran po aktivnom org tabu Proizvodnja/Hogo) — obavezno.
+- Preview izabranih obroka iz template-a (read-only lista).
+- **Multi-select kalendar** (`Calendar mode="multiple"`) — korisnik klikom dodaje/uklanja datume.
+  - Disabled: prošli datumi i datumi koji već imaju dodelu u istom org tabu.
+  - Lista izabranih datuma ispod kalendara sa "X" za uklanjanje.
+- Submit → za svaki izabrani datum INSERT u `menus` (sa `template_id`, `organization_tag` iz template-a, `name` = `template.name + ' — ' + format(date)`, `menu_date`) + bulk INSERT u `menu_meals` (kopiranje obroka iz template-a, da postojeća logika prikaza i porudžbina nastavi da radi bez promena).
+
+### 4. Hook izmene
+
+- **Nov `useMenuTemplates.ts`**: `templates`, `loading`, `createTemplate`, `updateTemplate`, `deleteTemplate`, `refetch`.
+- **`useMenus.ts`**: dodati `assignTemplate(templateId, dates[])` koji u petlji kreira `menus` + `menu_meals` zapise (slično postojećem `cloneSingleMenu`).
+- Postojeće `createMenu`, `cloneWeekMenus`, `cloneSingleMenu` ostaju netaknute (koriste se za istorijske dodele i kloniranje).
+
+### 5. Tipovi
+
+- `src/types/menu.ts`: dodati `MenuTemplate`, `MenuTemplateMeal`, `MenuTemplateWithMeals`, `MenuTemplateCreateData`, `MenuTemplateUpdateData`.
+- `Menu` interfejs dobija opciono `template_id`.
+
+### Šta ostaje nepromenjeno
+- `menu_meals`, `orders`, `order_items`, RLS politike za `menus`, employee dashboard, kioski, fiskalizacija — sve nastavlja da radi jer dodele i dalje žive u `menus` sa popunjenim `menu_meals`.
+- Postojeći "Kloniraj nedelju / Kloniraj jelovnik" funkcionalnost ostaje u tabu "Dodela Jelovnika".
+
+### Tehnički detalji
+- Migracija koristi standardni RLS pattern sa `is_admin_user(auth.uid())`.
+- FK `menus.template_id → menu_templates.id ON DELETE SET NULL` čuva istoriju dodela ako se template obriše.
+- Dijalog za dodelu koristi `Calendar mode="multiple"` sa `pointer-events-auto` klasom (Radix DayPicker pravilo iz Shadcn).
+- Pretraga po smeni u listi template-a se računa klijentski iz `template.meals[].meal.shifts`.
+- Validacija template forme preko `zod` schema (`name: z.string().trim().nonempty().max(100)`).
