@@ -12,12 +12,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2, Factory, Building2 } from "lucide-react";
+import { Calendar, Plus, ChevronDown, ImageIcon, Save, Trash2, Copy, CalendarIcon, Loader2, Factory, Building2, ListChecks } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus, type MenuWithMeals } from "@/hooks/useMenus";
 import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, isWithinInterval, isSameDay } from "date-fns";
 import { WEEK_DAYS } from "@/constants";
+import { MenuTemplatesTab } from "./MenuTemplatesTab";
+import { AssignMenuDialog } from "./AssignMenuDialog";
 
 interface MenuFormState {
   description: string;
