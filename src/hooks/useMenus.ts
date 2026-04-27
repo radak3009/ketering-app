@@ -256,6 +256,57 @@ export function useMenus() {
     }
   };
 
+  const assignTemplate = async (
+    template: { id: string; name: string; description: string | null; organization_tag: string | null; meals?: Array<{ meal_id: string; quantity: number }> },
+    dates: Date[]
+  ) => {
+    try {
+      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      for (const targetDate of sortedDates) {
+        const menuName = generateMenuName(targetDate);
+        const { data: newMenu, error: menuError } = await supabase
+          .from('menus')
+          .insert([{
+            name: menuName,
+            description: template.description,
+            menu_date: format(targetDate, 'yyyy-MM-dd'),
+            is_active: true,
+            organization_tag: template.organization_tag,
+            template_id: template.id,
+          }])
+          .select()
+          .single();
+
+        if (menuError) throw menuError;
+
+        if (template.meals && template.meals.length > 0) {
+          const rows = template.meals.map(m => ({
+            menu_id: newMenu.id,
+            meal_id: m.meal_id,
+            quantity: m.quantity ?? 1,
+          }));
+          const { error: mmErr } = await supabase.from('menu_meals').insert(rows);
+          if (mmErr) throw mmErr;
+        }
+      }
+
+      await fetchMenus();
+      handleSuccess({
+        category: 'create',
+        entity: 'jelovnik',
+        customMessage: `Jelovnik dodeljen za ${sortedDates.length} ${sortedDates.length === 1 ? 'datum' : 'datuma'}`,
+      });
+    } catch (error) {
+      handleError({
+        category: 'create',
+        entity: 'jelovnik',
+        error,
+        customMessage: 'Nije moguće dodeliti jelovnik',
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchMenus();
   }, []);
@@ -268,6 +319,7 @@ export function useMenus() {
     deleteMenu,
     cloneWeekMenus,
     cloneSingleMenu,
+    assignTemplate,
     refetch: fetchMenus
   };
 }
