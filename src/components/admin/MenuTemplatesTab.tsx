@@ -28,6 +28,7 @@ type FormState = {
   name: string;
   description: string;
   organization_tag: "Proizvodnja" | "Hogo";
+  status: "aktivan" | "neaktivan";
   selectedMeals: string[];
 };
 
@@ -35,6 +36,7 @@ const emptyForm = (): FormState => ({
   name: "",
   description: "",
   organization_tag: "Hogo",
+  status: "aktivan",
   selectedMeals: [],
 });
 
@@ -46,6 +48,7 @@ export function MenuTemplatesTab() {
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("");
   const [shiftFilter, setShiftFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -73,9 +76,13 @@ export function MenuTemplatesTab() {
         const hasShift = t.meals?.some(m => m.meal?.shifts?.includes(shiftFilter));
         if (!hasShift) return false;
       }
+      if (statusFilter) {
+        const tplStatus = (t as any).status || "aktivan";
+        if (tplStatus !== statusFilter) return false;
+      }
       return true;
     });
-  }, [templates, search, groupFilter, shiftFilter]);
+  }, [templates, search, groupFilter, shiftFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / pageSize));
   const currentPage = Math.min(page, totalPages);
