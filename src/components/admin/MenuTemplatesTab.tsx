@@ -231,6 +231,7 @@ export function MenuTemplatesTab() {
       name: tpl.name,
       description: tpl.description || "",
       organization_tag: tpl.organization_tag === "Proizvodnja" ? "Proizvodnja" : "Hogo",
+      status: ((tpl as any).status === "neaktivan" ? "neaktivan" : "aktivan"),
       selectedMeals: tpl.meals?.map(m => m.meal_id) || [],
     });
     resetMealFilters();
