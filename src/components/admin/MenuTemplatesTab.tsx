@@ -433,7 +433,6 @@ export function MenuTemplatesTab() {
           <div className="p-3 border-t">
             <TablePagination
               currentPage={currentPage}
-              totalPages={totalPages}
               pageSize={pageSize}
               totalItems={filteredTemplates.length}
               onPageChange={setPage}
