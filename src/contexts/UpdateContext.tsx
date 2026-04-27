@@ -18,13 +18,27 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    immediate: true,
+    onNeedRefresh() {
+      console.log("[PWA] New content available, need refresh");
+    },
+    onOfflineReady() {
+      console.log("[PWA] App ready to work offline");
+    },
     onRegisteredSW(swUrl, registration) {
       console.log("[PWA] SW registered:", swUrl);
       if (registration) {
+        // Check immediately on load
+        registration.update().catch((err) =>
+          console.warn("[PWA] Initial update check failed:", err)
+        );
+        // Then check periodically every 15 minutes
         setInterval(() => {
           console.log("[PWA] Checking for updates...");
-          registration.update();
-        }, 60 * 60 * 1000);
+          registration.update().catch((err) =>
+            console.warn("[PWA] Update check failed:", err)
+          );
+        }, 15 * 60 * 1000);
       }
     },
     onRegisterError(error) {

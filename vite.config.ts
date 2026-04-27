@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
-      injectRegister: false,
+      injectRegister: "script-defer",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
         name: "Ketering Hogo",
