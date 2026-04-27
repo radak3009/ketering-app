@@ -376,87 +376,158 @@ export function MenuTemplatesTab() {
       </div>
 
       <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Naziv</TableHead>
-              <TableHead>Grupa</TableHead>
-              <TableHead>Broj obroka</TableHead>
-              <TableHead>Smene</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Akcije</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        {isMobile ? (
+          <div className="p-3 space-y-2">
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Učitavanje...</TableCell></TableRow>
+              <p className="text-center text-muted-foreground py-6 text-sm">Učitavanje...</p>
             ) : pageItems.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Nema kreiranih jelovnika</TableCell></TableRow>
+              <p className="text-center text-muted-foreground py-6 text-sm">Nema kreiranih jelovnika</p>
             ) : (
               pageItems.map(tpl => {
                 const shifts = new Set<string>();
                 tpl.meals?.forEach(m => m.meal?.shifts?.forEach(s => shifts.add(s)));
                 const shiftLabel = (s: string) => s === "prva" ? "I" : s === "druga" ? "II" : s === "treća" ? "III" : s;
+                const status = (tpl as any).status === "neaktivan" ? "neaktivan" : "aktivan";
                 return (
-                  <TableRow key={tpl.id}>
-                    <TableCell className="font-medium">
-                      {tpl.name}
-                      {tpl.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">{tpl.description}</p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
+                  <div
+                    key={tpl.id}
+                    className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
+                    onClick={() => openEdit(tpl)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm break-words">{tpl.name}</p>
+                        {tpl.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{tpl.description}</p>
+                        )}
+                      </div>
+                      <Badge variant={status === "aktivan" ? "default" : "outline"} className="text-xs shrink-0">
+                        {status === "aktivan" ? "Aktivan" : "Neaktivan"}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <Badge variant="secondary" className="text-xs h-5">
                         {tpl.organization_tag === "Proizvodnja" ? "Proizvodnja" : "Hogo"}
                       </Badge>
-                    </TableCell>
-                    <TableCell>{tpl.meals?.length || 0}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {[...shifts].sort().map(s => (
-                          <Badge key={s} variant="outline" className="text-[10px]">{shiftLabel(s)}</Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {((tpl as any).status === "neaktivan") ? (
-                        <Badge variant="outline">Neaktivan</Badge>
-                      ) : (
-                        <Badge variant="default">Aktivan</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title="Izmeni">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" title="Obriši">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Obrisati jelovnik?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Šablon "{tpl.name}" će biti obrisan. Postojeće dodele za datume ostaju netaknute.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Otkaži</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteTemplate(tpl.id)}>Obriši</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      <Badge variant="outline" className="text-xs h-5">
+                        {tpl.meals?.length || 0} obroka
+                      </Badge>
+                      {[...shifts].sort().map(s => (
+                        <Badge key={s} variant="outline" className="text-[10px] h-5">{shiftLabel(s)}</Badge>
+                      ))}
+                    </div>
+                    <div className="flex justify-end gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title="Izmeni">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" title="Obriši">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Obrisati jelovnik?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Šablon "{tpl.name}" će biti obrisan. Postojeće dodele za datume ostaju netaknute.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteTemplate(tpl.id)}>Obriši</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
                 );
               })
             )}
-          </TableBody>
-        </Table>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Naziv</TableHead>
+                <TableHead>Grupa</TableHead>
+                <TableHead>Broj obroka</TableHead>
+                <TableHead>Smene</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Akcije</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Učitavanje...</TableCell></TableRow>
+              ) : pageItems.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">Nema kreiranih jelovnika</TableCell></TableRow>
+              ) : (
+                pageItems.map(tpl => {
+                  const shifts = new Set<string>();
+                  tpl.meals?.forEach(m => m.meal?.shifts?.forEach(s => shifts.add(s)));
+                  const shiftLabel = (s: string) => s === "prva" ? "I" : s === "druga" ? "II" : s === "treća" ? "III" : s;
+                  return (
+                    <TableRow key={tpl.id}>
+                      <TableCell className="font-medium">
+                        {tpl.name}
+                        {tpl.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">{tpl.description}</p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {tpl.organization_tag === "Proizvodnja" ? "Proizvodnja" : "Hogo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{tpl.meals?.length || 0}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {[...shifts].sort().map(s => (
+                            <Badge key={s} variant="outline" className="text-[10px]">{shiftLabel(s)}</Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {((tpl as any).status === "neaktivan") ? (
+                          <Badge variant="outline">Neaktivan</Badge>
+                        ) : (
+                          <Badge variant="default">Aktivan</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title="Izmeni">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" title="Obriši">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Obrisati jelovnik?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Šablon "{tpl.name}" će biti obrisan. Postojeće dodele za datume ostaju netaknute.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Otkaži</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteTemplate(tpl.id)}>Obriši</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        )}
         {filteredTemplates.length > 0 && (
           <div className="p-3 border-t">
             <TablePagination
