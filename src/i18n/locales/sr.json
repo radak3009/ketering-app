@@ -3,7 +3,12 @@
     "updateAvailable": "Ažuriranje dostupno",
     "updateBody": "Nova verzija je spremna. Ponovo učitajte da biste ažurirali.",
     "reloadNow": "Učitaj ponovo",
-    "later": "Kasnije"
+    "later": "Kasnije",
+    "checkForUpdates": "Proveri ažuriranja",
+    "checking": "Proveravam...",
+    "upToDate": "Aplikacija je ažurna",
+    "updateFound": "Novo ažuriranje je dostupno",
+    "checkError": "Greška pri proveri ažuriranja"
   },
   "common": {
     "signOut": "Odjavi se",

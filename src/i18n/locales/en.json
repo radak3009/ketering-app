@@ -3,7 +3,12 @@
     "updateAvailable": "Update available",
     "updateBody": "A new version is ready. Reload now to update.",
     "reloadNow": "Reload now",
-    "later": "Later"
+    "later": "Later",
+    "checkForUpdates": "Check for updates",
+    "checking": "Checking...",
+    "upToDate": "App is up to date",
+    "updateFound": "A new update is available",
+    "checkError": "Failed to check for updates"
   },
   "common": {
     "signOut": "Sign out",
