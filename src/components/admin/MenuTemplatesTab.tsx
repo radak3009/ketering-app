@@ -45,6 +45,7 @@ export function MenuTemplatesTab() {
   const { toast } = useToast();
   const { meals } = useMeals();
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useMenuTemplates();
+  const isMobile = useIsMobile();
 
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("");
