@@ -38,8 +38,10 @@ function menuMatchesTab(menu: MenuWithMeals, tab: OrgTab): boolean {
 export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
-  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu } = useMenus();
+  const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu, assignTemplate } = useMenus();
   
+  const [mainTab, setMainTab] = useState<'templates' | 'assignments'>('assignments');
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
