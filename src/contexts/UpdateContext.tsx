@@ -47,6 +47,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
 
   const detectWaitingWorker = useCallback((registration: ServiceWorkerRegistration) => {
     if (isCurrentServiceWorker(registration.waiting) && navigator.serviceWorker.controller) {
+      setForceReloadNeeded(false);
       markUpdateAvailable("waiting worker");
       return true;
     }
@@ -60,6 +61,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     );
     if (registration && navigator.serviceWorker.controller) {
       registrationRef.current = registration;
+      setForceReloadNeeded(false);
       markUpdateAvailable("external waiting worker");
       return true;
     }
