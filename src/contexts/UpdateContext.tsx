@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useRef, useState } from "react";
+import { createContext, useContext, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 interface UpdateContextType {
@@ -17,33 +17,78 @@ const UpdateContext = createContext<UpdateContextType>({
 
 export const useUpdate = () => useContext(UpdateContext);
 
+const SW_URL = "/sw.js";
+
+const isCurrentServiceWorker = (worker: ServiceWorker | null | undefined) => {
+  if (!worker) return false;
+  return new URL(worker.scriptURL).pathname === SW_URL;
+};
+
 export function UpdateProvider({ children }: { children: ReactNode }) {
   const [manualNeedRefresh, setManualNeedRefresh] = useState(false);
+  const [forceReloadNeeded, setForceReloadNeeded] = useState(false);
   const [checking, setChecking] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
-  const markUpdateAvailable = (reason: string) => {
+  const markUpdateAvailable = useCallback((reason: string) => {
     console.log(`[PWA] New content available, need refresh (${reason})`);
     setManualNeedRefresh(true);
-  };
+  }, []);
 
-  const watchInstallingWorker = (worker: ServiceWorker | null) => {
-    if (!worker) return;
+  const watchInstallingWorker = useCallback((worker: ServiceWorker | null) => {
+    if (!isCurrentServiceWorker(worker)) return;
 
     worker.addEventListener("statechange", () => {
       if (worker.state === "installed" && navigator.serviceWorker.controller) {
         markUpdateAvailable("installed worker");
       }
     });
-  };
+  }, [markUpdateAvailable]);
 
-  const detectWaitingWorker = (registration: ServiceWorkerRegistration) => {
-    if (registration.waiting && navigator.serviceWorker.controller) {
+  const detectWaitingWorker = useCallback((registration: ServiceWorkerRegistration) => {
+    if (isCurrentServiceWorker(registration.waiting) && navigator.serviceWorker.controller) {
+      setForceReloadNeeded(false);
       markUpdateAvailable("waiting worker");
       return true;
     }
     return false;
-  };
+  }, [markUpdateAvailable]);
+
+  const detectExternalWaitingWorker = useCallback(async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const registration = registrations.find((candidate) =>
+      isCurrentServiceWorker(candidate.waiting)
+    );
+    if (registration && navigator.serviceWorker.controller) {
+      registrationRef.current = registration;
+      setForceReloadNeeded(false);
+      markUpdateAvailable("external waiting worker");
+      return true;
+    }
+    return false;
+  }, [markUpdateAvailable]);
+
+  const detectPublishedShellUpdate = useCallback(async () => {
+    const currentScripts = Array.from(
+      document.querySelectorAll<HTMLScriptElement>('script[type="module"][src*="/assets/"]')
+    ).map((script) => new URL(script.src).pathname);
+
+    if (currentScripts.length === 0) return false;
+
+    const response = await fetch(`/index.html?pwa-check=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
+
+    if (!response.ok) return false;
+
+    const html = await response.text();
+    const publishedScripts = Array.from(
+      html.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)
+    ).map((match) => new URL(match[1], window.location.origin).pathname);
+
+    return publishedScripts.some((script) => !currentScripts.includes(script));
+  }, []);
 
   const {
     needRefresh: [needRefresh],
@@ -52,6 +97,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     immediate: true,
     onNeedRefresh() {
       console.log("[PWA] New content available, need refresh");
+      markUpdateAvailable("workbox waiting event");
     },
     onOfflineReady() {
       console.log("[PWA] App ready to work offline");
@@ -88,6 +134,24 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      detectExternalWaitingWorker().catch((err) =>
+        console.warn("[PWA] External waiting worker check failed:", err)
+      );
+      detectPublishedShellUpdate()
+        .then((hasUpdate) => {
+          if (hasUpdate) {
+            setForceReloadNeeded(true);
+            markUpdateAvailable("published shell changed");
+          }
+        })
+        .catch((err) =>
+          console.warn("[PWA] Published shell update check failed:", err)
+        );
+    }
+  }, [detectExternalWaitingWorker, detectPublishedShellUpdate, markUpdateAvailable]);
+
   const waitForInstall = (worker: ServiceWorker, timeoutMs = 15000): Promise<boolean> =>
     new Promise((resolve) => {
       const timer = setTimeout(() => {
@@ -114,6 +178,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     if (!("serviceWorker" in navigator)) return "unsupported";
     setChecking(true);
     try {
+      if (await detectExternalWaitingWorker()) return "update-available";
+      if (await detectPublishedShellUpdate()) {
+        setForceReloadNeeded(true);
+        markUpdateAvailable("manual published shell check");
+        return "update-available";
+      }
+
       let registration = registrationRef.current;
       if (!registration) {
         registration = (await navigator.serviceWorker.getRegistration()) ?? null;
@@ -127,6 +198,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       // Trigger update check (this fetches the new SW script)
       console.log("[PWA] Manual update: calling registration.update()");
       await registration.update();
+
+      if (await detectExternalWaitingWorker()) return "update-available";
+      if (await detectPublishedShellUpdate()) {
+        setForceReloadNeeded(true);
+        markUpdateAvailable("manual published shell check after sw update");
+        return "update-available";
+      }
 
       // After update(), the browser may have started installing a new worker
       const installing = registration.installing;
@@ -163,11 +241,19 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const applyUpdate = async (reloadPage = true) => {
+    if (forceReloadNeeded) {
+      window.location.reload();
+      return;
+    }
+    await updateServiceWorker(reloadPage);
+  };
+
   return (
     <UpdateContext.Provider
       value={{
         needRefresh: needRefresh || manualNeedRefresh,
-        updateServiceWorker,
+        updateServiceWorker: applyUpdate,
         checkForUpdates,
         checking,
       }}
