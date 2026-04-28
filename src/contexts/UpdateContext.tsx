@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useRef, useState } from "react";
+import { createContext, useContext, ReactNode, useCallback, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 interface UpdateContextType {
@@ -16,6 +16,13 @@ const UpdateContext = createContext<UpdateContextType>({
 });
 
 export const useUpdate = () => useContext(UpdateContext);
+
+const SW_URL = "/sw.js";
+
+const isCurrentServiceWorker = (worker: ServiceWorker | null | undefined) => {
+  if (!worker) return false;
+  return new URL(worker.scriptURL).pathname === SW_URL;
+};
 
 export function UpdateProvider({ children }: { children: ReactNode }) {
   const [manualNeedRefresh, setManualNeedRefresh] = useState(false);
