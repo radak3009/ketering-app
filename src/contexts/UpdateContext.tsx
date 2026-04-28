@@ -73,6 +73,8 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       document.querySelectorAll<HTMLScriptElement>('script[type="module"][src*="/assets/"]')
     ).map((script) => new URL(script.src).pathname);
 
+    if (currentScripts.length === 0) return false;
+
     const response = await fetch(`/index.html?pwa-check=${Date.now()}`, {
       cache: "no-store",
       headers: { "Cache-Control": "no-cache" },
@@ -137,8 +139,18 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       detectExternalWaitingWorker().catch((err) =>
         console.warn("[PWA] External waiting worker check failed:", err)
       );
+      detectPublishedShellUpdate()
+        .then((hasUpdate) => {
+          if (hasUpdate) {
+            setForceReloadNeeded(true);
+            markUpdateAvailable("published shell changed");
+          }
+        })
+        .catch((err) =>
+          console.warn("[PWA] Published shell update check failed:", err)
+        );
     }
-  }, [detectExternalWaitingWorker]);
+  }, [detectExternalWaitingWorker, detectPublishedShellUpdate, markUpdateAvailable]);
 
   const waitForInstall = (worker: ServiceWorker, timeoutMs = 15000): Promise<boolean> =>
     new Promise((resolve) => {
