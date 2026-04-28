@@ -88,6 +88,26 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const waitForInstall = (worker: ServiceWorker, timeoutMs = 15000): Promise<boolean> =>
+    new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        worker.removeEventListener("statechange", onChange);
+        resolve(false);
+      }, timeoutMs);
+      const onChange = () => {
+        if (worker.state === "installed" || worker.state === "activated") {
+          clearTimeout(timer);
+          worker.removeEventListener("statechange", onChange);
+          resolve(true);
+        } else if (worker.state === "redundant") {
+          clearTimeout(timer);
+          worker.removeEventListener("statechange", onChange);
+          resolve(false);
+        }
+      };
+      worker.addEventListener("statechange", onChange);
+    });
+
   const checkForUpdates = async (): Promise<
     "update-available" | "up-to-date" | "unsupported" | "error"
   > => {
@@ -101,16 +121,39 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       }
       if (!registration) return "unsupported";
 
+      // Already has a waiting worker (previous update not consumed yet)
+      if (detectWaitingWorker(registration)) return "update-available";
+
+      // Trigger update check (this fetches the new SW script)
+      console.log("[PWA] Manual update: calling registration.update()");
       await registration.update();
 
-      // Give the browser a tick to surface waiting worker
-      await new Promise((r) => setTimeout(r, 300));
-
-      if (detectWaitingWorker(registration)) return "update-available";
-      if (registration.installing) {
-        watchInstallingWorker(registration.installing);
-        return "update-available";
+      // After update(), the browser may have started installing a new worker
+      const installing = registration.installing;
+      if (installing) {
+        console.log("[PWA] Manual update: installing worker found, waiting...");
+        watchInstallingWorker(installing);
+        const installed = await waitForInstall(installing);
+        if (installed && detectWaitingWorker(registration)) {
+          return "update-available";
+        }
+        // If it activated without waiting, it's likely the first SW (no controller yet)
+        return navigator.serviceWorker.controller ? "up-to-date" : "update-available";
       }
+
+      // No new worker triggered — poll briefly in case browser is slow
+      for (let i = 0; i < 10; i++) {
+        await new Promise((r) => setTimeout(r, 300));
+        if (registration.installing) {
+          const installed = await waitForInstall(registration.installing);
+          if (installed && detectWaitingWorker(registration)) {
+            return "update-available";
+          }
+          break;
+        }
+        if (detectWaitingWorker(registration)) return "update-available";
+      }
+
       return "up-to-date";
     } catch (err) {
       console.error("[PWA] Manual update check failed:", err);
