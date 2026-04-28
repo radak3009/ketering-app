@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useCallback, useRef, useState } from "react";
+import { createContext, useContext, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 interface UpdateContextType {
@@ -109,13 +109,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  useState(() => {
+  useEffect(() => {
     if ("serviceWorker" in navigator) {
       detectExternalWaitingWorker().catch((err) =>
         console.warn("[PWA] External waiting worker check failed:", err)
       );
     }
-  });
+  }, [detectExternalWaitingWorker]);
 
   const waitForInstall = (worker: ServiceWorker, timeoutMs = 15000): Promise<boolean> =>
     new Promise((resolve) => {
