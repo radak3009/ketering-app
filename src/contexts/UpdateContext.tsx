@@ -26,6 +26,7 @@ const isCurrentServiceWorker = (worker: ServiceWorker | null | undefined) => {
 
 export function UpdateProvider({ children }: { children: ReactNode }) {
   const [manualNeedRefresh, setManualNeedRefresh] = useState(false);
+  const [forceReloadNeeded, setForceReloadNeeded] = useState(false);
   const [checking, setChecking] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
@@ -64,6 +65,26 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }
     return false;
   }, [markUpdateAvailable]);
+
+  const detectPublishedShellUpdate = useCallback(async () => {
+    const currentScripts = Array.from(
+      document.querySelectorAll<HTMLScriptElement>('script[type="module"][src*="/assets/"]')
+    ).map((script) => new URL(script.src).pathname);
+
+    const response = await fetch(`/index.html?pwa-check=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
+
+    if (!response.ok) return false;
+
+    const html = await response.text();
+    const publishedScripts = Array.from(
+      html.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)
+    ).map((match) => new URL(match[1], window.location.origin).pathname);
+
+    return publishedScripts.some((script) => !currentScripts.includes(script));
+  }, []);
 
   const {
     needRefresh: [needRefresh],
