@@ -178,6 +178,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     if (!("serviceWorker" in navigator)) return "unsupported";
     setChecking(true);
     try {
+      if (await detectExternalWaitingWorker()) return "update-available";
+      if (await detectPublishedShellUpdate()) {
+        setForceReloadNeeded(true);
+        markUpdateAvailable("manual published shell check");
+        return "update-available";
+      }
+
       let registration = registrationRef.current;
       if (!registration) {
         registration = (await navigator.serviceWorker.getRegistration()) ?? null;
@@ -191,6 +198,13 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       // Trigger update check (this fetches the new SW script)
       console.log("[PWA] Manual update: calling registration.update()");
       await registration.update();
+
+      if (await detectExternalWaitingWorker()) return "update-available";
+      if (await detectPublishedShellUpdate()) {
+        setForceReloadNeeded(true);
+        markUpdateAvailable("manual published shell check after sw update");
+        return "update-available";
+      }
 
       // After update(), the browser may have started installing a new worker
       const installing = registration.installing;
@@ -227,11 +241,19 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const applyUpdate = async (reloadPage = true) => {
+    if (forceReloadNeeded) {
+      window.location.reload();
+      return;
+    }
+    await updateServiceWorker(reloadPage);
+  };
+
   return (
     <UpdateContext.Provider
       value={{
         needRefresh: needRefresh || manualNeedRefresh,
-        updateServiceWorker,
+        updateServiceWorker: applyUpdate,
         checkForUpdates,
         checking,
       }}
