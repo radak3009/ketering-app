@@ -72,6 +72,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     immediate: true,
     onNeedRefresh() {
       console.log("[PWA] New content available, need refresh");
+      markUpdateAvailable("workbox waiting event");
     },
     onOfflineReady() {
       console.log("[PWA] App ready to work offline");
@@ -106,6 +107,14 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     onRegisterError(error) {
       console.error("[PWA] SW registration error:", error);
     },
+  });
+
+  useState(() => {
+    if ("serviceWorker" in navigator) {
+      detectExternalWaitingWorker().catch((err) =>
+        console.warn("[PWA] External waiting worker check failed:", err)
+      );
+    }
   });
 
   const waitForInstall = (worker: ServiceWorker, timeoutMs = 15000): Promise<boolean> =>
