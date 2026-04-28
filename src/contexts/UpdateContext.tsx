@@ -29,28 +29,41 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
-  const markUpdateAvailable = (reason: string) => {
+  const markUpdateAvailable = useCallback((reason: string) => {
     console.log(`[PWA] New content available, need refresh (${reason})`);
     setManualNeedRefresh(true);
-  };
+  }, []);
 
-  const watchInstallingWorker = (worker: ServiceWorker | null) => {
-    if (!worker) return;
+  const watchInstallingWorker = useCallback((worker: ServiceWorker | null) => {
+    if (!isCurrentServiceWorker(worker)) return;
 
     worker.addEventListener("statechange", () => {
       if (worker.state === "installed" && navigator.serviceWorker.controller) {
         markUpdateAvailable("installed worker");
       }
     });
-  };
+  }, [markUpdateAvailable]);
 
-  const detectWaitingWorker = (registration: ServiceWorkerRegistration) => {
-    if (registration.waiting && navigator.serviceWorker.controller) {
+  const detectWaitingWorker = useCallback((registration: ServiceWorkerRegistration) => {
+    if (isCurrentServiceWorker(registration.waiting) && navigator.serviceWorker.controller) {
       markUpdateAvailable("waiting worker");
       return true;
     }
     return false;
-  };
+  }, [markUpdateAvailable]);
+
+  const detectExternalWaitingWorker = useCallback(async () => {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const registration = registrations.find((candidate) =>
+      isCurrentServiceWorker(candidate.waiting)
+    );
+    if (registration && navigator.serviceWorker.controller) {
+      registrationRef.current = registration;
+      markUpdateAvailable("external waiting worker");
+      return true;
+    }
+    return false;
+  }, [markUpdateAvailable]);
 
   const {
     needRefresh: [needRefresh],
