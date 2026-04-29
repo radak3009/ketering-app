@@ -76,10 +76,7 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         // Exclude index.html from precache so the shell is always fetched fresh.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
-        // IMPORTANT: do NOT set navigateFallback here. It would create a Workbox
-        // NavigationRoute that takes precedence over our NetworkFirst handler
-        // and serves a cached index.html, causing PWA users to get stuck on
-        // an old shell. We handle navigation via the NetworkFirst rule below.
+        // We handle navigation via the NetworkFirst rule below.
         runtimeCaching: [
           {
             urlPattern: ({ request, url }) =>
