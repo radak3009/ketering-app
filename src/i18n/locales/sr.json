@@ -1,8 +1,8 @@
 {
   "pwa": {
-    "updateAvailable": "Ažuriranje dostupno",
-    "updateBody": "Nova verzija je spremna. Ponovo učitajte da biste ažurirali.",
-    "reloadNow": "Učitaj ponovo",
+    "updateAvailable": "Dostupno je ažuriranje",
+    "updateBody": "Nova verzija aplikacije je spremna.",
+    "reloadNow": "Ažuriraj",
     "later": "Kasnije",
     "checkForUpdates": "Proveri ažuriranja",
     "checking": "Proveravam...",
