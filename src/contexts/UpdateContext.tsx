@@ -172,6 +172,11 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       worker.addEventListener("statechange", onChange);
     });
 
+  const clearUpdateState = useCallback(() => {
+    setManualNeedRefresh(false);
+    setForceReloadNeeded(false);
+  }, []);
+
   const checkForUpdates = async (): Promise<
     "update-available" | "up-to-date" | "unsupported" | "error"
   > => {
@@ -216,7 +221,11 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
           return "update-available";
         }
         // If it activated without waiting, it's likely the first SW (no controller yet)
-        return navigator.serviceWorker.controller ? "up-to-date" : "update-available";
+        if (navigator.serviceWorker.controller) {
+          clearUpdateState();
+          return "up-to-date";
+        }
+        return "update-available";
       }
 
       // No new worker triggered — poll briefly in case browser is slow
@@ -232,6 +241,8 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
         if (detectWaitingWorker(registration)) return "update-available";
       }
 
+      // Genuinely up-to-date — clear any stale update flags from earlier checks
+      clearUpdateState();
       return "up-to-date";
     } catch (err) {
       console.error("[PWA] Manual update check failed:", err);
