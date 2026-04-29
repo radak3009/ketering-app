@@ -134,8 +134,10 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
+  const runBackgroundCheck = useCallback(
+    (reason: string) => {
+      if (!("serviceWorker" in navigator)) return;
+      console.log(`[PWA] Background update check (${reason})`);
       detectExternalWaitingWorker().catch((err) =>
         console.warn("[PWA] External waiting worker check failed:", err)
       );
@@ -143,14 +145,49 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
         .then((hasUpdate) => {
           if (hasUpdate) {
             setForceReloadNeeded(true);
-            markUpdateAvailable("published shell changed");
+            markUpdateAvailable(`published shell changed (${reason})`);
           }
         })
         .catch((err) =>
           console.warn("[PWA] Published shell update check failed:", err)
         );
-    }
-  }, [detectExternalWaitingWorker, detectPublishedShellUpdate, markUpdateAvailable]);
+      const reg = registrationRef.current;
+      if (reg) {
+        reg
+          .update()
+          .then(() => detectWaitingWorker(reg))
+          .catch((err) => console.warn("[PWA] reg.update() failed:", err));
+      }
+    },
+    [
+      detectExternalWaitingWorker,
+      detectPublishedShellUpdate,
+      detectWaitingWorker,
+      markUpdateAvailable,
+    ]
+  );
+
+  useEffect(() => {
+    runBackgroundCheck("mount");
+  }, [runBackgroundCheck]);
+
+  useEffect(() => {
+    const onFocus = () => runBackgroundCheck("focus");
+    const onOnline = () => runBackgroundCheck("online");
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        runBackgroundCheck("visibility");
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [runBackgroundCheck]);
 
   const waitForInstall = (worker: ServiceWorker, timeoutMs = 15000): Promise<boolean> =>
     new Promise((resolve) => {
