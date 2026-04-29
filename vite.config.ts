@@ -4,12 +4,15 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+const buildDate = new Date();
+const buildId = `b${buildDate.getTime().toString(36)}`;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "0.0.0"),
     __APP_BUILD_DATE__: JSON.stringify(
-      new Date().toLocaleString("sr-Latn-RS", {
+      buildDate.toLocaleString("sr-Latn-RS", {
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -18,6 +21,7 @@ export default defineConfig(({ mode }) => ({
         timeZone: "Europe/Belgrade",
       })
     ),
+    __APP_BUILD_ID__: JSON.stringify(buildId),
   },
   server: {
     host: "::",
@@ -38,7 +42,7 @@ export default defineConfig(({ mode }) => ({
         background_color: "#ffffff",
         display: "standalone",
         scope: "/",
-        start_url: "/",
+        start_url: "/?source=pwa",
         orientation: "portrait-primary",
         icons: [
           {
@@ -60,6 +64,13 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
+        // vite-plugin-pwa defaults this to "index.html". It must be explicitly
+        // disabled, otherwise Workbox registers a cache-first NavigationRoute
+        // before our NetworkFirst navigation route and PWA users can stay stuck
+        // on an old app shell.
+        navigateFallback: undefined,
+        skipWaiting: true,
+        clientsClaim: true,
         // Exclude index.html from precache so the shell is always fetched fresh.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         // IMPORTANT: do NOT set navigateFallback here. It would create a Workbox
