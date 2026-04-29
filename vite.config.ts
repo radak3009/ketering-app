@@ -86,7 +86,7 @@ export default defineConfig(({ mode }) => ({
               request.mode === "navigate" && !/^\/~oauth/.test(url.pathname),
             handler: "NetworkFirst",
             options: {
-              cacheName: "html-shell-cache",
+              cacheName: `html-shell-cache-${buildId}`,
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 5,
@@ -98,7 +98,7 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /\/index\.html(\?.*)?$/i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "html-shell-cache",
+              cacheName: `html-shell-cache-${buildId}`,
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 5,
