@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useUpdate } from "@/contexts/UpdateContext";
 import { toast } from "sonner";
 
+declare const __APP_BUILD_ID__: string;
+
 const APP_VERSION = __APP_VERSION__;
 const BUILD_DATE = __APP_BUILD_DATE__;
 const BUILD_ID = __APP_BUILD_ID__;
