@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 const APP_VERSION = __APP_VERSION__;
 const BUILD_DATE = __APP_BUILD_DATE__;
+const BUILD_ID = __APP_BUILD_ID__;
 
 export function AppVersionBadge() {
   const { t } = useTranslation();
@@ -33,7 +34,7 @@ export function AppVersionBadge() {
     <div className="flex flex-col items-center justify-center gap-2 py-3">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60">
         <Info className="h-3 w-3" />
-        <span>v{APP_VERSION} · {BUILD_DATE}</span>
+        <span>v{APP_VERSION} · {BUILD_DATE} · {BUILD_ID}</span>
       </div>
       <Button
         variant="ghost"
