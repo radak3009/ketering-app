@@ -8,7 +8,16 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "0.0.0"),
-    __APP_BUILD_DATE__: JSON.stringify(new Date().toLocaleDateString("sr-Latn-RS", { year: "numeric", month: "short", day: "numeric" })),
+    __APP_BUILD_DATE__: JSON.stringify(
+      new Date().toLocaleString("sr-Latn-RS", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Belgrade",
+      })
+    ),
   },
   server: {
     host: "::",
@@ -53,13 +62,14 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Exclude index.html from precache so the shell is always fetched fresh.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/~oauth/],
-        // NetworkFirst for navigations ensures users get the latest shell when online,
-        // and falls back to cache only when offline.
+        // IMPORTANT: do NOT set navigateFallback here. It would create a Workbox
+        // NavigationRoute that takes precedence over our NetworkFirst handler
+        // and serves a cached index.html, causing PWA users to get stuck on
+        // an old shell. We handle navigation via the NetworkFirst rule below.
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.mode === "navigate",
+            urlPattern: ({ request, url }) =>
+              request.mode === "navigate" && !/^\/~oauth/.test(url.pathname),
             handler: "NetworkFirst",
             options: {
               cacheName: "html-shell-cache",

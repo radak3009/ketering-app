@@ -9,12 +9,19 @@ const BUILD_DATE = __APP_BUILD_DATE__;
 
 export function AppVersionBadge() {
   const { t } = useTranslation();
-  const { checkForUpdates, checking } = useUpdate();
+  const { checkForUpdates, checking, updateServiceWorker } = useUpdate();
 
   const handleCheck = async () => {
     const result = await checkForUpdates();
     if (result === "update-available") {
-      toast.success(t("pwa.updateFound"));
+      toast.success(t("pwa.updateFound"), {
+        description: t("pwa.updateBody"),
+        duration: 10000,
+        action: {
+          label: t("pwa.reloadNow"),
+          onClick: () => updateServiceWorker(true),
+        },
+      });
     } else if (result === "up-to-date") {
       toast.info(t("pwa.upToDate"));
     } else if (result === "error") {
