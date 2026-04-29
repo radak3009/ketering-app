@@ -69,6 +69,11 @@ export default defineConfig(({ mode }) => ({
         // before our NetworkFirst navigation route and PWA users can stay stuck
         // on an old app shell.
         navigateFallback: undefined,
+        // Let the fixed service worker take control as soon as the browser
+        // discovers it, so devices already stuck behind the old fallback can
+        // recover on the next app launch without waiting for all old clients.
+        skipWaiting: true,
+        clientsClaim: true,
         // Exclude index.html from precache so the shell is always fetched fresh.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
         // IMPORTANT: do NOT set navigateFallback here. It would create a Workbox
