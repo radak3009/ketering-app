@@ -8,7 +8,16 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(({ mode }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "0.0.0"),
-    __APP_BUILD_DATE__: JSON.stringify(new Date().toLocaleDateString("sr-Latn-RS", { year: "numeric", month: "short", day: "numeric" })),
+    __APP_BUILD_DATE__: JSON.stringify(
+      new Date().toLocaleString("sr-Latn-RS", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Belgrade",
+      })
+    ),
   },
   server: {
     host: "::",
