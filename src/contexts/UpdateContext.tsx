@@ -310,6 +310,8 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       console.warn("[PWA] Hard reload cleanup failed:", err);
     }
     const url = new URL(window.location.href);
+    url.searchParams.delete("pwa-recovered");
+    url.searchParams.set("pwa-reset", "1");
     url.searchParams.set("pwa-reload", Date.now().toString());
     window.location.replace(url.toString());
   };

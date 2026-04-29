@@ -1,134 +1,107 @@
-Može da se vrati stari UX: automatska toast poruka posle osvežavanja/prijave kada postoji nova verzija, sa dugmetom za ažuriranje. Problem nije u tome da je to nemoguće, već u tome što su poslednje izmene razdvojile detekciju ažuriranja od toast prikaza i dodatno unele konflikt u Workbox navigacionu strategiju.
+Potvrdio sam uzrok: objavljeni `sw.js` i dalje sadrži Workbox navigacioni fallback:
 
-## Šta sam našao
+```text
+registerRoute(new NavigationRoute(createHandlerBoundToURL("index.html")))
+```
 
-1. Toast za automatsko ažuriranje trenutno ne postoji u automatskom toku
-   - `UpdateContext` kada detektuje update samo radi `setManualNeedRefresh(true)`.
-   - `UpdatePrompt` prikazuje fiksni donji banner, ali ne šalje Sonner toast.
-   - `AppVersionBadge` prikazuje toast samo kada korisnik ručno klikne „Proveri ažuriranja“.
-   - Zato ponašanje „posle refresh-a ili prijave izađe toast sa dugmetom“ više nije pokriveno kodom.
-
-2. PWA navigacioni cache je u konfliktu
-   - `vite.config.ts` je izbacio `index.html` iz precache-a, što je ispravan smer za svež shell.
-   - Ali je ostao `navigateFallback: "/index.html"`.
-   - U generisanom `sw.js` se zato i dalje prvo registruje Workbox `NavigationRoute(createHandlerBoundToURL("/index.html"))`, pa tek posle toga custom `NetworkFirst` navigaciona ruta.
-   - To znači da `NetworkFirst` ruta za navigacije može da ne bude ona koja stvarno obrađuje refresh u PWA režimu. To objašnjava zašto mobilna PWA može ostati zaglavljena na staroj shell verziji.
-
-3. Razlika `v0.0.0 · 27` i `v0.0.0 · 29` nije pravi release/version sistem
-   - `v0.0.0` dolazi iz `package.json`, gde je verzija i dalje `0.0.0`.
-   - Broj `27` / `29` dolazi iz build date-a.
-   - To je indikator build datuma, ali nije dovoljno precizan za dijagnostiku PWA update-a, jer nema vreme build-a ni jedinstveni build ID.
+To znači da prethodna izmena nije stvarno uklonila fallback. Razlog je u `vite-plugin-pwa`: njegov podrazumevani `navigateFallback` je `"index.html"`, pa samo izostavljanje opcije nije dovoljno. Mora eksplicitno da se postavi na `null` ili `undefined` u `workbox` konfiguraciji. Zbog toga PWA i dalje može da vraća stari app shell, čak i nakon deinstalacije/reinstalacije, dok web u browser tabu dobija svež HTML.
 
 ## Plan implementacije
 
-### 1. Vratiti automatski toast update prompt
+### 1. Eksplicitno isključiti Workbox navigate fallback
 
-Uvesti ponovo Sonner toast koji se prikuje kada `needRefresh === true`:
+U `vite.config.ts` ću promeniti PWA konfiguraciju tako da `workbox.navigateFallback` bude eksplicitno isključen:
 
-- Toast tekst: „Dostupno je ažuriranje“.
-- Opis: „Nova verzija aplikacije je spremna.“
-- Dugme: „Ažuriraj“.
-- Klik na dugme poziva postojeći `updateServiceWorker(true)` tok.
-- Toast treba da bude dugotrajan ili persistent, da ne nestane pre nego što korisnik reaguje.
-- Koristiće se stabilan toast ID, npr. `pwa-update-available`, da se ne gomilaju duplikati.
-
-Zadržaću i postojeći donji `UpdatePrompt` banner kao fallback/persistent UI, ali će toast ponovo biti primarni signal kao ranije.
-
-### 2. Dodati okidače za proveru posle mount-a, refresh-a, focus-a i vraćanja online
-
-U `UpdateContext` ću stabilizovati provere tako da se update proverava:
-
-- odmah nakon registracije service worker-a,
-- kratko nakon mount-a aplikacije,
-- kada se tab/app vrati u fokus,
-- kada se aplikacija vrati online,
-- kada se dokument vrati iz hidden u visible stanje,
-- periodično kao i sada.
-
-Cilj: posle refresh-a, otvaranja PWA ili prijave korisnik opet dobija automatsku poruku ako je objavljena nova verzija.
-
-### 3. Popraviti Workbox konfiguraciju navigacija
-
-U `vite.config.ts` ću ukloniti `navigateFallback: "/index.html"`, jer sada pravi konflikt sa nameravanom `NetworkFirst` strategijom.
-
-Zadržati i pojačati runtime rute:
-
-```text
-Navigacija korisnika:
-  online  -> prvo mreža, dobija novi index.html
-  offline -> fallback na runtime cache ako postoji
-
-/index.html?pwa-check=...:
-  uvek NetworkFirst / no-store kompatibilno
+```ts
+workbox: {
+  navigateFallback: null,
+  globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+  runtimeCaching: [ ...NetworkFirst navigacija... ]
+}
 ```
 
-Tako PWA neće više prvo pokušavati da koristi Workbox precache fallback za `index.html`, već će navigacije stvarno ići kroz `NetworkFirst`.
-
-### 4. Stabilizovati ručni i automatski update tok
-
-U `UpdateContext` ću razdvojiti, ali povezati tri slučaja:
+Cilj je da generisani `sw.js` više nema:
 
 ```text
-A) postoji waiting service worker
-   -> prikaži toast/banner
-   -> dugme šalje SKIP_WAITING
-   -> reload watchdog proverava da li su asset hash-evi promenjeni
-
-B) nema waiting SW, ali je published index.html promenjen
-   -> prikaži toast/banner
-   -> dugme radi običan reload
-   -> ako su asseti isti posle 2s, hard reload watchdog čisti cache/SW i učitava cache-busted URL
-
-C) nema razlike
-   -> očisti stale update state
-   -> ručna provera prikazuje „Aplikacija je ažurna“
+NavigationRoute(createHandlerBoundToURL("index.html"))
 ```
 
-### 5. Poboljšati ručni toast iz dugmeta „Proveri ažuriranja“
+i da navigacije stvarno idu kroz postojeći `NetworkFirst` handler.
 
-Kada ručna provera nađe update, umesto običnog `toast.success("Novo ažuriranje je dostupno")`, prikazaću toast sa akcijom:
+### 2. Dodati hitnu PWA recovery putanju pri startu aplikacije
 
-- „Novo ažuriranje je dostupno“
-- dugme „Ažuriraj“
-- klik koristi isti centralni update tok kao automatski toast.
+Pošto su neki uređaji već zaglavljeni pod starim service worker-om, dodaću u `src/main.tsx` mali bootstrap recovery pre renderovanja React aplikacije.
 
-Tako ručna i automatska provera imaju isto ponašanje.
+Ako URL sadrži recovery parametar, npr:
 
-### 6. Poboljšati prikaz build verzije
+```text
+/?pwa-reset=1
+```
 
-Neću menjati poslovnu verziju aplikacije bez potrebe, ali ću predložiti jasniji build label:
+aplikacija će pre rendera:
 
-- `v0.0.0` ostaje ako `package.json` ostane `0.0.0`.
-- Build datum treba proširiti na datum + vreme ili build ID, npr. `29. apr 2026, 08:55`.
+- obrisati sve `caches`,
+- odjaviti sve service worker registracije za domen,
+- očistiti recovery parametar iz URL-a,
+- uraditi `window.location.replace(...)` na čist URL.
 
-Ovo će olakšati proveru da li je PWA stvarno prešla na novu verziju.
+Ovo daje korisniku i nama sigurnu, ručnu putanju za izlazak iz starog PWA stanja bez zavisnosti od starog React koda.
 
-## Tehnički detalji izmena
+### 3. Povezati hard reload sa istom recovery putanjom
 
-Planirane datoteke:
+U `src/contexts/UpdateContext.tsx` ću izmeniti postojeći `hardReload()` tako da, posle čišćenja cache/SW, preusmeri na URL sa recovery markerom ili cache-busting markerom koji jasno aktivira bootstrap recovery.
 
-- `src/contexts/UpdateContext.tsx`
-  - dodati centralni `notifyUpdateAvailable`/toast ili izložiti stabilan signal koji komponenta može da koristi,
-  - dodati event listenere za `focus`, `online`, `visibilitychange`,
-  - sprečiti duple intervale/toastove,
-  - zadržati watchdog hard reload logiku.
+Time update dugme više neće zavisiti samo od toga da li stari service worker ispravno prepusti novi `index.html`.
 
-- `src/components/UpdatePrompt.tsx`
-  - eventualno zadržati kao donji banner,
-  - povezati sa istim centralnim update akcijama.
+### 4. Dodati manifest start URL cache-busting za nove instalacije
 
-- `src/components/AppVersionBadge.tsx`
-  - ručni update toast dobija akciju „Ažuriraj“.
+U `vite.config.ts` ću promeniti manifest `start_url` sa:
 
-- `vite.config.ts`
-  - ukloniti `navigateFallback`,
-  - ostaviti `NetworkFirst` za navigacije i `/index.html`,
-  - ugraditi denylist za `~oauth` direktno u runtime `urlPattern`.
+```json
+"/"
+```
+
+na stabilnu PWA start putanju sa parametrom, npr:
+
+```json
+"/?source=pwa"
+```
+
+ili, ako je potrebna agresivnija recovery varijanta:
+
+```json
+"/?pwa-start=1"
+```
+
+Ovo pomaže novim instalacijama da ne koriste identičan start URL koji je ranije mogao biti uhvaćen starim shell cache-om. Ne menja rute aplikacije, jer React i dalje vidi `/`.
+
+### 5. Dodati jasan dijagnostički indikator
+
+U `AppVersionBadge`/build define ću ostaviti postojeći datum i vreme, ali ću dodati i kratki build identifier baziran na timestamp-u build-a, npr:
+
+```text
+v0.0.0 · 29. apr 2026, 09:22 · b1777447
+```
+
+Ovo olakšava proveru da li PWA stvarno učitava novi build, a ne samo isti dan/datum.
+
+### 6. Šta će biti potrebno nakon implementacije
+
+Nakon izmene moraće da se klikne `Publish / Update` za frontend. Zatim za zaglavljenu PWA postoje dve opcije:
+
+1. otvoriti PWA i kliknuti `Ažuriraj` ako se toast pojavi;
+2. ako se i dalje otvara stari shell, otvoriti u mobilnom browseru:
+
+```text
+https://ketering-app.lovable.app/?pwa-reset=1
+```
+
+Ovaj link će obrisati stari service worker i cache. Posle toga treba ponovo otvoriti/instalirati PWA.
 
 ## Očekivani rezultat
 
-- Na web aplikaciji i mobilnoj PWA, posle refresh-a/otvaranja/prijave, ako postoji nova verzija, ponovo će se pojaviti toast poruka sa dugmetom za ažuriranje.
-- Klik na „Ažuriraj“ će prvo pokušati normalan PWA update/reload.
-- Ako posle 2 sekunde i dalje ostanu isti asseti, watchdog će pokrenuti hard reload i očistiti cache/SW.
-- Mobilna PWA više ne bi trebalo da ostaje zaglavljena na starom shell-u zbog Workbox navigation fallback konflikta.
-- Verzija u footer-u/bedžu će biti informativnija za proveru realnog build-a.
+- Objavljeni `sw.js` više neće sadržati `NavigationRoute(createHandlerBoundToURL("index.html"))`.
+- PWA navigacije će ići preko `NetworkFirst`, pa novi `index.html` stiže sa mreže kada postoji nova verzija.
+- Već zaglavljeni mobilni uređaji imaće recovery URL za čišćenje starog SW/cache stanja.
+- Dugme `Ažuriraj` i watchdog će imati jači fallback ako običan reload ne promeni build.
+- Version badge će jasno pokazivati da li PWA zaista radi na novom buildu.
