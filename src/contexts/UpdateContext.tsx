@@ -252,13 +252,87 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getCurrentAssetSignature = () =>
+    Array.from(
+      document.querySelectorAll<HTMLScriptElement>('script[type="module"][src*="/assets/"]')
+    )
+      .map((s) => new URL(s.src).pathname)
+      .sort()
+      .join("|");
+
+  const hardReload = async () => {
+    console.warn("[PWA] Reload watchdog: forcing hard reload");
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      const regs = await navigator.serviceWorker?.getRegistrations?.();
+      await Promise.all((regs ?? []).map((r) => r.unregister()));
+    } catch (err) {
+      console.warn("[PWA] Hard reload cleanup failed:", err);
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("pwa-reload", Date.now().toString());
+    window.location.replace(url.toString());
+  };
+
+  const armReloadWatchdog = () => {
+    try {
+      sessionStorage.setItem("pwa:pre-reload-assets", getCurrentAssetSignature());
+      sessionStorage.setItem("pwa:pre-reload-ts", Date.now().toString());
+    } catch {
+      // sessionStorage unavailable — watchdog skipped
+    }
+  };
+
   const applyUpdate = async (reloadPage = true) => {
+    armReloadWatchdog();
     if (forceReloadNeeded) {
       window.location.reload();
       return;
     }
     await updateServiceWorker(reloadPage);
   };
+
+  // Reload watchdog: after a triggered update, if the page comes back with the
+  // same asset hashes within 2s, force a hard reload (cache+SW wipe).
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const prev = sessionStorage.getItem("pwa:pre-reload-assets");
+      const prevTs = Number(sessionStorage.getItem("pwa:pre-reload-ts") || "0");
+      if (!prev || !prevTs) return;
+      // Stale marker (>30s) — discard
+      if (Date.now() - prevTs > 30_000) {
+        sessionStorage.removeItem("pwa:pre-reload-assets");
+        sessionStorage.removeItem("pwa:pre-reload-ts");
+        return;
+      }
+      const current = getCurrentAssetSignature();
+      if (current && current !== prev) {
+        // Update succeeded — clear marker
+        sessionStorage.removeItem("pwa:pre-reload-assets");
+        sessionStorage.removeItem("pwa:pre-reload-ts");
+        return;
+      }
+      // Same assets after reload — wait 2s then hard reload
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        sessionStorage.removeItem("pwa:pre-reload-assets");
+        sessionStorage.removeItem("pwa:pre-reload-ts");
+        hardReload();
+      }, 2000);
+    } catch {
+      // ignore
+    }
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <UpdateContext.Provider
