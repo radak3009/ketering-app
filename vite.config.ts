@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => ({
         background_color: "#ffffff",
         display: "standalone",
         scope: "/",
-        start_url: "/?source=pwa",
+        start_url: `/?source=pwa&build=${buildId}`,
         orientation: "portrait-primary",
         icons: [
           {
