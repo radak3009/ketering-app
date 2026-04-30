@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard, Building2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -35,8 +36,18 @@ export default function Auth() {
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
-    fullName: ''
+    fullName: '',
+    companyCardId: '',
+    tag: ''
   });
+
+  // Auto-fill tag from URL ?tag=
+  useEffect(() => {
+    const tagFromUrl = searchParams.get('tag');
+    if (tagFromUrl && (tagFromUrl === 'Proizvodnja' || tagFromUrl === 'Hogo')) {
+      setSignUpData(prev => ({ ...prev, tag: tagFromUrl }));
+    }
+  }, [searchParams]);
   
   const [signInData, setSignInData] = useState({
     identifier: '',
@@ -49,7 +60,9 @@ export default function Auth() {
   const signUpSchema = z.object({
     email: z.string().email(t('auth.validation.invalidEmail')).max(255),
     password: z.string().min(6, t('auth.validation.passwordMin')).max(100),
-    fullName: z.string().trim().min(2, t('auth.validation.nameMin')).max(100)
+    fullName: z.string().trim().min(2, t('auth.validation.nameMin')).max(100),
+    companyCardId: z.string().regex(/^\d{1,10}$/, t('auth.validation.companyCardIdFormat')),
+    tag: z.enum(['Proizvodnja', 'Hogo'], { message: t('auth.validation.tagRequired') })
   });
 
   const signInSchema = z.object({
