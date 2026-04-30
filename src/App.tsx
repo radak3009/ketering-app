@@ -13,6 +13,7 @@ import { UpdateProvider } from "@/contexts/UpdateContext";
 // Lazy load pages for better code splitting
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const AuthConfirm = lazy(() => import("./pages/AuthConfirm"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KioskPickup = lazy(() => import("./pages/KioskPickup"));
 const KioskKitchen = lazy(() => import("./pages/KioskKitchen"));
@@ -47,6 +48,7 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/auth/confirm" element={<AuthConfirm />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </AuthProvider>
