@@ -105,15 +105,17 @@ Deno.serve(async (req) => {
 
     console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, role, hasPassword: !!password });
 
-    // Check if email already exists
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existingProfile) {
+    // Check if email already exists (case-insensitive via RPC)
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data: emailExists } = await supabaseAdmin.rpc('email_exists', { check_email: normalizedEmail });
+    if (emailExists) {
       throw new Error('Korisnik sa ovom email adresom već postoji');
+    }
+
+    // Check if company_card_id is already taken
+    const { data: idExists } = await supabaseAdmin.rpc('company_card_id_exists', { check_id: company_card_id });
+    if (idExists) {
+      throw new Error('ID zaposlenog je već dodeljen drugom korisniku');
     }
 
     let newUser;
