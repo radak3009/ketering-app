@@ -767,7 +767,45 @@ export default function Auth() {
                       </button>
                     </div>
                   </div>
-                  
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-card-id">{t('auth.signupCompanyCardId')}</Label>
+                    <div className="relative">
+                      <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-card-id"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="\d*"
+                        maxLength={10}
+                        placeholder={t('auth.signupCompanyCardIdPlaceholder')}
+                        className="pl-10"
+                        value={signUpData.companyCardId}
+                        onChange={(e) => setSignUpData({ ...signUpData, companyCardId: e.target.value.replace(/\D/g, '') })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-tag">{t('auth.signupTag')}</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                      <Select
+                        value={signUpData.tag}
+                        onValueChange={(value) => setSignUpData({ ...signUpData, tag: value })}
+                      >
+                        <SelectTrigger id="signup-tag" className="pl-10">
+                          <SelectValue placeholder={t('auth.signupTagPlaceholder')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Proizvodnja">{t('auth.signupOrgProizvodnja')}</SelectItem>
+                          <SelectItem value="Hogo">{t('auth.signupOrgHogo')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? t('auth.registering') : t('auth.signUp')}
                   </Button>
