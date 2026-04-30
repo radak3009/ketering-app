@@ -114,38 +114,49 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const validatedData = signUpSchema.parse(signUpData);
       setLoading(true);
-      
-      const { error } = await signUp(
-        validatedData.email,
-        validatedData.password,
-        validatedData.fullName,
-        'employee'
-      );
-      
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          toast({
-            title: t('auth.errors.error'),
-            description: t('auth.errors.userExists'),
-            variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: t('auth.errors.registrationError'),
-            description: error.message,
-            variant: 'destructive'
-          });
+
+      const { data, error } = await supabase.functions.invoke('signup-employee', {
+        body: {
+          email: validatedData.email,
+          password: validatedData.password,
+          full_name: validatedData.fullName,
+          company_card_id: validatedData.companyCardId,
+          tag: validatedData.tag,
         }
-      } else {
+      });
+
+      // Edge function returns { error, code? } in body on failure
+      if (data?.error) {
+        const code = data.code;
+        let description = data.error as string;
+        if (code === 'email_taken') description = t('auth.errors.userExists');
+        else if (code === 'id_taken') description = t('auth.errors.idTaken');
         toast({
-          title: t('auth.success.registrationSuccess'),
-          description: t('auth.success.checkEmailConfirm'),
+          title: t('auth.errors.registrationError'),
+          description,
+          variant: 'destructive'
         });
+        return;
       }
+
+      if (error) {
+        toast({
+          title: t('auth.errors.registrationError'),
+          description: error.message || t('auth.errors.registrationError'),
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      toast({
+        title: t('auth.success.registrationSuccess'),
+        description: t('auth.success.checkEmailConfirm'),
+      });
+      setSignUpData({ email: '', password: '', fullName: '', companyCardId: '', tag: '' });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
