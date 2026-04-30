@@ -75,3 +75,6 @@ verify_jwt = true
 
 [functions.signup-employee]
 verify_jwt = false
+
+[functions.confirm-email]
+verify_jwt = false
