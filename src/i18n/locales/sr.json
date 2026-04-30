@@ -140,11 +140,21 @@
       "nameMin": "Ime mora imati najmanje 2 karaktera",
       "enterPassword": "Unesite lozinku",
       "confirmPasswordMin": "Potvrdite lozinku",
-      "passwordsNotMatch": "Lozinke se ne poklapaju"
+      "passwordsNotMatch": "Lozinke se ne poklapaju",
+      "companyCardIdRequired": "ID zaposlenog je obavezan",
+      "companyCardIdFormat": "ID mora biti numerički, 1-10 cifara",
+      "tagRequired": "Izaberite organizaciju"
     },
+    "signupCompanyCardId": "ID zaposlenog",
+    "signupCompanyCardIdPlaceholder": "npr. 502",
+    "signupTag": "Organizacija",
+    "signupTagPlaceholder": "Izaberite organizaciju",
+    "signupOrgProizvodnja": "Proizvodnja",
+    "signupOrgHogo": "Hogo",
     "errors": {
       "error": "Greška",
       "userExists": "Korisnik sa ovom email adresom već postoji.",
+      "idTaken": "ID zaposlenog je već dodeljen drugom korisniku.",
       "registrationError": "Greška pri registraciji",
       "dataError": "Greška u podacima",
       "loginFailed": "Prijava neuspešna",
@@ -159,7 +169,7 @@
     },
     "success": {
       "registrationSuccess": "Uspešna registracija",
-      "checkEmailConfirm": "Proverite email za potvrdu naloga.",
+      "checkEmailConfirm": "Nalog je kreiran. Proverite email da potvrdite registraciju.",
       "magicLinkSent": "Magični link poslat!",
       "magicLinkDesc": "Proverite vaš email za link za prijavljivanje. Link ističe za 60 minuta.",
       "emailSent": "Email poslat!",

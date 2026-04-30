@@ -885,6 +885,7 @@ export type Database = {
     }
     Functions: {
       can_view_company: { Args: { company_uuid: string }; Returns: boolean }
+      company_card_id_exists: { Args: { check_id: string }; Returns: boolean }
       email_exists: { Args: { check_email: string }; Returns: boolean }
       has_role: {
         Args: {

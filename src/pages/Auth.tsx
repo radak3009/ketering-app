@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, KeyRound, IdCard, Building2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from 'zod';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LanguageToggle } from '@/components/ui/language-toggle';
@@ -35,8 +36,18 @@ export default function Auth() {
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
-    fullName: ''
+    fullName: '',
+    companyCardId: '',
+    tag: ''
   });
+
+  // Auto-fill tag from URL ?tag=
+  useEffect(() => {
+    const tagFromUrl = searchParams.get('tag');
+    if (tagFromUrl && (tagFromUrl === 'Proizvodnja' || tagFromUrl === 'Hogo')) {
+      setSignUpData(prev => ({ ...prev, tag: tagFromUrl }));
+    }
+  }, [searchParams]);
   
   const [signInData, setSignInData] = useState({
     identifier: '',
@@ -49,7 +60,9 @@ export default function Auth() {
   const signUpSchema = z.object({
     email: z.string().email(t('auth.validation.invalidEmail')).max(255),
     password: z.string().min(6, t('auth.validation.passwordMin')).max(100),
-    fullName: z.string().trim().min(2, t('auth.validation.nameMin')).max(100)
+    fullName: z.string().trim().min(2, t('auth.validation.nameMin')).max(100),
+    companyCardId: z.string().regex(/^\d{1,10}$/, t('auth.validation.companyCardIdFormat')),
+    tag: z.enum(['Proizvodnja', 'Hogo'], { message: t('auth.validation.tagRequired') })
   });
 
   const signInSchema = z.object({
@@ -101,38 +114,49 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const validatedData = signUpSchema.parse(signUpData);
       setLoading(true);
-      
-      const { error } = await signUp(
-        validatedData.email,
-        validatedData.password,
-        validatedData.fullName,
-        'employee'
-      );
-      
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          toast({
-            title: t('auth.errors.error'),
-            description: t('auth.errors.userExists'),
-            variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: t('auth.errors.registrationError'),
-            description: error.message,
-            variant: 'destructive'
-          });
+
+      const { data, error } = await supabase.functions.invoke('signup-employee', {
+        body: {
+          email: validatedData.email,
+          password: validatedData.password,
+          full_name: validatedData.fullName,
+          company_card_id: validatedData.companyCardId,
+          tag: validatedData.tag,
         }
-      } else {
+      });
+
+      // Edge function returns { error, code? } in body on failure
+      if (data?.error) {
+        const code = data.code;
+        let description = data.error as string;
+        if (code === 'email_taken') description = t('auth.errors.userExists');
+        else if (code === 'id_taken') description = t('auth.errors.idTaken');
         toast({
-          title: t('auth.success.registrationSuccess'),
-          description: t('auth.success.checkEmailConfirm'),
+          title: t('auth.errors.registrationError'),
+          description,
+          variant: 'destructive'
         });
+        return;
       }
+
+      if (error) {
+        toast({
+          title: t('auth.errors.registrationError'),
+          description: error.message || t('auth.errors.registrationError'),
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      toast({
+        title: t('auth.success.registrationSuccess'),
+        description: t('auth.success.checkEmailConfirm'),
+      });
+      setSignUpData({ email: '', password: '', fullName: '', companyCardId: '', tag: '' });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
@@ -743,7 +767,45 @@ export default function Auth() {
                       </button>
                     </div>
                   </div>
-                  
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-card-id">{t('auth.signupCompanyCardId')}</Label>
+                    <div className="relative">
+                      <IdCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-card-id"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="\d*"
+                        maxLength={10}
+                        placeholder={t('auth.signupCompanyCardIdPlaceholder')}
+                        className="pl-10"
+                        value={signUpData.companyCardId}
+                        onChange={(e) => setSignUpData({ ...signUpData, companyCardId: e.target.value.replace(/\D/g, '') })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-tag">{t('auth.signupTag')}</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                      <Select
+                        value={signUpData.tag}
+                        onValueChange={(value) => setSignUpData({ ...signUpData, tag: value })}
+                      >
+                        <SelectTrigger id="signup-tag" className="pl-10">
+                          <SelectValue placeholder={t('auth.signupTagPlaceholder')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Proizvodnja">{t('auth.signupOrgProizvodnja')}</SelectItem>
+                          <SelectItem value="Hogo">{t('auth.signupOrgHogo')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? t('auth.registering') : t('auth.signUp')}
                   </Button>

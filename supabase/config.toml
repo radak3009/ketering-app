@@ -72,3 +72,6 @@ verify_jwt = true
 
 [functions.notify-menu-ready]
 verify_jwt = true
+
+[functions.signup-employee]
+verify_jwt = false

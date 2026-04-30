@@ -140,11 +140,21 @@
       "nameMin": "Name must be at least 2 characters",
       "enterPassword": "Enter password",
       "confirmPasswordMin": "Confirm password",
-      "passwordsNotMatch": "Passwords do not match"
+      "passwordsNotMatch": "Passwords do not match",
+      "companyCardIdRequired": "Employee ID is required",
+      "companyCardIdFormat": "ID must be numeric, 1-10 digits",
+      "tagRequired": "Please select an organization"
     },
+    "signupCompanyCardId": "Employee ID",
+    "signupCompanyCardIdPlaceholder": "e.g. 502",
+    "signupTag": "Organization",
+    "signupTagPlaceholder": "Select organization",
+    "signupOrgProizvodnja": "Proizvodnja",
+    "signupOrgHogo": "Hogo",
     "errors": {
       "error": "Error",
       "userExists": "A user with this email address already exists.",
+      "idTaken": "This employee ID is already assigned to another user.",
       "registrationError": "Registration error",
       "dataError": "Data error",
       "loginFailed": "Login failed",
@@ -159,7 +169,7 @@
     },
     "success": {
       "registrationSuccess": "Registration successful",
-      "checkEmailConfirm": "Check your email to confirm your account.",
+      "checkEmailConfirm": "Account created. Check your email to confirm registration.",
       "magicLinkSent": "Magic link sent!",
       "magicLinkDesc": "Check your email for the login link. The link expires in 60 minutes.",
       "emailSent": "Email sent!",
