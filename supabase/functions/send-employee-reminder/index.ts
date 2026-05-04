@@ -41,6 +41,37 @@ const handler = async (req: Request): Promise<Response> => {
     nextSunday.setDate(nextMonday.getDate() + 6);
     nextSunday.setHours(23, 59, 59, 999);
 
+    // Check if there are active menus for next week — skip reminders if none exist
+    const { data: nextWeekMenus, error: menusCheckError } = await supabase
+      .from('menus')
+      .select('id')
+      .eq('is_active', true)
+      .gte('menu_date', nextMonday.toISOString().split('T')[0])
+      .lte('menu_date', nextSunday.toISOString().split('T')[0])
+      .limit(1);
+
+    if (menusCheckError) {
+      console.error("Error checking menus:", menusCheckError);
+      throw menusCheckError;
+    }
+
+    if (!nextWeekMenus || nextWeekMenus.length === 0) {
+      console.log("No active menus for next week — skipping reminder send");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: "Nema kreiranih jelovnika za sledeću nedelju",
+          email: { sent: 0, failed: 0, total: 0 },
+          push: { sent: 0, failed: 0, total: 0 },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Get all employee profiles
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
