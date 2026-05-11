@@ -6,6 +6,7 @@ interface UpdateContextType {
   updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
   checkForUpdates: () => Promise<"update-available" | "up-to-date" | "unsupported" | "error">;
   checking: boolean;
+  dismissUpdate: () => void;
 }
 
 const UpdateContext = createContext<UpdateContextType>({
@@ -13,6 +14,7 @@ const UpdateContext = createContext<UpdateContextType>({
   updateServiceWorker: async () => {},
   checkForUpdates: async () => "unsupported",
   checking: false,
+  dismissUpdate: () => {},
 });
 
 export const useUpdate = () => useContext(UpdateContext);
