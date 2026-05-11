@@ -71,24 +71,57 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   }, [markUpdateAvailable]);
 
   const detectPublishedShellUpdate = useCallback(async () => {
+    // Strategy 1: compare build IDs from /version.json (most reliable)
+    try {
+      const vRes = await fetch(`/version.json?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (vRes.ok) {
+        const data = await vRes.json();
+        const publishedBuildId = data?.buildId;
+        const currentBuildId = (typeof __APP_BUILD_ID__ !== "undefined" ? __APP_BUILD_ID__ : null);
+        console.log("[PWA] version.json check:", { currentBuildId, publishedBuildId });
+        if (publishedBuildId && currentBuildId && publishedBuildId !== currentBuildId) {
+          return true;
+        }
+        if (publishedBuildId && currentBuildId && publishedBuildId === currentBuildId) {
+          // Authoritative: same build, no update.
+          return false;
+        }
+      } else {
+        console.warn("[PWA] version.json fetch not ok:", vRes.status);
+      }
+    } catch (err) {
+      console.warn("[PWA] version.json check failed:", err);
+    }
+
+    // Strategy 2: fallback — compare script asset paths in DOM vs published HTML
     const currentScripts = Array.from(
       document.querySelectorAll<HTMLScriptElement>('script[type="module"][src*="/assets/"]')
     ).map((script) => new URL(script.src).pathname);
 
-    if (currentScripts.length === 0) return false;
+    if (currentScripts.length === 0) {
+      console.log("[PWA] No /assets/ scripts in DOM (likely dev mode); skipping shell diff");
+      return false;
+    }
 
     const response = await fetch(`/index.html?pwa-check=${Date.now()}`, {
       cache: "no-store",
       headers: { "Cache-Control": "no-cache" },
     });
 
-    if (!response.ok) return false;
+    if (!response.ok) {
+      console.warn("[PWA] index.html fetch not ok:", response.status);
+      return false;
+    }
 
     const html = await response.text();
     const publishedScripts = Array.from(
       html.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)
     ).map((match) => new URL(match[1], window.location.origin).pathname);
 
+    console.log("[PWA] shell diff:", { currentScripts, publishedScripts });
     return publishedScripts.some((script) => !currentScripts.includes(script));
   }, []);
 
