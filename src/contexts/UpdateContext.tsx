@@ -327,14 +327,30 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const applyUpdate = async (reloadPage = true) => {
+  const applyUpdate = async (_reloadPage = true) => {
+    console.log("[PWA] Apply update: performing hard reload");
     armReloadWatchdog();
-    if (forceReloadNeeded) {
+    // Fallback so the button always works even if hardReload hangs.
+    setTimeout(() => {
+      try {
+        window.location.reload();
+      } catch {
+        // ignore
+      }
+    }, 4000);
+    try {
+      await hardReload();
+    } catch (err) {
+      console.warn("[PWA] applyUpdate hardReload failed, falling back:", err);
       window.location.reload();
-      return;
     }
-    await updateServiceWorker(reloadPage);
   };
+
+  const dismissUpdate = useCallback(() => {
+    console.log("[PWA] User dismissed update prompt");
+    setManualNeedRefresh(false);
+    setForceReloadNeeded(false);
+  }, []);
 
   // Reload watchdog: after a triggered update, if the page comes back with the
   // same asset hashes within 2s, force a hard reload (cache+SW wipe).
@@ -345,7 +361,6 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       const prev = sessionStorage.getItem("pwa:pre-reload-assets");
       const prevTs = Number(sessionStorage.getItem("pwa:pre-reload-ts") || "0");
       if (!prev || !prevTs) return;
-      // Stale marker (>30s) — discard
       if (Date.now() - prevTs > 30_000) {
         sessionStorage.removeItem("pwa:pre-reload-assets");
         sessionStorage.removeItem("pwa:pre-reload-ts");
@@ -353,12 +368,10 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
       }
       const current = getCurrentAssetSignature();
       if (current && current !== prev) {
-        // Update succeeded — clear marker
         sessionStorage.removeItem("pwa:pre-reload-assets");
         sessionStorage.removeItem("pwa:pre-reload-ts");
         return;
       }
-      // Same assets after reload — wait 2s then hard reload
       timer = setTimeout(() => {
         if (cancelled) return;
         sessionStorage.removeItem("pwa:pre-reload-assets");
@@ -382,6 +395,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
         updateServiceWorker: applyUpdate,
         checkForUpdates,
         checking,
+        dismissUpdate,
       }}
     >
       {children}
