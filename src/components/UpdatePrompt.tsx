@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { useUpdate } from "@/contexts/UpdateContext";
 import { toast } from "sonner";
 
@@ -9,7 +9,7 @@ const TOAST_ID = "pwa-update-available";
 
 export const UpdatePrompt = () => {
   const { t } = useTranslation();
-  const { needRefresh, updateServiceWorker } = useUpdate();
+  const { needRefresh, updateServiceWorker, dismissUpdate } = useUpdate();
   const shownRef = useRef(false);
 
   useEffect(() => {
@@ -19,6 +19,11 @@ export const UpdatePrompt = () => {
         id: TOAST_ID,
         description: t("pwa.updateBody"),
         duration: Infinity,
+        closeButton: true,
+        onDismiss: () => {
+          shownRef.current = false;
+          dismissUpdate();
+        },
         action: {
           label: t("pwa.reloadNow"),
           onClick: () => {
@@ -31,7 +36,7 @@ export const UpdatePrompt = () => {
       shownRef.current = false;
       toast.dismiss(TOAST_ID);
     }
-  }, [needRefresh, t, updateServiceWorker]);
+  }, [needRefresh, t, updateServiceWorker, dismissUpdate]);
 
   if (!needRefresh) return null;
 
@@ -44,17 +49,31 @@ export const UpdatePrompt = () => {
             {t("pwa.updateAvailable")}
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => {
-            console.log("[PWA] User triggered update from banner");
-            updateServiceWorker(true);
-          }}
-          className="shrink-0"
-        >
-          {t("pwa.reloadNow")}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              console.log("[PWA] User triggered update from banner");
+              updateServiceWorker(true);
+            }}
+          >
+            {t("pwa.reloadNow")}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={t("common.close", { defaultValue: "Zatvori" })}
+            onClick={() => {
+              console.log("[PWA] User dismissed update banner");
+              dismissUpdate();
+              toast.dismiss(TOAST_ID);
+            }}
+            className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
