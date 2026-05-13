@@ -9,18 +9,19 @@ const ALERT_EMAIL = "support@simpler.rs";
 async function sendFiscalFailAlert(pickupId: string, error: string, mealName?: string) {
   try {
     const today = new Date().toLocaleDateString("sr-Latn-RS", { timeZone: "Europe/Belgrade" });
+    const html = [
+      `<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;">`,
+      `<h2 style="color:#c00;margin:0 0 12px 0;">Greška pri fiskalizaciji</h2>`,
+      `<p><strong>Obrok:</strong> ${mealName || "N/A"}</p>`,
+      `<p><strong>Pickup ID:</strong> ${pickupId}</p>`,
+      `<p><strong>Greška:</strong> <span style="color:#c00;">${error}</span></p>`,
+      `<p style="color:#666;font-size:12px;margin-top:16px;">Automatski retry će pokušati ponovo do 3 puta. Ako ne uspe, biće potrebna ručna intervencija.</p>`,
+      `</div>`,
+    ].join("");
     await sendEmail({
       to: ALERT_EMAIL,
-      subject: `⚠️ Fiskalizacija neuspešna - ${mealName || pickupId} (${today})`,
-      html: `
-        <div style="font-family:Arial,sans-serif;">
-          <h2 style="color:#c00;">⚠️ Greška pri fiskalizaciji</h2>
-          <p><strong>Obrok:</strong> ${mealName || "N/A"}</p>
-          <p><strong>Pickup ID:</strong> ${pickupId}</p>
-          <p><strong>Greška:</strong> <span style="color:#c00;">${error}</span></p>
-          <p style="color:#666;font-size:12px;">Automatski retry će pokušati ponovo do 3 puta. Ako ne uspe, biće potrebna ručna intervencija.</p>
-        </div>
-      `,
+      subject: `Fiskalizacija neuspešna - ${mealName || pickupId} (${today})`,
+      html,
     });
   } catch (e) {
     console.error("Alert email error:", e);
