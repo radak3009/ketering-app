@@ -15,37 +15,33 @@ async function sendFiscalAlert(
   const rows = items
     .map(
       (i) =>
-        `<tr>
-          <td style="padding:6px 10px;border:1px solid #ddd;">${i.employee}</td>
-          <td style="padding:6px 10px;border:1px solid #ddd;">${i.mealName}</td>
-          <td style="padding:6px 10px;border:1px solid #ddd;">${i.retryCount}/3</td>
-          <td style="padding:6px 10px;border:1px solid #ddd;color:#c00;">${i.error}</td>
-          <td style="padding:6px 10px;border:1px solid #ddd;font-size:11px;">${i.pickupId}</td>
-        </tr>`
+        `<tr>` +
+          `<td style="padding:6px 10px;border:1px solid #ddd;">${i.employee}</td>` +
+          `<td style="padding:6px 10px;border:1px solid #ddd;">${i.mealName}</td>` +
+          `<td style="padding:6px 10px;border:1px solid #ddd;">${i.retryCount}/3</td>` +
+          `<td style="padding:6px 10px;border:1px solid #ddd;color:#c00;">${i.error}</td>` +
+          `<td style="padding:6px 10px;border:1px solid #ddd;font-size:11px;">${i.pickupId}</td>` +
+        `</tr>`
     )
     .join("");
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:700px;">
-      <h2 style="color:#c00;">⚠️ ${subject}</h2>
-      <p>Sledeće stavke zahtevaju pažnju:</p>
-      <table style="border-collapse:collapse;width:100%;font-size:13px;">
-        <thead>
-          <tr style="background:#f5f5f5;">
-            <th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Zaposleni</th>
-            <th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Obrok</th>
-            <th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Pokušaji</th>
-            <th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Greška</th>
-            <th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Pickup ID</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <p style="color:#666;font-size:12px;margin-top:16px;">
-        Ove stavke zahtevaju ručnu intervenciju u admin panelu.
-      </p>
-    </div>
-  `;
+  const html = [
+    `<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;max-width:700px;">`,
+    `<h2 style="color:#c00;margin:0 0 12px 0;">${subject}</h2>`,
+    `<p>Sledeće stavke zahtevaju pažnju:</p>`,
+    `<table style="border-collapse:collapse;width:100%;font-size:13px;">`,
+    `<thead><tr style="background:#f5f5f5;">`,
+    `<th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Zaposleni</th>`,
+    `<th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Obrok</th>`,
+    `<th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Pokušaji</th>`,
+    `<th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Greška</th>`,
+    `<th style="padding:6px 10px;border:1px solid #ddd;text-align:left;">Pickup ID</th>`,
+    `</tr></thead>`,
+    `<tbody>${rows}</tbody>`,
+    `</table>`,
+    `<p style="color:#666;font-size:12px;margin-top:16px;">Ove stavke zahtevaju ručnu intervenciju u admin panelu.</p>`,
+    `</div>`,
+  ].join("");
 
   try {
     const result = await sendEmail({ to: ALERT_EMAIL, subject, html });
