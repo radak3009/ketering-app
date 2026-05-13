@@ -83,7 +83,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       from: `${fromName} <${fromEmail}>`,
       to: recipients,
       subject: options.subject,
-      content: "auto",
+      content: options.text ?? htmlToPlainText(options.html),
       html: options.html,
     });
 
