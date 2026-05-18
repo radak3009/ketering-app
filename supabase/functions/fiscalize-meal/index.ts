@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
   try {
     const { pickupId, price, kioskToken, regeneratePdf } = await req.json();
 
-    // Auth: accept either kiosk token or JWT
+    // Auth: accept either kiosk token or admin JWT
     const employeeToken = Deno.env.get("KIOSK_TOKEN_EMPLOYEE");
     const kitchenToken = Deno.env.get("KIOSK_TOKEN_KITCHEN");
     const isKiosk = kioskToken && (kioskToken === employeeToken || kioskToken === kitchenToken);
@@ -170,6 +170,29 @@ Deno.serve(async (req) => {
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(
           JSON.stringify({ error: "Nedozvoljen pristup" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const token = authHeader.replace("Bearer ", "");
+      const authClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!
+      );
+      const { data: userData, error: userErr } = await authClient.auth.getUser(token);
+      if (userErr || !userData?.user) {
+        return new Response(
+          JSON.stringify({ error: "Nevažeći token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: isAdmin } = await adminClient.rpc("is_admin_user", { user_uuid: userData.user.id });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Samo administratori" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
