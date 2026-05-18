@@ -28,9 +28,19 @@ Deno.serve(async (req) => {
       }
     )
 
-    const { card_id, order_item_id } = await req.json() as PickupRequest;
+    const { card_id, order_item_id, kioskToken } = await req.json() as PickupRequest & { kioskToken?: string };
 
     console.log('NFC Pickup request received:', { card_id, order_item_id });
+
+    // Auth: require kiosk shared secret
+    const employeeToken = Deno.env.get('KIOSK_TOKEN_EMPLOYEE');
+    const kitchenToken = Deno.env.get('KIOSK_TOKEN_KITCHEN');
+    if (!kioskToken || (kioskToken !== employeeToken && kioskToken !== kitchenToken)) {
+      return new Response(
+        JSON.stringify({ error: 'Nedozvoljen pristup' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!card_id) {
       return new Response(
