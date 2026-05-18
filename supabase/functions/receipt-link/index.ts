@@ -96,11 +96,38 @@ Deno.serve(async (req) => {
     }
 
     // Check fiscal status
-    if (pickup.fiscal_status !== "fiscalized" || !pickup.receipt_file_path) {
+    if (pickup.fiscal_status !== "fiscalized") {
       return new Response(
         JSON.stringify({ url: null }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // PDF was cleaned up — regenerate from stored receipt text
+    if (!pickup.receipt_file_path) {
+      console.log("[receipt-link] Regenerating missing PDF for pickup", pickupId);
+      const { error: regenErr } = await supabase.functions.invoke("fiscalize-meal", {
+        body: { pickupId, regeneratePdf: true },
+      });
+      if (regenErr) {
+        console.error("[receipt-link] Regeneration error:", regenErr);
+        return new Response(
+          JSON.stringify({ url: null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: refreshed } = await supabase
+        .from("pickup_requests")
+        .select("receipt_file_path")
+        .eq("id", pickupId)
+        .maybeSingle();
+      pickup.receipt_file_path = refreshed?.receipt_file_path ?? null;
+      if (!pickup.receipt_file_path) {
+        return new Response(
+          JSON.stringify({ url: null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Generate signed URL (5 min TTL)
