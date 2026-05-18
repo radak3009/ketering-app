@@ -236,8 +236,8 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
       orderId = newOrder.id;
     }
 
-    const { data: mealData } = await supabase
-      .from('meals')
+    const { data: mealData } = await (supabase as any)
+      .from('meals_secure')
       .select('price')
       .eq('id', selectedMeal)
       .single();
