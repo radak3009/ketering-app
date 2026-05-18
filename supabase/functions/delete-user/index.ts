@@ -27,31 +27,6 @@ Deno.serve(async (req) => {
     const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
 
     const token = authHeader.replace('Bearer ', '');
-    
-    // Decode JWT to get user ID (we trust Supabase's token structure)
-    let userId: string;
-    try {
-      // Decode the JWT payload (base64url decode the middle part)
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid JWT format');
-      }
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      userId = payload.sub;
-      
-      // Check if token is expired
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        throw new Error('Token expired');
-      }
-      
-      console.log('Decoded user ID from token:', userId);
-    } catch (decodeError) {
-      console.error('Error decoding token:', decodeError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Create admin client for all operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -61,16 +36,17 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Verify the user exists using admin API
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    // Verify the JWT signature server-side via Supabase Auth
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError || !userData?.user) {
-      console.error('User not found:', userError);
+      console.error('Invalid token:', userError);
       return new Response(
         JSON.stringify({ error: 'Invalid authorization token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const userId = userData.user.id;
     console.log('Verified user:', userId);
 
     // Check if user is admin
