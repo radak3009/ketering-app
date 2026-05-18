@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         totalDeleted += removed?.length || 0;
         totalOrphans += orphanCount;
         totalBytes += objects.reduce(
-          (sum: number, o: any) => sum + (Number(o.metadata?.size) || 0),
+          (sum: number, o: any) => sum + (Number(o.size) || 0),
           0
         );
       }
