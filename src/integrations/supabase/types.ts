@@ -925,6 +925,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin_user: { Args: { user_uuid: string }; Returns: boolean }
+      list_old_receipts: {
+        Args: { cutoff: string; max_rows?: number }
+        Returns: {
+          created_at: string
+          name: string
+          size: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "employee"
