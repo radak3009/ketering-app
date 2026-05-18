@@ -67,11 +67,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (pickup.fiscal_status !== "fiscalized" || !pickup.receipt_file_path) {
+    if (pickup.fiscal_status !== "fiscalized") {
       return new Response(JSON.stringify({ error: "Receipt not available" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // PDF was cleaned up — regenerate from stored receipt text
+    if (!pickup.receipt_file_path) {
+      console.log("[receipt-download] Regenerating missing PDF for pickup", pickupId);
+      const { error: regenErr } = await serviceClient.functions.invoke("fiscalize-meal", {
+        body: { pickupId, regeneratePdf: true },
+      });
+      if (regenErr) {
+        console.error("[receipt-download] Regeneration error:", regenErr);
+        return new Response(JSON.stringify({ error: "Receipt not available" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: refreshed } = await serviceClient
+        .from("pickup_requests")
+        .select("receipt_file_path")
+        .eq("id", pickupId)
+        .maybeSingle();
+      pickup.receipt_file_path = refreshed?.receipt_file_path ?? null;
+      if (!pickup.receipt_file_path) {
+        return new Response(JSON.stringify({ error: "Receipt not available" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Check ownership: pickup.profile_id -> profiles.user_id must match auth user
