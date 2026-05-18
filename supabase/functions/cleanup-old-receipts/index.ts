@@ -45,14 +45,25 @@ Deno.serve(async (req) => {
 
       const paths = objects.map((o: any) => o.name);
 
-      // Identify orphans (no DB reference) vs regenerable
-      const { data: refs } = await supabase
-        .from("pickup_requests")
-        .select("id, receipt_file_path")
-        .in("receipt_file_path", paths);
-
-      const referencedPaths = new Set((refs || []).map((r: any) => r.receipt_file_path));
-      const referencedIds = (refs || []).map((r: any) => r.id);
+      // Identify orphans (no DB reference) vs regenerable — chunk to avoid URL length limits
+      const referencedPaths = new Set<string>();
+      const referencedIds: string[] = [];
+      const CHUNK = 50;
+      for (let i = 0; i < paths.length; i += CHUNK) {
+        const slice = paths.slice(i, i + CHUNK);
+        const { data: refs, error: refErr } = await supabase
+          .from("pickup_requests")
+          .select("id, receipt_file_path")
+          .in("receipt_file_path", slice);
+        if (refErr) {
+          console.error("[cleanup-old-receipts] Ref lookup error:", refErr);
+          continue;
+        }
+        for (const r of refs || []) {
+          referencedPaths.add((r as any).receipt_file_path);
+          referencedIds.push((r as any).id);
+        }
+      }
       const orphanCount = paths.filter((p) => !referencedPaths.has(p)).length;
 
       // Delete from storage
