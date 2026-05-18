@@ -25,18 +25,13 @@ Deno.serve(async (req) => {
     let totalOrphans = 0;
     let totalErrors = 0;
     let totalBytes = 0;
-    let offset = 0;
 
-    // Loop through storage objects in pages
+    // Loop through old storage objects in pages
     while (true) {
-      const { data: objects, error: listErr } = await supabase
-        .schema("storage")
-        .from("objects")
-        .select("name, created_at, metadata")
-        .eq("bucket_id", "receipts")
-        .lt("created_at", cutoff)
-        .order("created_at", { ascending: true })
-        .range(offset, offset + BATCH_SIZE - 1);
+      const { data: objects, error: listErr } = await supabase.rpc("list_old_receipts", {
+        cutoff,
+        max_rows: BATCH_SIZE,
+      });
 
       if (listErr) {
         console.error("[cleanup-old-receipts] List error:", listErr);
