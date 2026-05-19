@@ -55,7 +55,7 @@ interface MealFilters {
 const initialMealForm: MealFormState = {
   name: "",
   description: "",
-  price: "400",
+  price: "240",
   purchase_price: "200",
   code: "",
   status: "aktivan",
