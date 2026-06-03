@@ -34,16 +34,21 @@ export interface EmailResult {
 }
 
 export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
-  const smtpHost = Deno.env.get("SMTP_HOST");
+  const configuredSmtpHost = Deno.env.get("SMTP_HOST");
   const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
   const smtpUser = Deno.env.get("SMTP_USER");
   const smtpPassword = Deno.env.get("SMTP_PASSWORD");
   const fromEmail = Deno.env.get("SMTP_FROM_EMAIL");
   const fromName = Deno.env.get("SMTP_FROM_NAME") || "Ketering";
 
+  // webmail.simpler.rs currently resolves to the same SMTP server, but its TLS
+  // certificate is issued for s34.unlimited.rs. Use the certificate name for
+  // the SMTP connection so Deno's TLS verification succeeds.
+  const smtpHost = configuredSmtpHost === "webmail.simpler.rs" ? "s34.unlimited.rs" : configuredSmtpHost;
+
   if (!smtpHost || !smtpUser || !smtpPassword || !fromEmail) {
     console.error("Missing SMTP configuration:", {
-      hasHost: !!smtpHost,
+      hasHost: !!configuredSmtpHost,
       hasUser: !!smtpUser,
       hasPassword: !!smtpPassword,
       hasFromEmail: !!fromEmail,
@@ -60,6 +65,9 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     const useTls = smtpPort === 465;
     
     console.log(`Connecting to SMTP: ${smtpHost}:${smtpPort} (TLS: ${useTls})`);
+    if (configuredSmtpHost !== smtpHost) {
+      console.log(`SMTP host normalized from ${configuredSmtpHost} to ${smtpHost} for TLS certificate validation`);
+    }
     console.log(`From: ${fromName} <${fromEmail}>`);
 
     const client = new SMTPClient({
