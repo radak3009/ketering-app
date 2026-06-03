@@ -19,7 +19,7 @@ interface SendInvitationDialogProps {
   user: ProfileWithRole | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSendMagicLink: (email: string) => Promise<void>;
+  onSendMagicLink: (email: string, fullName?: string) => Promise<void>;
   onSendCredentials: (userId: string, email: string, fullName?: string) => Promise<void>;
 }
 
@@ -41,7 +41,7 @@ export function SendInvitationDialog({
       if (inviteType === 'credentials') {
         await onSendCredentials(user.user_id, user.email, user.full_name || undefined);
       } else {
-        await onSendMagicLink(user.email);
+        await onSendMagicLink(user.email, user.full_name || undefined);
       }
       onOpenChange(false);
     } catch (error) {

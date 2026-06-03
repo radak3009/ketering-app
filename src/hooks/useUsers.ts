@@ -196,16 +196,14 @@ export function useUsers() {
     }
   };
 
-  const sendMagicLink = async (email: string) => {
+  const sendMagicLink = async (email: string, fullName?: string) => {
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
+      const { data, error } = await supabase.functions.invoke('send-magic-link', {
+        body: { email, fullName, redirectTo: `${window.location.origin}/` }
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Nije moguće poslati magic link');
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: 'Uspeh',
