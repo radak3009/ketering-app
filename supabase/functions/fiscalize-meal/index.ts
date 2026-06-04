@@ -21,6 +21,7 @@ async function sendFiscalFailAlert(pickupId: string, error: string, mealName?: s
     ].join("");
     await sendEmail({
       to: ALERT_EMAIL,
+      cc: ALERT_CC_EMAIL,
       subject: `Fiskalizacija neuspešna - ${mealName || pickupId} (${today})`,
       html,
     });
