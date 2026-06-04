@@ -2,6 +2,7 @@ import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 export interface EmailOptions {
   to: string | string[];
+  cc?: string | string[];
   subject: string;
   html: string;
   text?: string;
