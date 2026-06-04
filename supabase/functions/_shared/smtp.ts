@@ -2,6 +2,7 @@ import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 export interface EmailOptions {
   to: string | string[];
+  cc?: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -83,13 +84,17 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     });
 
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
+    const ccRecipients = options.cc
+      ? (Array.isArray(options.cc) ? options.cc : [options.cc])
+      : undefined;
 
-    console.log(`Sending email to: ${recipients.join(", ")}`);
+    console.log(`Sending email to: ${recipients.join(", ")}${ccRecipients ? ` cc: ${ccRecipients.join(", ")}` : ""}`);
     console.log(`Subject: ${options.subject}`);
 
     await client.send({
       from: `${fromName} <${fromEmail}>`,
       to: recipients,
+      ...(ccRecipients && ccRecipients.length > 0 ? { cc: ccRecipients } : {}),
       subject: options.subject,
       content: options.text ?? htmlToPlainText(options.html),
       html: options.html,

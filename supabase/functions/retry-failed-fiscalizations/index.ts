@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const ALERT_EMAIL = "support@simpler.rs";
+const ALERT_CC_EMAIL = "zdravko.strbac@hogo.rs";
 
 async function sendFiscalAlert(
   subject: string,
@@ -44,11 +45,11 @@ async function sendFiscalAlert(
   ].join("");
 
   try {
-    const result = await sendEmail({ to: ALERT_EMAIL, subject, html });
+    const result = await sendEmail({ to: ALERT_EMAIL, cc: ALERT_CC_EMAIL, subject, html });
     if (!result.success) {
       console.error("Alert email failed:", result.error);
     } else {
-      console.log("Alert email sent to", ALERT_EMAIL);
+      console.log("Alert email sent to", ALERT_EMAIL, "cc", ALERT_CC_EMAIL);
     }
   } catch (e) {
     console.error("Alert email error:", e);
