@@ -5,6 +5,7 @@ import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 import { sendEmail } from "../_shared/smtp.ts";
 
 const ALERT_EMAIL = "support@simpler.rs";
+const ALERT_CC_EMAIL = "zdravko.strbac@hogo.rs";
 
 async function sendFiscalFailAlert(pickupId: string, error: string, mealName?: string) {
   try {
