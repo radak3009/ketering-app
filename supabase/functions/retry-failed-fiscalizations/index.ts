@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const ALERT_EMAIL = "support@simpler.rs";
+const ALERT_CC_EMAIL = "zdravko.strbac@hogo.rs";
 
 async function sendFiscalAlert(
   subject: string,
