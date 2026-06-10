@@ -111,12 +111,12 @@ Deno.serve(async (req) => {
 
     const { data: emailExists } = await supabaseAdmin.rpc('email_exists', { check_email: email });
     if (emailExists) {
-      return jsonResponse({ error: 'Korisnik sa ovom email adresom već postoji', code: 'email_taken' }, 409);
+      return jsonResponse({ error: 'Korisnik sa ovom email adresom već postoji', code: 'email_taken' }, 200);
     }
 
     const { data: idExists } = await supabaseAdmin.rpc('company_card_id_exists', { check_id: company_card_id });
     if (idExists) {
-      return jsonResponse({ error: 'ID zaposlenog je već dodeljen drugom korisniku', code: 'id_taken' }, 409);
+      return jsonResponse({ error: 'ID zaposlenog je već dodeljen drugom korisniku. Molimo proverite uneti ID ili se obratite administratoru.', code: 'id_taken' }, 200);
     }
 
     const userMetadata: Record<string, string> = {
