@@ -134,7 +134,7 @@ export default function Auth() {
         const code = data.code;
         let description = data.error as string;
         if (code === 'email_taken') description = t('auth.errors.userExists');
-        else if (code === 'id_taken') description = t('auth.errors.idTaken');
+        else if (code === 'id_taken' || code === 'duplicate') description = t('auth.errors.idTaken');
         toast({
           title: t('auth.errors.registrationError'),
           description,

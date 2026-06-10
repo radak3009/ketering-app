@@ -111,12 +111,12 @@ Deno.serve(async (req) => {
 
     const { data: emailExists } = await supabaseAdmin.rpc('email_exists', { check_email: email });
     if (emailExists) {
-      return jsonResponse({ error: 'Korisnik sa ovom email adresom već postoji', code: 'email_taken' }, 409);
+      return jsonResponse({ error: 'Korisnik sa ovom email adresom već postoji', code: 'email_taken' }, 200);
     }
 
     const { data: idExists } = await supabaseAdmin.rpc('company_card_id_exists', { check_id: company_card_id });
     if (idExists) {
-      return jsonResponse({ error: 'ID zaposlenog je već dodeljen drugom korisniku', code: 'id_taken' }, 409);
+      return jsonResponse({ error: 'ID zaposlenog je već dodeljen drugom korisniku. Molimo proverite uneti ID ili se obratite administratoru.', code: 'id_taken' }, 200);
     }
 
     const userMetadata: Record<string, string> = {
@@ -138,10 +138,10 @@ Deno.serve(async (req) => {
     if (createErr) {
       console.error('[signup-employee] createUser error:', createErr.message);
       if (createErr.message.toLowerCase().includes('already')) {
-        return jsonResponse({ error: 'Korisnik sa ovom email adresom već postoji', code: 'email_taken' }, 409);
+        return jsonResponse({ error: 'Korisnik sa ovom email adresom već postoji', code: 'email_taken' }, 200);
       }
       if ((createErr as any).code === '23505' || createErr.message.includes('23505')) {
-        return jsonResponse({ error: 'ID zaposlenog ili email su već dodeljeni', code: 'duplicate' }, 409);
+        return jsonResponse({ error: 'ID zaposlenog ili email su već dodeljeni drugom korisniku', code: 'duplicate' }, 200);
       }
       return jsonResponse({ error: createErr.message }, 400);
     }
