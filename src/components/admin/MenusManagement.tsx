@@ -320,6 +320,17 @@ export function MenusManagement() {
 
   const hasMoreHistory = allGroupedMenus.length > visibleGroupedMenus.length;
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeOrgTab, historyWeeksBack, groupedMenus.length]);
+
+  const totalPages = Math.max(1, Math.ceil(groupedMenus.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedMenus = groupedMenus.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   const currentWeekRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
