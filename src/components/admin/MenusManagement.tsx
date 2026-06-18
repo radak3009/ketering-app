@@ -630,6 +630,15 @@ export function MenusManagement() {
                       </div>
                     </Collapsible>
                   ))}
+                  <div className="pt-2 border-t">
+                    <TablePagination
+                      currentPage={safePage}
+                      pageSize={pageSize}
+                      totalItems={groupedMenus.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                    />
+                  </div>
                 </div>
               )}
             </TabsContent>
