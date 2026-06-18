@@ -20,6 +20,7 @@ import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, is
 import { WEEK_DAYS } from "@/constants";
 import { MenuTemplatesTab } from "./MenuTemplatesTab";
 import { AssignMenuDialog } from "./AssignMenuDialog";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 interface MenuFormState {
   description: string;
@@ -296,7 +297,7 @@ export function MenusManagement() {
     });
     
     return Array.from(grouped.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]));
+      .sort((a, b) => b[0].localeCompare(a[0]));
   };
 
   const allGroupedMenus = groupMenusByWeek(filteredMenus);
@@ -318,6 +319,17 @@ export function MenusManagement() {
   const groupedMenus = visibleGroupedMenus;
 
   const hasMoreHistory = allGroupedMenus.length > visibleGroupedMenus.length;
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeOrgTab, historyWeeksBack, groupedMenus.length]);
+
+  const totalPages = Math.max(1, Math.ceil(groupedMenus.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedMenus = groupedMenus.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const currentWeekRef = useRef<HTMLDivElement>(null);
 
@@ -536,7 +548,7 @@ export function MenusManagement() {
               {groupedMenus.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
               ) : (
-                <div className="max-h-[600px] overflow-y-auto p-1 space-y-2">
+                <div className="p-1 space-y-2">
                   {hasMoreHistory && (
                     <div className="flex justify-center pb-2">
                       <Button
@@ -548,7 +560,7 @@ export function MenusManagement() {
                       </Button>
                     </div>
                   )}
-                  {groupedMenus.map(([key, weekData]) => (
+                  {paginatedMenus.map(([key, weekData]) => (
                     <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
                       <div ref={weekData.isCurrentWeek ? currentWeekRef : undefined}>
                       <div className="flex items-center gap-2">
@@ -618,6 +630,16 @@ export function MenusManagement() {
                       </div>
                     </Collapsible>
                   ))}
+                  <div className="pt-2 border-t">
+                    <TablePagination
+                      currentPage={safePage}
+                      pageSize={pageSize}
+                      totalItems={groupedMenus.length}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                      pageSizeOptions={[5, 10, 20]}
+                    />
+                  </div>
                 </div>
               )}
             </TabsContent>
