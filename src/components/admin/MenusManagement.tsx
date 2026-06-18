@@ -297,7 +297,7 @@ export function MenusManagement() {
     });
     
     return Array.from(grouped.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]));
+      .sort((a, b) => b[0].localeCompare(a[0]));
   };
 
   const allGroupedMenus = groupMenusByWeek(filteredMenus);
