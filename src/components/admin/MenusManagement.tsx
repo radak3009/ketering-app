@@ -548,7 +548,7 @@ export function MenusManagement() {
               {groupedMenus.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4 text-sm">Nema definisanih jelovnika</p>
               ) : (
-                <div className="max-h-[600px] overflow-y-auto p-1 space-y-2">
+                <div className="p-1 space-y-2">
                   {hasMoreHistory && (
                     <div className="flex justify-center pb-2">
                       <Button
@@ -560,7 +560,7 @@ export function MenusManagement() {
                       </Button>
                     </div>
                   )}
-                  {groupedMenus.map(([key, weekData]) => (
+                  {paginatedMenus.map(([key, weekData]) => (
                     <Collapsible key={key} defaultOpen={weekData.isCurrentWeek || weekData.isNextWeek}>
                       <div ref={weekData.isCurrentWeek ? currentWeekRef : undefined}>
                       <div className="flex items-center gap-2">
