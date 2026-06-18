@@ -637,6 +637,7 @@ export function MenusManagement() {
                       totalItems={groupedMenus.length}
                       onPageChange={setCurrentPage}
                       onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
+                      pageSizeOptions={[5, 10, 20]}
                     />
                   </div>
                 </div>
