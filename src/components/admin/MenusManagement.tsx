@@ -20,6 +20,7 @@ import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear, addDays, is
 import { WEEK_DAYS } from "@/constants";
 import { MenuTemplatesTab } from "./MenuTemplatesTab";
 import { AssignMenuDialog } from "./AssignMenuDialog";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 interface MenuFormState {
   description: string;
