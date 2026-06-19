@@ -991,7 +991,9 @@ export function MealsManagement() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredMeals.map(meal => (
+                    filteredMeals
+                      .slice((mealsPage - 1) * mealsPageSize, mealsPage * mealsPageSize)
+                      .map(meal => (
                       <TableRow 
                         key={meal.id}
                         className={`cursor-pointer hover:bg-muted/50 ${selectedMealIds.has(meal.id) ? 'bg-primary/5' : ''}`}
@@ -1072,6 +1074,13 @@ export function MealsManagement() {
                   )}
                 </TableBody>
               </Table>
+              <TablePagination
+                currentPage={mealsPage}
+                totalItems={filteredMeals.length}
+                pageSize={mealsPageSize}
+                onPageChange={setMealsPage}
+                onPageSizeChange={setMealsPageSize}
+              />
             </div>
           )}
         </CardContent>
