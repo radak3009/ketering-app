@@ -1,42 +1,11 @@
-import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, X } from "lucide-react";
 import { useUpdate } from "@/contexts/UpdateContext";
-import { toast } from "sonner";
-
-const TOAST_ID = "pwa-update-available";
 
 export const UpdatePrompt = () => {
   const { t } = useTranslation();
   const { needRefresh, updateServiceWorker, dismissUpdate } = useUpdate();
-  const shownRef = useRef(false);
-
-  useEffect(() => {
-    if (needRefresh && !shownRef.current) {
-      shownRef.current = true;
-      toast(t("pwa.updateAvailable"), {
-        id: TOAST_ID,
-        description: t("pwa.updateBody"),
-        duration: Infinity,
-        closeButton: true,
-        onDismiss: () => {
-          shownRef.current = false;
-          dismissUpdate();
-        },
-        action: {
-          label: t("pwa.reloadNow"),
-          onClick: () => {
-            console.log("[PWA] User triggered update from toast");
-            updateServiceWorker(true);
-          },
-        },
-      });
-    } else if (!needRefresh && shownRef.current) {
-      shownRef.current = false;
-      toast.dismiss(TOAST_ID);
-    }
-  }, [needRefresh, t, updateServiceWorker, dismissUpdate]);
 
   if (!needRefresh) return null;
 
@@ -67,7 +36,6 @@ export const UpdatePrompt = () => {
             onClick={() => {
               console.log("[PWA] User dismissed update banner");
               dismissUpdate();
-              toast.dismiss(TOAST_ID);
             }}
             className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10"
           >
