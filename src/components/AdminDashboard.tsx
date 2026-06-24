@@ -1,9 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useRef } from "react";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings, ArrowUp } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings, ArrowUp, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
@@ -44,15 +47,56 @@ export function AdminDashboard() {
   
   
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [broadcastSubject, setBroadcastSubject] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
-  
+  const [broadcastTags, setBroadcastTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
   // Date range state for filtering - defaults to current week
   const [orderDateRange, setOrderDateRange] = useState({
     startDate: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
     endDate: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   });
-  
-  const { stats, loading: statsLoading } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
+
+  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const wasLoadingRef = useRef(false);
+
+  // Track when stats finish loading to update timestamp
+  useEffect(() => {
+    if (wasLoadingRef.current && !statsLoading) {
+      setLastRefreshed(new Date());
+    }
+    wasLoadingRef.current = statsLoading;
+  }, [statsLoading]);
+
+  // Auto-refresh KPI every 3 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchStats();
+    }, 3 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [refetchStats]);
+
+  // Fetch available tags for broadcast filtering
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tag')
+        .eq('role', 'employee')
+        .not('tag', 'is', null);
+      if (data) {
+        const uniq = [...new Set(data.map((p: any) => p.tag).filter(Boolean))] as string[];
+        setAvailableTags(uniq.sort());
+      }
+    })();
+  }, []);
+
+  const handleManualRefresh = async () => {
+    await refetchStats();
+    setLastRefreshed(new Date());
+  };
 
   // Notification functions
   const sendMenuAlert = async () => {
