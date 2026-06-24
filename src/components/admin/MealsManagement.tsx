@@ -390,7 +390,7 @@ export function MealsManagement() {
         meal_group: normalizedGroup || null
       });
 
-      await Promise.all([refetch(), fetchMealGroups()]);
+      await Promise.all([refetch(), fetchMealGroups(), fetchAllergens()]);
       setSelectedMeal({ ...selectedMeal, image_url: imageUrl, meal_group: normalizedGroup });
       setImageFile(null);
     } catch (error) {
