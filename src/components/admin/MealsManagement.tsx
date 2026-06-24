@@ -1286,10 +1286,12 @@ export function MealsManagement() {
 
               <div>
                 <Label>Alergeni</Label>
-                <TagInput
+                <AllergensCombobox
                   value={selectedMeal.allergens || []}
                   onChange={(allergens) => setSelectedMeal({ ...selectedMeal, allergens })}
-                  placeholder="Dodajte alergene..."
+                  options={availableAllergens}
+                  onCreate={persistAllergen}
+                  placeholder="Izaberite ili dodajte alergene..."
                 />
               </div>
               
