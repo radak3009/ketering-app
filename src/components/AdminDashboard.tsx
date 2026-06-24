@@ -494,27 +494,74 @@ export function AdminDashboard() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Custom obaveštenje</CardTitle>
+                      <CardTitle className="text-base">Custom obaveštenje (email)</CardTitle>
                       <CardDescription className="text-xs">
-                        Pošaljite poruku svim zaposlenima u realnom vremenu
+                        Pošaljite email zaposlenima — opciono filtrirano po organizacionoj jedinici (tagu)
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <textarea
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="Unesite poruku..."
-                        value={broadcastMessage}
-                        onChange={(e) => setBroadcastMessage(e.target.value)}
-                        maxLength={500}
-                      />
-                      <Button 
-                        onClick={sendBroadcast} 
-                        disabled={notificationsLoading || !broadcastMessage.trim()}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Naslov</Label>
+                        <Input
+                          placeholder="Naslov emaila..."
+                          value={broadcastSubject}
+                          onChange={(e) => setBroadcastSubject(e.target.value)}
+                          maxLength={150}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Poruka</Label>
+                        <textarea
+                          className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          placeholder="Unesite poruku..."
+                          value={broadcastMessage}
+                          onChange={(e) => setBroadcastMessage(e.target.value)}
+                          maxLength={2000}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Primaoci {broadcastTags.length === 0 ? '(svi zaposleni)' : `(${broadcastTags.length} tagova izabrano)`}
+                        </Label>
+                        {availableTags.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nema dostupnih tagova — email će biti poslat svim zaposlenima.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-3 p-2 border rounded-md max-h-32 overflow-y-auto">
+                            {availableTags.map((tag) => {
+                              const checked = broadcastTags.includes(tag);
+                              return (
+                                <label key={tag} className="flex items-center gap-2 text-sm cursor-pointer">
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(v) => {
+                                      if (v) setBroadcastTags(prev => [...prev, tag]);
+                                      else setBroadcastTags(prev => prev.filter(t => t !== tag));
+                                    }}
+                                  />
+                                  <span>{tag}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {broadcastTags.length > 0 && (
+                          <button
+                            type="button"
+                            className="text-xs text-muted-foreground hover:text-foreground underline"
+                            onClick={() => setBroadcastTags([])}
+                          >
+                            Pošalji svim zaposlenima
+                          </button>
+                        )}
+                      </div>
+                      <Button
+                        onClick={sendBroadcast}
+                        disabled={notificationsLoading || !broadcastSubject.trim() || !broadcastMessage.trim()}
                         variant="outline"
                         className="w-full"
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
-                        {notificationsLoading ? 'Slanje...' : 'Pošalji obaveštenje'}
+                        {notificationsLoading ? 'Slanje...' : 'Pošalji email'}
                       </Button>
                     </CardContent>
                   </Card>
