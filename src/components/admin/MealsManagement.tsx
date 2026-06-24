@@ -260,10 +260,16 @@ export function MealsManagement() {
       } catch (error) {
         console.error('Error fetching meal groups:', error);
       }
+
+      try {
+        await fetchAllergens();
+      } catch (error) {
+        console.error('Error fetching allergens:', error);
+      }
     };
 
     fetchTagsAndGroups();
-  }, [fetchMealGroups]);
+  }, [fetchMealGroups, fetchAllergens]);
 
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
