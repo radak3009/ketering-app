@@ -19,6 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
+import { AllergensCombobox } from "@/components/admin/AllergensCombobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { uploadImage } from "@/services/storageService";
 import { validateMealCode } from "@/services/validationService";
@@ -107,6 +108,7 @@ export function MealsManagement() {
   const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
   const [persistedGroups, setPersistedGroups] = useState<string[]>([]);
   const [customGroups, setCustomGroups] = useState<string[]>([]);
+  const [persistedAllergens, setPersistedAllergens] = useState<string[]>([]);
 
   const normalizeGroupName = (value: string | null | undefined) => value?.trim() || '';
 
