@@ -1,9 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useRef } from "react";
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings, ArrowUp } from "lucide-react";
+import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Settings, ArrowUp, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
@@ -44,15 +47,56 @@ export function AdminDashboard() {
   
   
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [broadcastSubject, setBroadcastSubject] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
-  
+  const [broadcastTags, setBroadcastTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+
   // Date range state for filtering - defaults to current week
   const [orderDateRange, setOrderDateRange] = useState({
     startDate: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
     endDate: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   });
-  
-  const { stats, loading: statsLoading } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
+
+  const { stats, loading: statsLoading, refetch: refetchStats } = useAdminStats(orderDateRange.startDate, orderDateRange.endDate);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const wasLoadingRef = useRef(false);
+
+  // Track when stats finish loading to update timestamp
+  useEffect(() => {
+    if (wasLoadingRef.current && !statsLoading) {
+      setLastRefreshed(new Date());
+    }
+    wasLoadingRef.current = statsLoading;
+  }, [statsLoading]);
+
+  // Auto-refresh KPI every 3 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchStats();
+    }, 3 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [refetchStats]);
+
+  // Fetch available tags for broadcast filtering
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('tag')
+        .eq('role', 'employee')
+        .not('tag', 'is', null);
+      if (data) {
+        const uniq = [...new Set(data.map((p: any) => p.tag).filter(Boolean))] as string[];
+        setAvailableTags(uniq.sort());
+      }
+    })();
+  }, []);
+
+  const handleManualRefresh = async () => {
+    await refetchStats();
+    setLastRefreshed(new Date());
+  };
 
   // Notification functions
   const sendMenuAlert = async () => {
@@ -89,18 +133,38 @@ export function AdminDashboard() {
   };
 
   const sendBroadcast = async () => {
+    const subject = broadcastSubject.trim();
     const msg = broadcastMessage.trim();
-    if (!msg) return;
-    if (!confirm('Da li ste sigurni da želite poslati ovo obaveštenje svim zaposlenima?')) return;
+    if (!subject || !msg) {
+      toast({ title: 'Greška', description: 'Unesite naslov i poruku', variant: 'destructive' });
+      return;
+    }
+    const targetDesc = broadcastTags.length === 0
+      ? 'svim zaposlenima'
+      : `zaposlenima sa tagom: ${broadcastTags.join(', ')}`;
+    if (!confirm(`Da li ste sigurni da želite poslati ovaj email ${targetDesc}?`)) return;
     try {
       setNotificationsLoading(true);
-      const { error } = await supabase.from('admin_broadcasts' as any).insert({ message: msg, sent_by: (await supabase.auth.getUser()).data.user?.id });
+      const { data, error } = await supabase.functions.invoke('send-custom-broadcast', {
+        body: { subject, message: msg, tags: broadcastTags },
+      });
       if (error) throw error;
+      const sent = data?.sent ?? 0;
+      const total = data?.total ?? 0;
+      const failed = data?.failed ?? 0;
+      setBroadcastSubject('');
       setBroadcastMessage('');
-      toast({ title: 'Uspešno', description: 'Obaveštenje je poslato svim zaposlenima' });
-    } catch (error) {
-      console.error('Error sending broadcast:', error);
-      toast({ title: 'Greška', description: 'Došlo je do greške pri slanju', variant: 'destructive' });
+      toast({
+        title: 'Email poslat',
+        description: `Poslato ${sent}/${total}${failed > 0 ? ` (neuspešno: ${failed})` : ''}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending broadcast email:', error);
+      toast({
+        title: 'Greška',
+        description: error?.message || 'Došlo je do greške pri slanju emaila',
+        variant: 'destructive',
+      });
     } finally {
       setNotificationsLoading(false);
     }
@@ -134,6 +198,23 @@ export function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-8">
         {/* Stats Overview */}
+        <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
+          <span className="text-xs md:text-sm text-muted-foreground">
+            {lastRefreshed
+              ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
+              : 'Učitavanje...'}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualRefresh}
+            disabled={statsLoading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Osveži</span>
+          </Button>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
           {/* Card 1: Top 3 obroka */}
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
@@ -413,27 +494,74 @@ export function AdminDashboard() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Custom obaveštenje</CardTitle>
+                      <CardTitle className="text-base">Custom obaveštenje (email)</CardTitle>
                       <CardDescription className="text-xs">
-                        Pošaljite poruku svim zaposlenima u realnom vremenu
+                        Pošaljite email zaposlenima — opciono filtrirano po organizacionoj jedinici (tagu)
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <textarea
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="Unesite poruku..."
-                        value={broadcastMessage}
-                        onChange={(e) => setBroadcastMessage(e.target.value)}
-                        maxLength={500}
-                      />
-                      <Button 
-                        onClick={sendBroadcast} 
-                        disabled={notificationsLoading || !broadcastMessage.trim()}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Naslov</Label>
+                        <Input
+                          placeholder="Naslov emaila..."
+                          value={broadcastSubject}
+                          onChange={(e) => setBroadcastSubject(e.target.value)}
+                          maxLength={150}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Poruka</Label>
+                        <textarea
+                          className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          placeholder="Unesite poruku..."
+                          value={broadcastMessage}
+                          onChange={(e) => setBroadcastMessage(e.target.value)}
+                          maxLength={2000}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          Primaoci {broadcastTags.length === 0 ? '(svi zaposleni)' : `(${broadcastTags.length} tagova izabrano)`}
+                        </Label>
+                        {availableTags.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nema dostupnih tagova — email će biti poslat svim zaposlenima.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-3 p-2 border rounded-md max-h-32 overflow-y-auto">
+                            {availableTags.map((tag) => {
+                              const checked = broadcastTags.includes(tag);
+                              return (
+                                <label key={tag} className="flex items-center gap-2 text-sm cursor-pointer">
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(v) => {
+                                      if (v) setBroadcastTags(prev => [...prev, tag]);
+                                      else setBroadcastTags(prev => prev.filter(t => t !== tag));
+                                    }}
+                                  />
+                                  <span>{tag}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {broadcastTags.length > 0 && (
+                          <button
+                            type="button"
+                            className="text-xs text-muted-foreground hover:text-foreground underline"
+                            onClick={() => setBroadcastTags([])}
+                          >
+                            Pošalji svim zaposlenima
+                          </button>
+                        )}
+                      </div>
+                      <Button
+                        onClick={sendBroadcast}
+                        disabled={notificationsLoading || !broadcastSubject.trim() || !broadcastMessage.trim()}
                         variant="outline"
                         className="w-full"
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
-                        {notificationsLoading ? 'Slanje...' : 'Pošalji obaveštenje'}
+                        {notificationsLoading ? 'Slanje...' : 'Pošalji email'}
                       </Button>
                     </CardContent>
                   </Card>

@@ -78,3 +78,6 @@ verify_jwt = false
 
 [functions.confirm-email]
 verify_jwt = false
+
+[functions.send-custom-broadcast]
+verify_jwt = true

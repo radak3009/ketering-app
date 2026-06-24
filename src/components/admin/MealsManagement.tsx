@@ -19,6 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
+import { AllergensCombobox } from "@/components/admin/AllergensCombobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { uploadImage } from "@/services/storageService";
 import { validateMealCode } from "@/services/validationService";
@@ -107,6 +108,7 @@ export function MealsManagement() {
   const [editShowNewGroupInput, setEditShowNewGroupInput] = useState(false);
   const [persistedGroups, setPersistedGroups] = useState<string[]>([]);
   const [customGroups, setCustomGroups] = useState<string[]>([]);
+  const [persistedAllergens, setPersistedAllergens] = useState<string[]>([]);
 
   const normalizeGroupName = (value: string | null | undefined) => value?.trim() || '';
 
@@ -117,6 +119,14 @@ export function MealsManagement() {
       ...customGroups
     ])].sort((a, b) => a.localeCompare(b, 'sr', { sensitivity: 'base' })),
     [persistedGroups, meals, customGroups]
+  );
+
+  const availableAllergens = useMemo(
+    () => [...new Set([
+      ...persistedAllergens,
+      ...meals.flatMap(m => (m.allergens || []).map((a: string) => a?.trim()).filter(Boolean) as string[]),
+    ])].sort((a, b) => a.localeCompare(b, 'sr', { sensitivity: 'base' })),
+    [persistedAllergens, meals]
   );
 
   const resetMealForm = () => {
@@ -151,6 +161,47 @@ export function MealsManagement() {
 
     setCustomGroups(prev => (prev.includes(groupName) ? prev : [...prev, groupName]));
     return groupName;
+  }, []);
+
+  const fetchAllergens = useCallback(async () => {
+    const { data, error } = await (supabase as any)
+      .from('allergens')
+      .select('name')
+      .order('name', { ascending: true });
+    if (error) {
+      console.error('Error fetching allergens:', error);
+      return;
+    }
+    setPersistedAllergens((data || [])
+      .map((r: { name: string }) => r.name?.trim())
+      .filter(Boolean));
+  }, []);
+
+  const persistAllergen = useCallback(async (rawName: string): Promise<string | null> => {
+    const name = rawName?.trim();
+    if (!name) return null;
+    const { error } = await (supabase as any)
+      .from('allergens')
+      .upsert({ name }, { onConflict: 'name' });
+    if (error) {
+      console.error('Error persisting allergen:', error);
+      toast({ title: "Greška", description: "Alergen nije sačuvan", variant: "destructive" });
+      return null;
+    }
+    setPersistedAllergens(prev => (prev.includes(name) ? prev : [...prev, name]));
+    return name;
+  }, [toast]);
+
+  const persistAllergensList = useCallback(async (list: string[]) => {
+    const unique = [...new Set(list.map(a => a?.trim()).filter(Boolean))];
+    if (unique.length === 0) return;
+    const rows = unique.map(name => ({ name }));
+    const { error } = await (supabase as any)
+      .from('allergens')
+      .upsert(rows, { onConflict: 'name' });
+    if (error) {
+      console.error('Error syncing allergens:', error);
+    }
   }, []);
 
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
@@ -209,10 +260,16 @@ export function MealsManagement() {
       } catch (error) {
         console.error('Error fetching meal groups:', error);
       }
+
+      try {
+        await fetchAllergens();
+      } catch (error) {
+        console.error('Error fetching allergens:', error);
+      }
     };
 
     fetchTagsAndGroups();
-  }, [fetchMealGroups]);
+  }, [fetchMealGroups, fetchAllergens]);
 
   const handleCreateMeal = async () => {
     if (!mealForm.name || !mealForm.price) {
@@ -248,6 +305,10 @@ export function MealsManagement() {
         await persistMealGroup(normalizedGroup);
       }
 
+      if (mealForm.allergens.length > 0) {
+        await persistAllergensList(mealForm.allergens);
+      }
+
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
@@ -265,7 +326,7 @@ export function MealsManagement() {
         meal_group: normalizedGroup || null
       });
 
-      await Promise.all([refetch(), fetchMealGroups()]);
+      await Promise.all([refetch(), fetchMealGroups(), fetchAllergens()]);
       
       resetMealForm();
       setIsAddMealOpen(false);
@@ -311,6 +372,10 @@ export function MealsManagement() {
         await persistMealGroup(normalizedGroup);
       }
 
+      if (selectedMeal.allergens?.length > 0) {
+        await persistAllergensList(selectedMeal.allergens);
+      }
+
       await updateMeal(selectedMeal.id, {
         name: selectedMeal.name,
         description: selectedMeal.description || null,
@@ -325,7 +390,7 @@ export function MealsManagement() {
         meal_group: normalizedGroup || null
       });
 
-      await Promise.all([refetch(), fetchMealGroups()]);
+      await Promise.all([refetch(), fetchMealGroups(), fetchAllergens()]);
       setSelectedMeal({ ...selectedMeal, image_url: imageUrl, meal_group: normalizedGroup });
       setImageFile(null);
     } catch (error) {
@@ -564,10 +629,12 @@ export function MealsManagement() {
                   
                   <div>
                     <Label htmlFor="meal-allergens">Alergeni</Label>
-                    <TagInput
+                    <AllergensCombobox
                       value={mealForm.allergens}
                       onChange={(allergens) => setMealForm({ ...mealForm, allergens })}
-                      placeholder="Dodajte alergene (gluten, laktoza, jaja...)"
+                      options={availableAllergens}
+                      onCreate={persistAllergen}
+                      placeholder="Izaberite ili dodajte alergene..."
                     />
                   </div>
                   
@@ -1219,10 +1286,12 @@ export function MealsManagement() {
 
               <div>
                 <Label>Alergeni</Label>
-                <TagInput
+                <AllergensCombobox
                   value={selectedMeal.allergens || []}
                   onChange={(allergens) => setSelectedMeal({ ...selectedMeal, allergens })}
-                  placeholder="Dodajte alergene..."
+                  options={availableAllergens}
+                  onCreate={persistAllergen}
+                  placeholder="Izaberite ili dodajte alergene..."
                 />
               </div>
               
