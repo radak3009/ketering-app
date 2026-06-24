@@ -133,18 +133,38 @@ export function AdminDashboard() {
   };
 
   const sendBroadcast = async () => {
+    const subject = broadcastSubject.trim();
     const msg = broadcastMessage.trim();
-    if (!msg) return;
-    if (!confirm('Da li ste sigurni da želite poslati ovo obaveštenje svim zaposlenima?')) return;
+    if (!subject || !msg) {
+      toast({ title: 'Greška', description: 'Unesite naslov i poruku', variant: 'destructive' });
+      return;
+    }
+    const targetDesc = broadcastTags.length === 0
+      ? 'svim zaposlenima'
+      : `zaposlenima sa tagom: ${broadcastTags.join(', ')}`;
+    if (!confirm(`Da li ste sigurni da želite poslati ovaj email ${targetDesc}?`)) return;
     try {
       setNotificationsLoading(true);
-      const { error } = await supabase.from('admin_broadcasts' as any).insert({ message: msg, sent_by: (await supabase.auth.getUser()).data.user?.id });
+      const { data, error } = await supabase.functions.invoke('send-custom-broadcast', {
+        body: { subject, message: msg, tags: broadcastTags },
+      });
       if (error) throw error;
+      const sent = data?.sent ?? 0;
+      const total = data?.total ?? 0;
+      const failed = data?.failed ?? 0;
+      setBroadcastSubject('');
       setBroadcastMessage('');
-      toast({ title: 'Uspešno', description: 'Obaveštenje je poslato svim zaposlenima' });
-    } catch (error) {
-      console.error('Error sending broadcast:', error);
-      toast({ title: 'Greška', description: 'Došlo je do greške pri slanju', variant: 'destructive' });
+      toast({
+        title: 'Email poslat',
+        description: `Poslato ${sent}/${total}${failed > 0 ? ` (neuspešno: ${failed})` : ''}`,
+      });
+    } catch (error: any) {
+      console.error('Error sending broadcast email:', error);
+      toast({
+        title: 'Greška',
+        description: error?.message || 'Došlo je do greške pri slanju emaila',
+        variant: 'destructive',
+      });
     } finally {
       setNotificationsLoading(false);
     }
