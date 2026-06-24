@@ -121,6 +121,14 @@ export function MealsManagement() {
     [persistedGroups, meals, customGroups]
   );
 
+  const availableAllergens = useMemo(
+    () => [...new Set([
+      ...persistedAllergens,
+      ...meals.flatMap(m => (m.allergens || []).map((a: string) => a?.trim()).filter(Boolean) as string[]),
+    ])].sort((a, b) => a.localeCompare(b, 'sr', { sensitivity: 'base' })),
+    [persistedAllergens, meals]
+  );
+
   const resetMealForm = () => {
     setMealForm(initialMealForm);
     setImageFile(null);
@@ -153,6 +161,47 @@ export function MealsManagement() {
 
     setCustomGroups(prev => (prev.includes(groupName) ? prev : [...prev, groupName]));
     return groupName;
+  }, []);
+
+  const fetchAllergens = useCallback(async () => {
+    const { data, error } = await (supabase as any)
+      .from('allergens')
+      .select('name')
+      .order('name', { ascending: true });
+    if (error) {
+      console.error('Error fetching allergens:', error);
+      return;
+    }
+    setPersistedAllergens((data || [])
+      .map((r: { name: string }) => r.name?.trim())
+      .filter(Boolean));
+  }, []);
+
+  const persistAllergen = useCallback(async (rawName: string): Promise<string | null> => {
+    const name = rawName?.trim();
+    if (!name) return null;
+    const { error } = await (supabase as any)
+      .from('allergens')
+      .upsert({ name }, { onConflict: 'name' });
+    if (error) {
+      console.error('Error persisting allergen:', error);
+      toast({ title: "Greška", description: "Alergen nije sačuvan", variant: "destructive" });
+      return null;
+    }
+    setPersistedAllergens(prev => (prev.includes(name) ? prev : [...prev, name]));
+    return name;
+  }, [toast]);
+
+  const persistAllergensList = useCallback(async (list: string[]) => {
+    const unique = [...new Set(list.map(a => a?.trim()).filter(Boolean))];
+    if (unique.length === 0) return;
+    const rows = unique.map(name => ({ name }));
+    const { error } = await (supabase as any)
+      .from('allergens')
+      .upsert(rows, { onConflict: 'name' });
+    if (error) {
+      console.error('Error syncing allergens:', error);
+    }
   }, []);
 
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
