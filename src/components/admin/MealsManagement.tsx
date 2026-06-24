@@ -305,6 +305,10 @@ export function MealsManagement() {
         await persistMealGroup(normalizedGroup);
       }
 
+      if (mealForm.allergens.length > 0) {
+        await persistAllergensList(mealForm.allergens);
+      }
+
       await createMeal({
         name: mealForm.name,
         description: mealForm.description || null,
@@ -322,7 +326,7 @@ export function MealsManagement() {
         meal_group: normalizedGroup || null
       });
 
-      await Promise.all([refetch(), fetchMealGroups()]);
+      await Promise.all([refetch(), fetchMealGroups(), fetchAllergens()]);
       
       resetMealForm();
       setIsAddMealOpen(false);
@@ -366,6 +370,10 @@ export function MealsManagement() {
       const normalizedGroup = normalizeGroupName(selectedMeal.meal_group);
       if (normalizedGroup) {
         await persistMealGroup(normalizedGroup);
+      }
+
+      if (selectedMeal.allergens?.length > 0) {
+        await persistAllergensList(selectedMeal.allergens);
       }
 
       await updateMeal(selectedMeal.id, {
