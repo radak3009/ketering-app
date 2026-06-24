@@ -629,10 +629,12 @@ export function MealsManagement() {
                   
                   <div>
                     <Label htmlFor="meal-allergens">Alergeni</Label>
-                    <TagInput
+                    <AllergensCombobox
                       value={mealForm.allergens}
                       onChange={(allergens) => setMealForm({ ...mealForm, allergens })}
-                      placeholder="Dodajte alergene (gluten, laktoza, jaja...)"
+                      options={availableAllergens}
+                      onCreate={persistAllergen}
+                      placeholder="Izaberite ili dodajte alergene..."
                     />
                   </div>
                   
