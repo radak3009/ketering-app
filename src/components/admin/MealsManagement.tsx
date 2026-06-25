@@ -555,78 +555,27 @@ export function MealsManagement() {
                   
                   <div>
                     <Label>Grupa</Label>
-                    {showNewGroupInput ? (
-                      <div className="flex gap-2">
-                        <Input 
-                          value={newGroupInput}
-                          onChange={e => setNewGroupInput(e.target.value)}
-                          placeholder="Unesite naziv nove grupe..."
-                          className="flex-1"
-                        />
-                        <Button type="button" size="sm" onClick={async () => {
-                          const g = normalizeGroupName(newGroupInput);
-                          if (!g) return;
-
-                          try {
-                            const savedGroup = await persistMealGroup(g);
-                            await fetchMealGroups();
-                            setMealForm({ ...mealForm, meal_group: savedGroup });
-                            setShowNewGroupInput(false);
-                            setNewGroupInput('');
-                          } catch (error) {
-                            toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
-                          }
-                        }}>OK</Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={() => {
-                          setShowNewGroupInput(false);
-                          setNewGroupInput('');
-                        }}>Otkaži</Button>
-                      </div>
-                    ) : (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between font-normal">
-                            {mealForm.meal_group || "Bez grupe"}
-                            <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
-                          <div
-                            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent"
-                            onClick={() => setMealForm({ ...mealForm, meal_group: '' })}
-                          >
-                            {!mealForm.meal_group && <Check className="h-4 w-4" />}
-                            <span className={!mealForm.meal_group ? '' : 'ml-6'}>Bez grupe</span>
-                          </div>
-                          {availableGroups.map(g => (
-                            <div key={g} className="flex items-center gap-1 px-2 py-1.5 text-sm rounded-sm hover:bg-accent group">
-                              <div
-                                className="flex-1 flex items-center gap-2 cursor-pointer"
-                                onClick={() => setMealForm({ ...mealForm, meal_group: g })}
-                              >
-                                {mealForm.meal_group === g && <Check className="h-4 w-4" />}
-                                <span className={mealForm.meal_group === g ? '' : 'ml-6'}>{g}</span>
-                              </div>
-                              <button
-                                type="button"
-                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/20 text-destructive transition-opacity"
-                                onClick={(e) => { e.stopPropagation(); setGroupToDelete(g); }}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                          <div
-                            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent text-primary border-t mt-1 pt-1.5"
-                            onClick={() => setShowNewGroupInput(true)}
-                          >
-                            <Plus className="h-4 w-4 ml-6" />
-                            <span>Nova grupa...</span>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    )}
+                    <GroupCombobox
+                      value={mealForm.meal_group}
+                      onChange={(g) => setMealForm({ ...mealForm, meal_group: g })}
+                      options={availableGroups}
+                      onCreate={async (name) => {
+                        const g = normalizeGroupName(name);
+                        if (!g) return null;
+                        try {
+                          const saved = await persistMealGroup(g);
+                          await fetchMealGroups();
+                          return saved;
+                        } catch {
+                          toast({ title: "Greška", description: "Grupa nije sačuvana", variant: "destructive" });
+                          return null;
+                        }
+                      }}
+                      onDeleteOption={(g) => setGroupToDelete(g)}
+                      placeholder="Izaberite ili dodajte grupu..."
+                    />
                   </div>
+
                   
                   <div>
                     <Label htmlFor="meal-allergens">Alergeni</Label>
