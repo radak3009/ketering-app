@@ -291,7 +291,12 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   Lista
                 </Button>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-xs text-muted-foreground sm:mr-1 self-start sm:self-auto">
+                  {lastRefreshed
+                    ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
+                    : 'Učitavanje...'}
+                </span>
                 <Button 
                   size="sm" 
                   variant="outline"
