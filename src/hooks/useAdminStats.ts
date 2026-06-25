@@ -203,39 +203,10 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     }
   }, [startDate, endDate]);
 
-  const debouncedFetchStats = useCallback(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      fetchStats();
-    }, 500);
-  }, [fetchStats]);
-
   useEffect(() => {
     fetchStats();
+  }, [fetchStats]);
 
-    const channel = supabase
-      .channel('admin-stats-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => debouncedFetchStats()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        () => debouncedFetchStats()
-      )
-      .subscribe();
-
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      supabase.removeChannel(channel);
-    };
-  }, [fetchStats, debouncedFetchStats]);
 
   return {
     stats,
