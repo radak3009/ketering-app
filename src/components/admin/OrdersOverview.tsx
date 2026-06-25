@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,16 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   // Pagination state for list view
   const [listPage, setListPage] = useState(1);
   const [listPageSize, setListPageSize] = useState(20);
+
+  // Last refreshed timestamp — updates after each fetch completes
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    if (wasLoadingRef.current && !loading) {
+      setLastRefreshed(new Date());
+    }
+    wasLoadingRef.current = loading;
+  }, [loading]);
 
   // Get unique tags from users
   const availableTags = useMemo(() => {
@@ -281,7 +291,12 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   Lista
                 </Button>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-xs text-muted-foreground sm:mr-1 self-start sm:self-auto">
+                  {lastRefreshed
+                    ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
+                    : 'Učitavanje...'}
+                </span>
                 <Button 
                   size="sm" 
                   variant="outline"
