@@ -87,6 +87,16 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const [listPage, setListPage] = useState(1);
   const [listPageSize, setListPageSize] = useState(20);
 
+  // Last refreshed timestamp — updates after each fetch completes
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    if (wasLoadingRef.current && !loading) {
+      setLastRefreshed(new Date());
+    }
+    wasLoadingRef.current = loading;
+  }, [loading]);
+
   // Get unique tags from users
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
