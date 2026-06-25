@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { handleError } from '@/services/errorService';
 
@@ -25,7 +25,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     topMeals: [],
   });
   const [loading, setLoading] = useState(true);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
 
   // Helper to fetch all rows bypassing the 1000-row default limit
   const fetchAllFromTable = async (
@@ -203,39 +203,10 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     }
   }, [startDate, endDate]);
 
-  const debouncedFetchStats = useCallback(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      fetchStats();
-    }, 500);
-  }, [fetchStats]);
-
   useEffect(() => {
     fetchStats();
+  }, [fetchStats]);
 
-    const channel = supabase
-      .channel('admin-stats-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => debouncedFetchStats()
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items' },
-        () => debouncedFetchStats()
-      )
-      .subscribe();
-
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      supabase.removeChannel(channel);
-    };
-  }, [fetchStats, debouncedFetchStats]);
 
   return {
     stats,
