@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { TagInput } from "@/components/ui/tag-input";
 import { AllergensCombobox } from "@/components/admin/AllergensCombobox";
+import { GroupCombobox } from "@/components/admin/GroupCombobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { uploadImage } from "@/services/storageService";
 import { validateMealCode } from "@/services/validationService";
