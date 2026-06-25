@@ -25,7 +25,7 @@ export function useAdminStats(startDate?: string, endDate?: string) {
     topMeals: [],
   });
   const [loading, setLoading] = useState(true);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
 
   // Helper to fetch all rows bypassing the 1000-row default limit
   const fetchAllFromTable = async (
