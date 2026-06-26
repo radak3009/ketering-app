@@ -169,7 +169,7 @@ export function useUsers() {
           company_card_id: userData.company_card_id || null,
           tag: userData.tag || null,
           date_of_birth: userData.date_of_birth?.toISOString().split('T')[0] || null,
-          role: userData.role,
+          roleKey: userData.role,
           password: userData.password || null
         }
       });
@@ -262,17 +262,26 @@ export function useUsers() {
     }
   };
 
-  const changeUserRole = async (userId: string, userIdAuth: string, newRole: 'admin' | 'employee') => {
+  const changeUserRole = async (userId: string, userIdAuth: string, roleKey: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('manage-user-role', {
-        body: { userId: userIdAuth, role: newRole }
+        body: { userId: userIdAuth, roleKey }
       });
 
       if (error) throw new Error(error.message || 'Greška pri promeni uloge');
       if (data?.error) throw new Error(data.error);
 
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
+      const enumRole = (data?.data?.role as 'admin' | 'employee') || undefined;
+      setUsers(prev => prev.map(user =>
+        user.id === userId
+          ? {
+              ...user,
+              role: enumRole ?? user.role,
+              role_id: data?.data?.role_id ?? user.role_id,
+              role_key: data?.data?.role_key ?? roleKey,
+              role_name: data?.data?.role_name ?? user.role_name,
+            }
+          : user
       ));
 
       handleSuccess({ category: 'update', entity: 'korisnik' });
