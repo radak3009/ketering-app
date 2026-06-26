@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     if (demoBlock) return demoBlock;
 
     const body: CreateUserRequest = await req.json();
-    const { email, full_name, phone, company_card_id, tag, date_of_birth, role, password } = body;
+    const { email, full_name, phone, company_card_id, tag, date_of_birth, roleKey, role: legacyRole, password } = body;
 
     if (!email) {
       throw new Error('Email je obavezan');
@@ -98,7 +98,25 @@ Deno.serve(async (req) => {
       throw new Error('ID zaposlenog je obavezan');
     }
 
-    console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, role, hasPassword: !!password });
+    // Resolve role: prefer roleKey, fallback to legacy enum mapping, default to 'zaposleni'.
+    let resolvedKey = roleKey;
+    if (!resolvedKey && legacyRole) {
+      resolvedKey = legacyRole === 'admin' ? 'administrator' : 'zaposleni';
+    }
+    if (!resolvedKey) resolvedKey = 'zaposleni';
+
+    const { data: roleRow, error: roleLookupError } = await supabaseAdmin
+      .from('roles')
+      .select('id, key, name, panel')
+      .eq('key', resolvedKey)
+      .maybeSingle();
+
+    if (roleLookupError || !roleRow) {
+      throw new Error(`Uloga "${resolvedKey}" ne postoji`);
+    }
+    const enumRole: 'admin' | 'employee' = roleRow.panel === 'admin' ? 'admin' : 'employee';
+
+    console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, roleKey: roleRow.key, hasPassword: !!password });
 
     // Check if email already exists (case-insensitive via RPC)
     const normalizedEmail = email.trim().toLowerCase();
