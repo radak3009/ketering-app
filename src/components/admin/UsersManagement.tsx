@@ -16,9 +16,9 @@ import { SendInvitationDialog } from './SendInvitationDialog';
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
+import { useRoles } from "@/hooks/useRoles";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
 import { format } from "date-fns";
-import type { Role } from "@/constants";
 
 interface UserFormState {
   full_name: string;
@@ -28,7 +28,7 @@ interface UserFormState {
   company_card_serial: string;
   tag: string;
   date_of_birth: Date | undefined;
-  role: Role;
+  role: string; // role key from public.roles
   password: string;
   usePassword: boolean;
 }
@@ -61,7 +61,7 @@ const initialUserForm: UserFormState = {
   company_card_serial: "",
   tag: "",
   date_of_birth: undefined,
-  role: "employee",
+  role: "zaposleni",
   password: generateTemporaryPassword(),
   usePassword: true
 };
@@ -70,6 +70,7 @@ export function UsersManagement() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
+  const { roles } = useRoles();
   const [changingRole, setChangingRole] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
