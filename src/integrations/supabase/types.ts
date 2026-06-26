@@ -628,6 +628,33 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          created_at: string
+          description: string | null
+          group_key: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          group_key: string
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          group_key?: string
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       pickup_requests: {
         Row: {
           company_id: string | null
@@ -820,6 +847,81 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          permission_key: string
+          role_id: string
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          permission_key: string
+          role_id: string
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          permission_key?: string
+          role_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_key_fkey"
+            columns: ["permission_key"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_demo: boolean
+          is_system: boolean
+          key: string
+          name: string
+          panel: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_demo?: boolean
+          is_system?: boolean
+          key: string
+          name: string
+          panel?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_demo?: boolean
+          is_system?: boolean
+          key?: string
+          name?: string
+          panel?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suggestions: {
         Row: {
           additional_notes: string | null
@@ -855,21 +957,32 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          role_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          role_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -935,6 +1048,12 @@ export type Database = {
       can_view_company: { Args: { company_uuid: string }; Returns: boolean }
       company_card_id_exists: { Args: { check_id: string }; Returns: boolean }
       email_exists: { Args: { check_email: string }; Returns: boolean }
+      get_user_panel: { Args: { _user: string }; Returns: string }
+      get_user_permissions: { Args: { _user: string }; Returns: string[] }
+      has_permission: {
+        Args: { _perm: string; _user: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -943,6 +1062,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_user: { Args: { user_uuid: string }; Returns: boolean }
+      is_demo_user: { Args: { _user: string }; Returns: boolean }
       list_old_receipts: {
         Args: { cutoff: string; max_rows?: number }
         Returns: {

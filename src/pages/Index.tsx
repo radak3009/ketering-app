@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Lazy load heavy dashboard components
@@ -15,6 +16,7 @@ const DashboardLoader = () => (
 
 const Index = () => {
   const { user, profile, loading, isPasswordRecovery } = useAuth();
+  const { panel, loading: permsLoading } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,15 +78,24 @@ const Index = () => {
     return null;
   }
 
-  // Show appropriate dashboard based on user role
-  if (profile.role === 'employee') {
+  // Sačekaj permissions/panel da se učita pre nego što biramo dashboard
+  if (permsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
+        <LoadingSpinner size="xl" text="Učitavanje pristupa..." />
+      </div>
+    );
+  }
+
+  // Panel se određuje iz roles.panel kolone (RBAC), sa fallback-om na legacy enum.
+  if (panel === 'employee') {
     return (
       <Suspense fallback={<DashboardLoader />}>
         <EmployeeDashboard />
       </Suspense>
     );
   }
-  
+
   return (
     <Suspense fallback={<DashboardLoader />}>
       <AdminDashboard />

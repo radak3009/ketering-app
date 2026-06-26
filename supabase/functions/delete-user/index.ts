@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { jwtVerify, createRemoteJWKSet } from 'https://deno.land/x/jose@v5.2.2/index.ts';
+import { assertNotDemo } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,6 +67,10 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Block demo users from destructive action
+    const demoBlock = await assertNotDemo(supabaseAdmin, userId, corsHeaders);
+    if (demoBlock) return demoBlock;
 
     const { profileId } = await req.json();
 

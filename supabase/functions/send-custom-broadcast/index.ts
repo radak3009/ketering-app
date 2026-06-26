@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { sendEmail } from "../_shared/smtp.ts";
+import { assertNotDemo } from "../_shared/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -47,6 +48,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (!callerRole) {
       throw new Error("Samo administratori mogu slati obaveštenja");
     }
+
+    // Demo nalogu nije dozvoljeno slanje obaveštenja
+    const demoBlock = await assertNotDemo(supabase, callerUser.id, corsHeaders);
+    if (demoBlock) return demoBlock;
+
 
     const body = await req.json();
     const subject: string = (body?.subject || "").toString().trim();
