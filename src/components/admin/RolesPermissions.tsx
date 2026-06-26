@@ -198,6 +198,7 @@ export function RolesPermissions() {
       setCreateOpen(false);
       setNewKey(""); setNewName(""); setNewDesc(""); setNewPanel("admin"); setNewCopyFrom("");
       await load();
+      await queryClient.invalidateQueries({ queryKey: ["roles-catalog"] });
       setSelectedRoleId(data.role.id);
     } catch (e: any) {
       toast({ title: "Greška", description: e.message, variant: "destructive" });
