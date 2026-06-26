@@ -21,17 +21,23 @@ export function useUsers() {
 
       const { data: rolesData } = await supabase
         .from('user_roles' as any)
-        .select('user_id, role');
+        .select('user_id, role, role_id, roles:role_id(id, key, name, panel)');
 
-      // O(n) lookup using Map instead of O(n×m) with find()
-      const roleByUserId = new Map(
-        (rolesData as any[] ?? []).map((r: any) => [r.user_id, r.role])
+      // O(n) lookup using Map
+      const roleByUserId = new Map<string, any>(
+        (rolesData as any[] ?? []).map((r: any) => [r.user_id, r])
       );
 
-      const usersWithRoles = (profilesData || []).map(profile => ({
-        ...profile,
-        role: roleByUserId.get(profile.user_id) || 'employee'
-      } as ProfileWithRole));
+      const usersWithRoles = (profilesData || []).map(profile => {
+        const r = roleByUserId.get(profile.user_id);
+        return {
+          ...profile,
+          role: r?.role || 'employee',
+          role_id: r?.role_id || null,
+          role_key: r?.roles?.key || null,
+          role_name: r?.roles?.name || null,
+        } as ProfileWithRole;
+      });
 
       setUsers(usersWithRoles);
     } catch (error) {
@@ -98,11 +104,18 @@ export function useUsers() {
 
       const { data: roleData } = await supabase
         .from('user_roles' as any)
-        .select('role')
+        .select('role, role_id, roles:role_id(id, key, name)')
         .eq('user_id', updatedData.user_id)
         .maybeSingle();
 
-      const updatedUser = { ...updatedData, role: (roleData as any)?.role || 'employee' } as ProfileWithRole;
+      const r: any = roleData;
+      const updatedUser = {
+        ...updatedData,
+        role: r?.role || 'employee',
+        role_id: r?.role_id || null,
+        role_key: r?.roles?.key || null,
+        role_name: r?.roles?.name || null,
+      } as ProfileWithRole;
       setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
       
       if (emailRequiresConfirmation) {
@@ -156,7 +169,7 @@ export function useUsers() {
           company_card_id: userData.company_card_id || null,
           tag: userData.tag || null,
           date_of_birth: userData.date_of_birth?.toISOString().split('T')[0] || null,
-          role: userData.role,
+          roleKey: userData.role,
           password: userData.password || null
         }
       });
@@ -249,20 +262,30 @@ export function useUsers() {
     }
   };
 
-  const changeUserRole = async (userId: string, userIdAuth: string, newRole: 'admin' | 'employee') => {
+  const changeUserRole = async (userId: string, userIdAuth: string, roleKey: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('manage-user-role', {
-        body: { userId: userIdAuth, role: newRole }
+        body: { userId: userIdAuth, roleKey }
       });
 
       if (error) throw new Error(error.message || 'Greška pri promeni uloge');
       if (data?.error) throw new Error(data.error);
 
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, role: newRole } : user
+      const enumRole = (data?.data?.role as 'admin' | 'employee') || undefined;
+      setUsers(prev => prev.map(user =>
+        user.id === userId
+          ? {
+              ...user,
+              role: enumRole ?? user.role,
+              role_id: data?.data?.role_id ?? user.role_id,
+              role_key: data?.data?.role_key ?? roleKey,
+              role_name: data?.data?.role_name ?? user.role_name,
+            }
+          : user
       ));
 
       handleSuccess({ category: 'update', entity: 'korisnik' });
+      return data?.data;
     } catch (error) {
       handleError({ category: 'update', entity: 'korisnik', error, customMessage: getErrorMessage(error) });
       throw error;

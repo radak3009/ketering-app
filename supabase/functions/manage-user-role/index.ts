@@ -8,7 +8,9 @@ const corsHeaders = {
 
 interface RoleRequest {
   userId: string;
-  role: 'admin' | 'employee';
+  roleKey?: string;
+  // Legacy fallback (admin/employee enum); still accepted for backward-compat.
+  role?: 'admin' | 'employee';
 }
 
 Deno.serve(async (req) => {
@@ -52,27 +54,37 @@ Deno.serve(async (req) => {
     if (demoBlock) return demoBlock;
 
     // Parse request body
-    const { userId, role }: RoleRequest = await req.json();
+    const { userId, roleKey, role: legacyRole }: RoleRequest = await req.json();
 
-
-    if (!userId || !role) {
+    if (!userId || (!roleKey && !legacyRole)) {
       return new Response(
-        JSON.stringify({ error: 'userId and role are required' }),
+        JSON.stringify({ error: 'userId and roleKey are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!['admin', 'employee'].includes(role)) {
+    // Resolve role: prefer roleKey, fallback to legacy enum mapping.
+    let resolvedKey = roleKey;
+    if (!resolvedKey && legacyRole) {
+      resolvedKey = legacyRole === 'admin' ? 'administrator' : 'zaposleni';
+    }
+
+    const { data: roleRow, error: roleLookupError } = await supabase
+      .from('roles')
+      .select('id, key, name, panel')
+      .eq('key', resolvedKey!)
+      .maybeSingle();
+
+    if (roleLookupError || !roleRow) {
       return new Response(
-        JSON.stringify({ error: 'Invalid role. Must be "admin" or "employee"' }),
+        JSON.stringify({ error: `Uloga "${resolvedKey}" ne postoji` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Admin ${user.email} is updating role for user ${userId} to ${role}`);
+    console.log(`Admin ${user.email} is updating role for user ${userId} -> ${roleRow.key} (panel=${roleRow.panel})`);
 
-    // Use service role to update user_roles table
-    // First, delete any existing roles for this user
+    // Delete existing roles for this user
     const { error: deleteError } = await supabase
       .from('user_roles')
       .delete()
@@ -86,11 +98,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert the new role
+    // Insert new role. Provide enum `role` as fallback (trigger also syncs it from role_id).
+    const enumRole = roleRow.panel === 'admin' ? 'admin' : 'employee';
     const { data, error: insertError } = await supabase
       .from('user_roles')
-      .insert({ user_id: userId, role })
-      .select()
+      .insert({ user_id: userId, role_id: roleRow.id, role: enumRole })
+      .select('id, user_id, role, role_id')
       .single();
 
     if (insertError) {
@@ -101,10 +114,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Successfully updated role for user ${userId} to ${role}`);
+    console.log(`Successfully updated role for user ${userId} to ${roleRow.key}`);
 
     return new Response(
-      JSON.stringify({ success: true, data }),
+      JSON.stringify({
+        success: true,
+        data: {
+          ...data,
+          role_key: roleRow.key,
+          role_name: roleRow.name,
+          panel: roleRow.panel,
+        },
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

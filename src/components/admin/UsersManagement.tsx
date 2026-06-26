@@ -16,9 +16,9 @@ import { SendInvitationDialog } from './SendInvitationDialog';
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
+import { useRoles } from "@/hooks/useRoles";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
 import { format } from "date-fns";
-import type { Role } from "@/constants";
 
 interface UserFormState {
   full_name: string;
@@ -28,7 +28,7 @@ interface UserFormState {
   company_card_serial: string;
   tag: string;
   date_of_birth: Date | undefined;
-  role: Role;
+  role: string; // role key from public.roles
   password: string;
   usePassword: boolean;
 }
@@ -61,7 +61,7 @@ const initialUserForm: UserFormState = {
   company_card_serial: "",
   tag: "",
   date_of_birth: undefined,
-  role: "employee",
+  role: "zaposleni",
   password: generateTemporaryPassword(),
   usePassword: true
 };
@@ -70,6 +70,7 @@ export function UsersManagement() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
+  const { roles } = useRoles();
   const [changingRole, setChangingRole] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -130,7 +131,7 @@ export function UsersManagement() {
 
   const handleDownloadTemplate = () => {
     const headers = ['Ime i prezime', 'Email', 'ID', 'Broj kartice', 'Tag', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
-    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'ABC123', 'VIP', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
+    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'ABC123', 'VIP', '0641234567', '15.03.1985', 'zaposleni', 'TempPass123'];
     
     const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -254,7 +255,7 @@ export function UsersManagement() {
 
       const usersToImport = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
-        const userData: any = { role: 'employee' };
+        const userData: any = { role: 'zaposleni' };
         
         headers.forEach((header, index) => {
           const value = values[index];
@@ -291,9 +292,17 @@ export function UsersManagement() {
           if (header.includes('tag') || header.includes('oznaka')) {
             userData.tag = value;
           }
-          // Uloga
+          // Uloga - match by key ili nazivu (case-insensitive)
           if (header.includes('role') || header.includes('uloga')) {
-            userData.role = value.toLowerCase().includes('admin') ? 'admin' : 'employee';
+            const v = value.trim().toLowerCase();
+            const match = roles.find(r => r.key.toLowerCase() === v || r.name.toLowerCase() === v);
+            if (match) {
+              userData.role = match.key;
+            } else if (v.includes('admin')) {
+              userData.role = 'administrator';
+            } else {
+              userData.role = 'zaposleni';
+            }
           }
           // Privremena lozinka
           if (header.includes('password') || header.includes('lozinka')) {
@@ -344,7 +353,8 @@ export function UsersManagement() {
       (user.phone && user.phone.includes(userFilters.phone));
     const matchesDob = !userFilters.dateOfBirth || 
       (user.date_of_birth && user.date_of_birth.includes(userFilters.dateOfBirth));
-    const matchesRole = userFilters.role === 'all' || user.role === userFilters.role;
+    const userRoleKey = (user as any).role_key || (user.role === 'admin' ? 'administrator' : 'zaposleni');
+    const matchesRole = userFilters.role === 'all' || userRoleKey === userFilters.role || user.role === userFilters.role;
     
     return matchesId && matchesName && matchesEmail && matchesTag && matchesPhone && matchesDob && matchesRole;
   });
@@ -655,16 +665,19 @@ export function UsersManagement() {
                     
                     <div>
                       <Label>Uloga</Label>
-                      <Select 
-                        value={userForm.role} 
-                        onValueChange={(value: Role) => setUserForm({ ...userForm, role: value })}
+                      <Select
+                        value={userForm.role}
+                        onValueChange={(value: string) => setUserForm({ ...userForm, role: value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Odaberite ulogu" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="employee">Zaposleni</SelectItem>
-                          <SelectItem value="admin">Administrator</SelectItem>
+                          {roles.map(r => (
+                            <SelectItem key={r.id} value={r.key}>
+                              {r.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -855,7 +868,7 @@ export function UsersManagement() {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
-                                {user.role === 'admin' ? 'Admin' : 'Zaposleni'}
+                                {(user as any).role_name || (user.role === 'admin' ? 'Admin' : 'Zaposleni')}
                               </Badge>
                               <Button
                                 size="sm"
@@ -987,8 +1000,9 @@ export function UsersManagement() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="all">Svi</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="employee">Zaposleni</SelectItem>
+                                {roles.map(r => (
+                                  <SelectItem key={r.id} value={r.key}>{r.name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -1046,7 +1060,7 @@ export function UsersManagement() {
                             </TableCell>
                             <TableCell>
                               <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
-                                {user.role === 'admin' ? 'Admin' : 'Zaposleni'}
+                                {(user as any).role_name || (user.role === 'admin' ? 'Admin' : 'Zaposleni')}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -1234,14 +1248,22 @@ export function UsersManagement() {
               
               <div>
                 <Label>Uloga</Label>
-                <Select 
-                  value={selectedUser.role || 'employee'} 
-                  onValueChange={async (value: 'admin' | 'employee') => {
-                    if (value === selectedUser.role) return;
+                <Select
+                  value={(selectedUser as any).role_key || (selectedUser.role === 'admin' ? 'administrator' : 'zaposleni')}
+                  onValueChange={async (value: string) => {
+                    const currentKey = (selectedUser as any).role_key || (selectedUser.role === 'admin' ? 'administrator' : 'zaposleni');
+                    if (value === currentKey) return;
                     setChangingRole(true);
                     try {
-                      await changeUserRole(selectedUser.id, selectedUser.user_id, value);
-                      setSelectedUser({ ...selectedUser, role: value });
+                      const updated: any = await changeUserRole(selectedUser.id, selectedUser.user_id, value);
+                      const matched = roles.find(r => r.key === value);
+                      setSelectedUser({
+                        ...selectedUser,
+                        role: (updated?.role ?? (matched?.panel === 'admin' ? 'admin' : 'employee')) as any,
+                        role_id: updated?.role_id ?? matched?.id,
+                        role_key: value,
+                        role_name: updated?.role_name ?? matched?.name,
+                      } as any);
                     } catch (error) {
                       console.error('Error changing role:', error);
                     } finally {
@@ -1254,8 +1276,11 @@ export function UsersManagement() {
                     <SelectValue placeholder="Odaberite ulogu" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Zaposleni</SelectItem>
-                    <SelectItem value="admin">Administrator</SelectItem>
+                    {roles.map(r => (
+                      <SelectItem key={r.id} value={r.key}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {changingRole && (

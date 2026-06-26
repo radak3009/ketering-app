@@ -9,6 +9,9 @@ export type AppRole = Enums<'app_role'>;
 // Profile with role (merged from user_roles table)
 export interface ProfileWithRole extends Profile {
   role: AppRole;
+  role_id?: string | null;
+  role_key?: string | null;
+  role_name?: string | null;
 }
 
 // Basic profile info for references
@@ -26,7 +29,7 @@ export interface UserCreateData {
   company_card_id?: string;
   tag?: string;
   date_of_birth?: Date;
-  role: AppRole;
+  role: string; // role key from public.roles (e.g. 'administrator', 'hr', 'zaposleni')
   password?: string;
 }
 

@@ -14,8 +14,9 @@ interface CreateUserRequest {
   company_card_id?: string;
   tag?: string;
   date_of_birth?: string;
-  role: 'admin' | 'employee';
-  password?: string; // Optional: if provided, creates user with password instead of invite
+  roleKey?: string;            // preferred: key from public.roles
+  role?: 'admin' | 'employee'; // legacy fallback
+  password?: string;
 }
 
 // Function to send welcome email with credentials via SMTP
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
     if (demoBlock) return demoBlock;
 
     const body: CreateUserRequest = await req.json();
-    const { email, full_name, phone, company_card_id, tag, date_of_birth, role, password } = body;
+    const { email, full_name, phone, company_card_id, tag, date_of_birth, roleKey, role: legacyRole, password } = body;
 
     if (!email) {
       throw new Error('Email je obavezan');
@@ -98,7 +99,25 @@ Deno.serve(async (req) => {
       throw new Error('ID zaposlenog je obavezan');
     }
 
-    console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, role, hasPassword: !!password });
+    // Resolve role: prefer roleKey, fallback to legacy enum mapping, default to 'zaposleni'.
+    let resolvedKey = roleKey;
+    if (!resolvedKey && legacyRole) {
+      resolvedKey = legacyRole === 'admin' ? 'administrator' : 'zaposleni';
+    }
+    if (!resolvedKey) resolvedKey = 'zaposleni';
+
+    const { data: roleRow, error: roleLookupError } = await supabaseAdmin
+      .from('roles')
+      .select('id, key, name, panel')
+      .eq('key', resolvedKey)
+      .maybeSingle();
+
+    if (roleLookupError || !roleRow) {
+      throw new Error(`Uloga "${resolvedKey}" ne postoji`);
+    }
+    const enumRole: 'admin' | 'employee' = roleRow.panel === 'admin' ? 'admin' : 'employee';
+
+    console.log('Creating user with data:', { email, full_name, phone, company_card_id, tag, date_of_birth, roleKey: roleRow.key, hasPassword: !!password });
 
     // Check if email already exists (case-insensitive via RPC)
     const normalizedEmail = email.trim().toLowerCase();
@@ -130,7 +149,7 @@ Deno.serve(async (req) => {
         email_confirm: true, // Auto-confirm email so user can login immediately
         user_metadata: {
           full_name: full_name || '',
-          role: role || 'employee',
+          role: enumRole,
         },
       });
       newUser = result.data;
@@ -157,7 +176,7 @@ Deno.serve(async (req) => {
       const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: {
           full_name: full_name || '',
-          role: role || 'employee',
+          role: enumRole,
         },
         redirectTo: `${req.headers.get('origin') || supabaseUrl}/`,
       });
@@ -187,7 +206,7 @@ Deno.serve(async (req) => {
     if (company_card_id) profileUpdates.company_card_id = company_card_id;
     if (tag) profileUpdates.tag = tag;
     if (date_of_birth) profileUpdates.date_of_birth = date_of_birth;
-    profileUpdates.role = role || 'employee';
+    profileUpdates.role = enumRole;
     // Set password_set based on whether password was provided
     profileUpdates.password_set = !!password;
 
@@ -214,13 +233,14 @@ Deno.serve(async (req) => {
       .from('user_roles')
       .insert({
         user_id: userId,
-        role: role || 'employee',
+        role_id: roleRow.id,
+        role: enumRole,
       });
 
     if (roleError) {
       console.error('Error setting user role:', roleError);
     } else {
-      console.log('User role set successfully:', role);
+      console.log('User role set successfully:', roleRow.key);
     }
 
     // Fetch the created profile to return
