@@ -14,8 +14,9 @@ interface CreateUserRequest {
   company_card_id?: string;
   tag?: string;
   date_of_birth?: string;
-  role: 'admin' | 'employee';
-  password?: string; // Optional: if provided, creates user with password instead of invite
+  roleKey?: string;            // preferred: key from public.roles
+  role?: 'admin' | 'employee'; // legacy fallback
+  password?: string;
 }
 
 // Function to send welcome email with credentials via SMTP
