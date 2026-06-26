@@ -10,13 +10,38 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { UpdateProvider } from "@/contexts/UpdateContext";
 
+// Lazy load pages with one-time auto-reload on stale chunk errors (post-deploy hash mismatch)
+function lazyWithReload<T extends { default: React.ComponentType<any> }>(
+  factory: () => Promise<T>,
+  key: string,
+) {
+  return lazy(() =>
+    factory().catch((err) => {
+      const msg = String(err?.message || err);
+      const isChunkError =
+        /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk \d+ failed/i.test(
+          msg,
+        );
+      if (!isChunkError) throw err;
+      const flag = `chunk-reload:${key}`;
+      try {
+        if (sessionStorage.getItem(flag)) throw err;
+        sessionStorage.setItem(flag, String(Date.now()));
+      } catch {}
+      console.warn(`[App] Stale chunk for ${key}, reloading...`, msg);
+      window.location.reload();
+      return new Promise<T>(() => {}) as Promise<T>;
+    }),
+  );
+}
+
 // Lazy load pages for better code splitting
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const AuthConfirm = lazy(() => import("./pages/AuthConfirm"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const KioskPickup = lazy(() => import("./pages/KioskPickup"));
-const KioskKitchen = lazy(() => import("./pages/KioskKitchen"));
+const Index = lazyWithReload(() => import("./pages/Index"), "Index");
+const Auth = lazyWithReload(() => import("./pages/Auth"), "Auth");
+const AuthConfirm = lazyWithReload(() => import("./pages/AuthConfirm"), "AuthConfirm");
+const NotFound = lazyWithReload(() => import("./pages/NotFound"), "NotFound");
+const KioskPickup = lazyWithReload(() => import("./pages/KioskPickup"), "KioskPickup");
+const KioskKitchen = lazyWithReload(() => import("./pages/KioskKitchen"), "KioskKitchen");
 
 const queryClient = new QueryClient();
 
