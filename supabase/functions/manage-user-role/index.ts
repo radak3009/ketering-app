@@ -57,8 +57,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Block demo users from modifying roles
+    const demoBlock = await assertNotDemo(supabase, user.id, corsHeaders);
+    if (demoBlock) return demoBlock;
+
     // Parse request body
     const { userId, role }: RoleRequest = await req.json();
+
 
     if (!userId || !role) {
       return new Response(
