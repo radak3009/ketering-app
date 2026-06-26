@@ -1246,14 +1246,22 @@ export function UsersManagement() {
               
               <div>
                 <Label>Uloga</Label>
-                <Select 
-                  value={selectedUser.role || 'employee'} 
-                  onValueChange={async (value: 'admin' | 'employee') => {
-                    if (value === selectedUser.role) return;
+                <Select
+                  value={(selectedUser as any).role_key || (selectedUser.role === 'admin' ? 'administrator' : 'zaposleni')}
+                  onValueChange={async (value: string) => {
+                    const currentKey = (selectedUser as any).role_key || (selectedUser.role === 'admin' ? 'administrator' : 'zaposleni');
+                    if (value === currentKey) return;
                     setChangingRole(true);
                     try {
-                      await changeUserRole(selectedUser.id, selectedUser.user_id, value);
-                      setSelectedUser({ ...selectedUser, role: value });
+                      const updated: any = await changeUserRole(selectedUser.id, selectedUser.user_id, value);
+                      const matched = roles.find(r => r.key === value);
+                      setSelectedUser({
+                        ...selectedUser,
+                        role: (updated?.role ?? (matched?.panel === 'admin' ? 'admin' : 'employee')) as any,
+                        role_id: updated?.role_id ?? matched?.id,
+                        role_key: value,
+                        role_name: updated?.role_name ?? matched?.name,
+                      } as any);
                     } catch (error) {
                       console.error('Error changing role:', error);
                     } finally {
@@ -1266,8 +1274,11 @@ export function UsersManagement() {
                     <SelectValue placeholder="Odaberite ulogu" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Zaposleni</SelectItem>
-                    <SelectItem value="admin">Administrator</SelectItem>
+                    {roles.map(r => (
+                      <SelectItem key={r.id} value={r.key}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {changingRole && (
