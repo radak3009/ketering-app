@@ -69,7 +69,7 @@ export function SettingsTab() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="kiosk" className="w-full">
-        <TabsList className="w-full grid grid-cols-3">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="kiosk" className="gap-1.5">
             <MonitorSmartphone className="h-4 w-4" />
             <span className="hidden sm:inline">Kiosk postavke</span>
@@ -77,13 +77,17 @@ export function SettingsTab() {
           </TabsTrigger>
           <TabsTrigger value="kitchen" className="gap-1.5">
             <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Kuhinja</span>
-            <span className="sm:hidden">Kuhinja</span>
+            <span>Kuhinja</span>
           </TabsTrigger>
           <TabsTrigger value="organization" className="gap-1.5">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Organizacija</span>
             <span className="sm:hidden">Org.</span>
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="gap-1.5">
+            <ShieldCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Uloge i dozvole</span>
+            <span className="sm:hidden">Uloge</span>
           </TabsTrigger>
         </TabsList>
 
