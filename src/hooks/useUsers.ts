@@ -21,17 +21,23 @@ export function useUsers() {
 
       const { data: rolesData } = await supabase
         .from('user_roles' as any)
-        .select('user_id, role');
+        .select('user_id, role, role_id, roles:role_id(id, key, name, panel)');
 
-      // O(n) lookup using Map instead of O(n×m) with find()
-      const roleByUserId = new Map(
-        (rolesData as any[] ?? []).map((r: any) => [r.user_id, r.role])
+      // O(n) lookup using Map
+      const roleByUserId = new Map<string, any>(
+        (rolesData as any[] ?? []).map((r: any) => [r.user_id, r])
       );
 
-      const usersWithRoles = (profilesData || []).map(profile => ({
-        ...profile,
-        role: roleByUserId.get(profile.user_id) || 'employee'
-      } as ProfileWithRole));
+      const usersWithRoles = (profilesData || []).map(profile => {
+        const r = roleByUserId.get(profile.user_id);
+        return {
+          ...profile,
+          role: r?.role || 'employee',
+          role_id: r?.role_id || null,
+          role_key: r?.roles?.key || null,
+          role_name: r?.roles?.name || null,
+        } as ProfileWithRole;
+      });
 
       setUsers(usersWithRoles);
     } catch (error) {
@@ -98,11 +104,18 @@ export function useUsers() {
 
       const { data: roleData } = await supabase
         .from('user_roles' as any)
-        .select('role')
+        .select('role, role_id, roles:role_id(id, key, name)')
         .eq('user_id', updatedData.user_id)
         .maybeSingle();
 
-      const updatedUser = { ...updatedData, role: (roleData as any)?.role || 'employee' } as ProfileWithRole;
+      const r: any = roleData;
+      const updatedUser = {
+        ...updatedData,
+        role: r?.role || 'employee',
+        role_id: r?.role_id || null,
+        role_key: r?.roles?.key || null,
+        role_name: r?.roles?.name || null,
+      } as ProfileWithRole;
       setUsers(prev => prev.map(user => user.id === id ? updatedUser : user));
       
       if (emailRequiresConfirmation) {
