@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { assertNotDemo, assertPermission } from "../_shared/auth.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,25 +51,11 @@ serve(async (req: Request) => {
 
     // Check if calling user is an admin using the is_admin_user function
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: isAdmin, error: adminError } = await adminClient.rpc("is_admin_user", {
-      user_uuid: callingUser.id,
-    });
+    const permBlock = await assertPermission(adminClient, callingUser.id, "users.update", corsHeaders);
+    if (permBlock) return permBlock;
+    const demoBlock = await assertNotDemo(adminClient, callingUser.id, corsHeaders);
+    if (demoBlock) return demoBlock;
 
-    if (adminError) {
-      console.error("Error checking admin status:", adminError);
-      return new Response(
-        JSON.stringify({ error: "Failed to verify admin status" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!isAdmin) {
-      console.error("User is not an admin:", callingUser.id);
-      return new Response(
-        JSON.stringify({ error: "Forbidden: Admin access required" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Parse request body
     const { userId, newPassword }: ResetPasswordRequest = await req.json();

@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { sendEmail } from '../_shared/smtp.ts';
+import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,17 +81,11 @@ Deno.serve(async (req) => {
     
     console.log('User validated:', callerUser.id, callerUser.email);
 
-    // Check if caller is admin using user_roles table
-    const { data: callerRole } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', callerUser.id)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (!callerRole) {
-      throw new Error('Samo administratori mogu kreirati korisnike');
-    }
+    // Granular permission check (Faza 2)
+    const permBlock = await assertPermission(supabaseAdmin, callerUser.id, 'users.create', corsHeaders);
+    if (permBlock) return permBlock;
+    const demoBlock = await assertNotDemo(supabaseAdmin, callerUser.id, corsHeaders);
+    if (demoBlock) return demoBlock;
 
     const body: CreateUserRequest = await req.json();
     const { email, full_name, phone, company_card_id, tag, date_of_birth, role, password } = body;
