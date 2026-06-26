@@ -75,6 +75,7 @@ const GROUP_LABELS: Record<string, string> = {
 
 export function RolesPermissions() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
