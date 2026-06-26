@@ -285,6 +285,7 @@ export function useUsers() {
       ));
 
       handleSuccess({ category: 'update', entity: 'korisnik' });
+      return data?.data;
     } catch (error) {
       handleError({ category: 'update', entity: 'korisnik', error, customMessage: getErrorMessage(error) });
       throw error;
