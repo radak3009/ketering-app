@@ -68,6 +68,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Block demo users from destructive action
+    const demoBlock = await assertNotDemo(supabaseAdmin, userId, corsHeaders);
+    if (demoBlock) return demoBlock;
+
     const { profileId } = await req.json();
 
     if (!profileId) {
