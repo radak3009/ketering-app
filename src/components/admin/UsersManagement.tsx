@@ -353,7 +353,8 @@ export function UsersManagement() {
       (user.phone && user.phone.includes(userFilters.phone));
     const matchesDob = !userFilters.dateOfBirth || 
       (user.date_of_birth && user.date_of_birth.includes(userFilters.dateOfBirth));
-    const matchesRole = userFilters.role === 'all' || user.role === userFilters.role;
+    const userRoleKey = (user as any).role_key || (user.role === 'admin' ? 'administrator' : 'zaposleni');
+    const matchesRole = userFilters.role === 'all' || userRoleKey === userFilters.role || user.role === userFilters.role;
     
     return matchesId && matchesName && matchesEmail && matchesTag && matchesPhone && matchesDob && matchesRole;
   });
@@ -999,8 +1000,9 @@ export function UsersManagement() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="all">Svi</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="employee">Zaposleni</SelectItem>
+                                {roles.map(r => (
+                                  <SelectItem key={r.id} value={r.key}>{r.name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
