@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
         email_confirm: true, // Auto-confirm email so user can login immediately
         user_metadata: {
           full_name: full_name || '',
-          role: role || 'employee',
+          role: enumRole,
         },
       });
       newUser = result.data;
@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
       const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: {
           full_name: full_name || '',
-          role: role || 'employee',
+          role: enumRole,
         },
         redirectTo: `${req.headers.get('origin') || supabaseUrl}/`,
       });
@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
     if (company_card_id) profileUpdates.company_card_id = company_card_id;
     if (tag) profileUpdates.tag = tag;
     if (date_of_birth) profileUpdates.date_of_birth = date_of_birth;
-    profileUpdates.role = role || 'employee';
+    profileUpdates.role = enumRole;
     // Set password_set based on whether password was provided
     profileUpdates.password_set = !!password;
 
@@ -233,13 +233,14 @@ Deno.serve(async (req) => {
       .from('user_roles')
       .insert({
         user_id: userId,
-        role: role || 'employee',
+        role_id: roleRow.id,
+        role: enumRole,
       });
 
     if (roleError) {
       console.error('Error setting user role:', roleError);
     } else {
-      console.log('User role set successfully:', role);
+      console.log('User role set successfully:', roleRow.key);
     }
 
     // Fetch the created profile to return
