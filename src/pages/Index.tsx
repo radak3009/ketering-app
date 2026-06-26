@@ -16,6 +16,7 @@ const DashboardLoader = () => (
 
 const Index = () => {
   const { user, profile, loading, isPasswordRecovery } = useAuth();
+  const { panel, loading: permsLoading } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
