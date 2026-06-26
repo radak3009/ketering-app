@@ -49,6 +49,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Samo administratori mogu slati obaveštenja");
     }
 
+    // Demo nalogu nije dozvoljeno slanje obaveštenja
+    const demoBlock = await assertNotDemo(supabase, callerUser.id, corsHeaders);
+    if (demoBlock) return demoBlock;
+
+
     const body = await req.json();
     const subject: string = (body?.subject || "").toString().trim();
     const message: string = (body?.message || "").toString().trim();
