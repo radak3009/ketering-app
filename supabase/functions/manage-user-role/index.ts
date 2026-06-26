@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
-import { assertNotDemo } from '../_shared/auth.ts';
+import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,19 +45,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if caller is admin using the is_admin_user function
-    const { data: isAdmin, error: adminCheckError } = await supabase
-      .rpc('is_admin_user', { user_uuid: user.id });
-
-    if (adminCheckError || !isAdmin) {
-      console.error('Admin check failed:', adminCheckError);
-      return new Response(
-        JSON.stringify({ error: 'Only admins can manage user roles' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Block demo users from modifying roles
+    // Granular: only roles with users.assign_role can mutate user_roles (HR no longer has it).
+    const permBlock = await assertPermission(supabase, user.id, 'users.assign_role', corsHeaders);
+    if (permBlock) return permBlock;
     const demoBlock = await assertNotDemo(supabase, user.id, corsHeaders);
     if (demoBlock) return demoBlock;
 

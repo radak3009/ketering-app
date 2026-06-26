@@ -1,5 +1,5 @@
 // manage-roles edge function: admin-only CRUD for roles and role_permissions.
-import { createAdminClient, getCallerUser, assertNotDemo } from "../_shared/auth.ts";
+import { createAdminClient, getCallerUser, assertNotDemo, assertPermission } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
     const { user, error } = await getCallerUser(req, admin);
     if (!user) return json({ error: error ?? "Unauthorized" }, 401);
 
-    const { data: isAdmin } = await admin.rpc("is_admin_user", { user_uuid: user.id });
-    if (!isAdmin) return json({ error: "Samo administratori." }, 403);
+    const permBlock = await assertPermission(admin, user.id, "settings.roles", corsHeaders);
+    if (permBlock) return permBlock;
 
     const body = (await req.json()) as Action;
 

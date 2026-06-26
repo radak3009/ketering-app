@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { sendEmail } from "../_shared/smtp.ts";
-import { assertNotDemo } from "../_shared/auth.ts";
+import { assertNotDemo, assertPermission } from "../_shared/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -39,17 +39,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Neautorizovan pristup");
     }
 
-    const { data: callerRole } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callerUser.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!callerRole) {
-      throw new Error("Samo administratori mogu slati obaveštenja");
-    }
-
-    // Demo nalogu nije dozvoljeno slanje obaveštenja
+    // Granular permission check (Faza 2)
+    const permBlock = await assertPermission(supabase, callerUser.id, "notifications.custom_email", corsHeaders);
+    if (permBlock) return permBlock;
     const demoBlock = await assertNotDemo(supabase, callerUser.id, corsHeaders);
     if (demoBlock) return demoBlock;
 

@@ -1050,6 +1050,7 @@ export type Database = {
       email_exists: { Args: { check_email: string }; Returns: boolean }
       get_user_panel: { Args: { _user: string }; Returns: string }
       get_user_permissions: { Args: { _user: string }; Returns: string[] }
+      has_perm: { Args: { _perm: string }; Returns: boolean }
       has_permission: {
         Args: { _perm: string; _user: string }
         Returns: boolean
@@ -1062,6 +1063,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_user: { Args: { user_uuid: string }; Returns: boolean }
+      is_demo: { Args: never; Returns: boolean }
       is_demo_user: { Args: { _user: string }; Returns: boolean }
       list_old_receipts: {
         Args: { cutoff: string; max_rows?: number }
@@ -1070,6 +1072,10 @@ export type Database = {
           name: string
           size: number
         }[]
+      }
+      order_item_only_pickup_changed: {
+        Args: { _id: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,18 +44,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if caller is admin
-    const { data: isAdmin, error: adminCheckError } = await supabaseAdmin.rpc('is_admin_user', {
-      user_uuid: caller.id
-    });
-
-    if (adminCheckError || !isAdmin) {
-      console.error('Admin check error:', adminCheckError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized - admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const permBlock = await assertPermission(supabaseAdmin, caller.id, 'users.update', corsHeaders);
+    if (permBlock) return permBlock;
+    const demoBlock = await assertNotDemo(supabaseAdmin, caller.id, corsHeaders);
+    if (demoBlock) return demoBlock;
 
     // Parse request body
     const { userId, newEmail }: UpdateEmailRequest = await req.json();

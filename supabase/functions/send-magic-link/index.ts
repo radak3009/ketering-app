@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { sendEmail } from '../_shared/smtp.ts';
+import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,18 +82,10 @@ Deno.serve(async (req) => {
       throw new Error('Neautorizovan pristup');
     }
 
-    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', {
-      user_uuid: callerUser.id,
-    });
-
-    if (adminError) {
-      console.error('Admin check failed:', adminError.message);
-      throw new Error('Nije moguće proveriti administratorska prava');
-    }
-
-    if (!isAdmin) {
-      throw new Error('Samo administratori mogu slati pozivnice');
-    }
+    const permBlock = await assertPermission(supabaseAdmin, callerUser.id, 'users.invite', corsHeaders);
+    if (permBlock) return permBlock;
+    const demoBlock = await assertNotDemo(supabaseAdmin, callerUser.id, corsHeaders);
+    if (demoBlock) return demoBlock;
 
     const body: SendMagicLinkRequest = await req.json();
     const email = body.email?.trim().toLowerCase();

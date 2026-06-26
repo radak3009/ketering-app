@@ -1,5 +1,4 @@
-// Shared auth helpers for edge functions.
-// IMPORTANT: assertNotDemo blocks destructive/sending actions for demo users.
+// Shared auth helpers for edge functions (Faza 2 RBAC).
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 export function createAdminClient(): SupabaseClient {
@@ -23,8 +22,8 @@ export async function getCallerUser(req: Request, admin?: SupabaseClient) {
 }
 
 /**
- * Throws JSON 403 Response if caller is a demo user.
- * Use in any edge function that performs destructive or outbound (email/notification) actions.
+ * FAIL-CLOSED: ako is_demo_user RPC pukne ILI je korisnik demo, blokiraj.
+ * Sloj odbrane uz RLS — koristi se za destruktivne i "slanje" akcije.
  */
 export async function assertNotDemo(
   admin: SupabaseClient,
@@ -33,13 +32,48 @@ export async function assertNotDemo(
 ): Promise<Response | null> {
   const { data, error } = await admin.rpc("is_demo_user", { _user: userId });
   if (error) {
-    // Fail-open with log: do not block on transient errors, but log loudly.
-    console.warn("[assertNotDemo] is_demo_user rpc error:", error.message);
-    return null;
+    console.error("[assertNotDemo] is_demo_user rpc error (FAIL-CLOSED):", error.message);
+    return new Response(
+      JSON.stringify({ error: "Demo provera nije uspela, akcija blokirana." }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
   if (data === true) {
     return new Response(
       JSON.stringify({ error: "Demo nalogu nije dozvoljena ova akcija." }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  return null;
+}
+
+/**
+ * FAIL-CLOSED: ako has_permission RPC pukne ILI vrati false, blokiraj sa 403.
+ * Zamena za generičku is_admin_user proveru — granularno po permission_key.
+ */
+export async function assertPermission(
+  admin: SupabaseClient,
+  userId: string,
+  permission: string,
+  corsHeaders: Record<string, string>,
+): Promise<Response | null> {
+  const { data, error } = await admin.rpc("has_permission", {
+    _user: userId,
+    _perm: permission,
+  });
+  if (error) {
+    console.error(
+      `[assertPermission] has_permission(${permission}) rpc error (FAIL-CLOSED):`,
+      error.message,
+    );
+    return new Response(
+      JSON.stringify({ error: "Provera dozvole nije uspela." }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  if (data !== true) {
+    return new Response(
+      JSON.stringify({ error: `Nemate dozvolu: ${permission}` }),
       { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

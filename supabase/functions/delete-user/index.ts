@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { jwtVerify, createRemoteJWKSet } from 'https://deno.land/x/jose@v5.2.2/index.ts';
-import { assertNotDemo } from '../_shared/auth.ts';
+import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,25 +50,9 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
     console.log('Verified user:', userId);
 
-    // Check if user is admin
-    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin_user', { user_uuid: userId });
-    
-    if (adminError) {
-      console.error('Error checking admin status:', adminError);
-      return new Response(
-        JSON.stringify({ error: 'Error verifying admin status' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!isAdmin) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Block demo users from destructive action
+    // Granular permission check + demo block (Faza 2)
+    const permBlock = await assertPermission(supabaseAdmin, userId, 'users.delete', corsHeaders);
+    if (permBlock) return permBlock;
     const demoBlock = await assertNotDemo(supabaseAdmin, userId, corsHeaders);
     if (demoBlock) return demoBlock;
 
