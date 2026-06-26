@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Lazy load heavy dashboard components
