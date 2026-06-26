@@ -131,7 +131,7 @@ export function UsersManagement() {
 
   const handleDownloadTemplate = () => {
     const headers = ['Ime i prezime', 'Email', 'ID', 'Broj kartice', 'Tag', 'Telefon', 'Datum rodjenja', 'Uloga', 'Privremena lozinka'];
-    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'ABC123', 'VIP', '0641234567', '15.03.1985', 'employee', 'TempPass123'];
+    const exampleRow = ['Marko Marković', 'marko@firma.rs', '1234567890', 'ABC123', 'VIP', '0641234567', '15.03.1985', 'zaposleni', 'TempPass123'];
     
     const csvContent = [headers.join(','), exampleRow.join(',')].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -255,7 +255,7 @@ export function UsersManagement() {
 
       const usersToImport = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim());
-        const userData: any = { role: 'employee' };
+        const userData: any = { role: 'zaposleni' };
         
         headers.forEach((header, index) => {
           const value = values[index];
@@ -292,9 +292,17 @@ export function UsersManagement() {
           if (header.includes('tag') || header.includes('oznaka')) {
             userData.tag = value;
           }
-          // Uloga
+          // Uloga - match by key ili nazivu (case-insensitive)
           if (header.includes('role') || header.includes('uloga')) {
-            userData.role = value.toLowerCase().includes('admin') ? 'admin' : 'employee';
+            const v = value.trim().toLowerCase();
+            const match = roles.find(r => r.key.toLowerCase() === v || r.name.toLowerCase() === v);
+            if (match) {
+              userData.role = match.key;
+            } else if (v.includes('admin')) {
+              userData.role = 'administrator';
+            } else {
+              userData.role = 'zaposleni';
+            }
           }
           // Privremena lozinka
           if (header.includes('password') || header.includes('lozinka')) {
@@ -656,16 +664,19 @@ export function UsersManagement() {
                     
                     <div>
                       <Label>Uloga</Label>
-                      <Select 
-                        value={userForm.role} 
-                        onValueChange={(value: Role) => setUserForm({ ...userForm, role: value })}
+                      <Select
+                        value={userForm.role}
+                        onValueChange={(value: string) => setUserForm({ ...userForm, role: value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Odaberite ulogu" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="employee">Zaposleni</SelectItem>
-                          <SelectItem value="admin">Administrator</SelectItem>
+                          {roles.map(r => (
+                            <SelectItem key={r.id} value={r.key}>
+                              {r.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
