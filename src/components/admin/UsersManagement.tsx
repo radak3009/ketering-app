@@ -868,7 +868,7 @@ export function UsersManagement() {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
-                                {user.role === 'admin' ? 'Admin' : 'Zaposleni'}
+                                {(user as any).role_name || (user.role === 'admin' ? 'Admin' : 'Zaposleni')}
                               </Badge>
                               <Button
                                 size="sm"
