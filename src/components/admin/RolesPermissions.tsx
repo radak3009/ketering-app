@@ -216,6 +216,7 @@ export function RolesPermissions() {
       toast({ title: "Obrisano", description: `Uloga "${selectedRole.name}" je obrisana.` });
       setSelectedRoleId(null);
       await load();
+      await queryClient.invalidateQueries({ queryKey: ["roles-catalog"] });
     } catch (e: any) {
       toast({ title: "Greška", description: e.message, variant: "destructive" });
     }
