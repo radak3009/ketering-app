@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ const GROUP_LABELS: Record<string, string> = {
 
 export function RolesPermissions() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -196,6 +198,7 @@ export function RolesPermissions() {
       setCreateOpen(false);
       setNewKey(""); setNewName(""); setNewDesc(""); setNewPanel("admin"); setNewCopyFrom("");
       await load();
+      await queryClient.invalidateQueries({ queryKey: ["roles-catalog"] });
       setSelectedRoleId(data.role.id);
     } catch (e: any) {
       toast({ title: "Greška", description: e.message, variant: "destructive" });
@@ -213,6 +216,7 @@ export function RolesPermissions() {
       toast({ title: "Obrisano", description: `Uloga "${selectedRole.name}" je obrisana.` });
       setSelectedRoleId(null);
       await load();
+      await queryClient.invalidateQueries({ queryKey: ["roles-catalog"] });
     } catch (e: any) {
       toast({ title: "Greška", description: e.message, variant: "destructive" });
     }
