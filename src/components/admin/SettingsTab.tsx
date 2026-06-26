@@ -350,6 +350,23 @@ export function SettingsTab() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="roles">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" />
+                Uloge i dozvole
+              </CardTitle>
+              <CardDescription>
+                Granularno upravljanje pristupom po ulogama. Sve promene se snimaju u Supabase.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RolesPermissions />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Send Update Notification */}
