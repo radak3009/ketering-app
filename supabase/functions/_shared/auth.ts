@@ -9,12 +9,38 @@ export function createAdminClient(): SupabaseClient {
   );
 }
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const padded = part.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+    const json = atob(padded + pad);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 export async function getCallerUser(req: Request, admin?: SupabaseClient) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return { user: null, token: null, error: "Missing authorization header" };
   }
   const token = authHeader.slice("Bearer ".length);
+
+  // Edge runtime već validira JWT (verify_jwt=true u config.toml) pre nego što stigne do funkcije.
+  // Lokalno dekodiranje payload-a je pouzdanije od client.auth.getUser(token) koji s vremena
+  // na vreme vraća null zbog mrežnih bljeskova ka GoTrue-u → izazivao je sporadične 401 greške
+  // (npr. prazna lista uloga u "Uloge i dozvole").
+  const payload = decodeJwtPayload(token);
+  const sub = typeof payload?.sub === "string" ? payload.sub as string : null;
+  if (sub) {
+    const email = typeof payload?.email === "string" ? payload!.email as string : null;
+    return { user: { id: sub, email } as { id: string; email: string | null }, token, error: null };
+  }
+
+  // Fallback: ako lokalno dekodiranje pukne, pokušaj sa GoTrue-om.
   const client = admin ?? createAdminClient();
   const { data, error } = await client.auth.getUser(token);
   if (error || !data?.user) return { user: null, token, error: "Invalid token" };
