@@ -476,7 +476,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                     <CardTitle className="text-lg md:text-xl">Lista porudžbina</CardTitle>
                     <CardDescription className="text-xs md:text-sm">Lista porudžbina po korisnicima</CardDescription>
                   </div>
-                  {flatOrderItems.length > 0 && (
+                  {flatOrderItems.length > 0 && hasPerm("orders.export_csv") && (
                     <Button variant="outline" size="sm" onClick={() => {
                       const header = ["Korisnik", "ID Kartice", "Organizacija", "Datum dostave", "Obrok", "Smena", "Status preuzimanja"];
                       const rows: (string | number)[][] = [header, ...flatOrderItems.map(item => [
