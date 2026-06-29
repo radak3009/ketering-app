@@ -201,25 +201,28 @@ export function AdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-8">
-        {/* Stats Overview */}
-        <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
-          <span className="text-xs md:text-sm text-muted-foreground">
-            {lastRefreshed
-              ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
-              : 'Učitavanje...'}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleManualRefresh}
-            disabled={statsLoading}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Osveži</span>
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+        {/* Stats Overview — samo ako korisnik ima dashboard.view */}
+        {has("dashboard.view") && (
+          <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
+            <span className="text-xs md:text-sm text-muted-foreground">
+              {lastRefreshed
+                ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
+                : 'Učitavanje...'}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={statsLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Osveži</span>
+            </Button>
+          </div>
+        )}
+        {has("dashboard.view") && (
+
           {/* Card 1: Top 3 obroka */}
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
