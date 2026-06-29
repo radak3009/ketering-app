@@ -74,6 +74,7 @@ export function UsersManagement() {
   const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
   const { roles } = useRoles();
   const { has: hasPerm } = usePermissions();
+  const { user: authUser } = useAuth();
   const [changingRole, setChangingRole] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -1275,6 +1276,16 @@ export function UsersManagement() {
                   onValueChange={async (value: string) => {
                     const currentKey = (selectedUser as any).role_key || (selectedUser.role === 'admin' ? 'administrator' : 'zaposleni');
                     if (value === currentKey) return;
+                    const isSelf = authUser?.id === selectedUser.user_id;
+                    const target = roles.find(r => r.key === value);
+                    if (isSelf && currentKey === 'administrator' && target?.panel !== 'admin') {
+                      toast({
+                        title: 'Akcija blokirana',
+                        description: 'Ne možete sami sebi skinuti administratorsku ulogu.',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
                     setChangingRole(true);
                     try {
                       const updated: any = await changeUserRole(selectedUser.id, selectedUser.user_id, value);
