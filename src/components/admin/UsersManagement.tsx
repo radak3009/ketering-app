@@ -1446,7 +1446,7 @@ export function UsersManagement() {
                 )}
 
               </div>
-            </div>
+            </fieldset>
           )}
         </SheetContent>
       </Sheet>
