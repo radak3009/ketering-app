@@ -82,7 +82,7 @@ export function SettingsTab() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto gap-1 p-1">
           {canKiosk && (
           <TabsTrigger value="kiosk" className="gap-1.5">
             <MonitorSmartphone className="h-4 w-4" />
