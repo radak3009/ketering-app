@@ -23,6 +23,8 @@ import { UserOrderPivotTable } from "./UserOrderPivotTable";
 import { AdminOrderDialog } from "./AdminOrderDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { format } from "date-fns";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 interface OrdersOverviewProps {
   orderDateRange: { startDate: string; endDate: string };
