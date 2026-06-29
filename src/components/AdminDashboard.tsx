@@ -359,48 +359,85 @@ export function AdminDashboard() {
         )}
 
 
-        {/* Tabs */}
-        <Tabs defaultValue="orders" className="space-y-4 md:space-y-6">
+        {/* Tabs — vidljivost po dozvoli */}
+        {(() => {
+          const tabVisibility = {
+            orders: has("orders.view"),
+            meals: has("meals.view"),
+            menus: has("menus.view"),
+            users: has("users.view"),
+            feedback: hasAny("feedback.view", "suggestions.view"),
+            notifications: hasAny("notifications.menu", "notifications.reminder", "notifications.custom_email"),
+            reports: has("reports.view"),
+            settings: hasAny("settings.kiosk", "settings.kitchen", "settings.organization", "settings.roles"),
+          } as const;
+          const order: (keyof typeof tabVisibility)[] = ["orders","meals","menus","users","feedback","notifications","reports","settings"];
+          const firstVisible = order.find((k) => tabVisibility[k]);
+          if (!firstVisible) {
+            return permsLoading ? (
+              <div className="text-center text-muted-foreground py-12 text-sm">Učitavanje dozvola...</div>
+            ) : (
+              <div className="text-center text-muted-foreground py-12 text-sm">Nemate dozvole za prikaz nijednog dela admin panela.</div>
+            );
+          }
+          return (
+        <Tabs defaultValue={firstVisible} className="space-y-4 md:space-y-6">
           <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto gap-1 p-1">
+            {tabVisibility.orders && (
             <TabsTrigger value="orders" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.orders')}</span>
               <span className="sm:hidden">Por.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.meals && (
             <TabsTrigger value="meals" className="text-xs md:text-sm py-2">
               <ChefHat className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.meals')}</span>
               <span className="sm:hidden">Obr.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.menus && (
             <TabsTrigger value="menus" className="text-xs md:text-sm py-2">
               <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.menus')}</span>
               <span className="sm:hidden">Men.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.users && (
             <TabsTrigger value="users" className="text-xs md:text-sm py-2">
               <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.users')}</span>
               <span className="sm:hidden">Kor.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.feedback && (
             <TabsTrigger value="feedback" className="text-xs md:text-sm py-2">
               <MessageSquare className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.feedback')}</span>
               <span className="sm:hidden">Pov.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.notifications && (
             <TabsTrigger value="notifications" className="text-xs md:text-sm py-2">
               <Bell className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.notifications')}</span>
               <span className="sm:hidden">Obav.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.reports && (
             <TabsTrigger value="reports" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.reports')}</span>
               <span className="sm:hidden">Izv.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.settings && (
             <TabsTrigger value="settings" className="text-xs md:text-sm py-2">
               <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.settings')}</span>
               <span className="sm:hidden">Pod.</span>
+
             </TabsTrigger>
           </TabsList>
 
