@@ -82,13 +82,20 @@ export function AdminDashboard() {
     return () => clearInterval(interval);
   }, [refetchStats]);
 
-  // Fetch available tags for broadcast filtering
+  // Fetch available tags for broadcast filtering (samo employee panel uloge)
   useEffect(() => {
     (async () => {
+      // Step 1: nađi user_id-eve čija je trenutna uloga sa panel='employee'
+      const { data: empRoles } = await supabase
+        .from('user_roles' as any)
+        .select('user_id, roles:role_id!inner(panel)')
+        .eq('roles.panel', 'employee');
+      const ids = ((empRoles as any[]) ?? []).map((r: any) => r.user_id).filter(Boolean);
+      if (ids.length === 0) { setAvailableTags([]); return; }
       const { data } = await supabase
         .from('profiles')
         .select('tag')
-        .eq('role', 'employee')
+        .in('user_id', ids)
         .not('tag', 'is', null);
       if (data) {
         const uniq = [...new Set(data.map((p: any) => p.tag).filter(Boolean))] as string[];
