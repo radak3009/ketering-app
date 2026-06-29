@@ -57,6 +57,8 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [mobilePage, setMobilePage] = useState(1);
   const [mobilePageSize, setMobilePageSize] = useState(20);
   const isMobile = useIsMobile();
+  const { has: hasPerm } = usePermissions();
+  const canExport = hasPerm("orders.export_csv");
 
   const toggleMeal = (mealName: string) => {
     setExpandedMeals(prev => {
