@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
 import { jwtVerify, createRemoteJWKSet } from 'https://deno.land/x/jose@v5.2.2/index.ts';
-import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
+import { assertNotDemo, assertPermission, getCallerUser } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the authorization header from the request
+    // Get the authorization header from the request (lokalni JWT decode preko shared helpera).
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
@@ -25,9 +25,6 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
-
-    const token = authHeader.replace('Bearer ', '');
 
     // Create admin client for all operations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -37,17 +34,16 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Verify the JWT signature server-side via Supabase Auth
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !userData?.user) {
-      console.error('Invalid token:', userError);
+    const { user: callerUser, error: callerError } = await getCallerUser(req, supabaseAdmin);
+    if (callerError || !callerUser) {
+      console.error('Invalid token:', callerError);
       return new Response(
         JSON.stringify({ error: 'Invalid authorization token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = userData.user.id;
+    const userId = callerUser.id;
     console.log('Verified user:', userId);
 
     // Granular permission check + demo block (Faza 2)

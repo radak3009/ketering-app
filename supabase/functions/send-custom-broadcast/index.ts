@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
 import { sendEmail } from "../_shared/smtp.ts";
-import { assertNotDemo, assertPermission } from "../_shared/auth.ts";
+import { assertNotDemo, assertPermission, getCallerUser } from "../_shared/auth.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -28,13 +28,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      throw new Error("Neautorizovan pristup");
-    }
-    const token = authHeader.slice("Bearer ".length);
-    const { data: { user: callerUser }, error: userError } =
-      await supabase.auth.getUser(token);
+    const { user: callerUser, error: userError } = await getCallerUser(req, supabase);
     if (userError || !callerUser) {
       throw new Error("Neautorizovan pristup");
     }

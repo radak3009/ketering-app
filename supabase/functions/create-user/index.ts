@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { sendEmail } from '../_shared/smtp.ts';
-import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
+import { assertNotDemo, assertPermission, getCallerUser } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,24 +62,13 @@ Deno.serve(async (req) => {
       },
     });
 
-    // Verify the caller is an admin
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('Missing or invalid Authorization header');
-      throw new Error('Neautorizovan pristup');
-    }
-
-    // Auth validation - use SERVICE_ROLE client with explicit token
-    // This works because service role can validate any JWT
-    const token = authHeader.slice('Bearer '.length);
-
-    const { data: { user: callerUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
+    // Verify the caller is an admin (lokalni JWT decode preko shared helpera)
+    const { user: callerUser, error: userError } = await getCallerUser(req, supabaseAdmin);
     if (userError || !callerUser) {
-      console.error('JWT validation failed:', userError?.message);
+      console.error('JWT validation failed:', userError);
       throw new Error('Neautorizovan pristup');
     }
-    
+
     console.log('User validated:', callerUser.id, callerUser.email);
 
     // Granular permission check (Faza 2)

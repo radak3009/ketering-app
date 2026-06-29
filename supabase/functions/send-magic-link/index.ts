@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import { sendEmail } from '../_shared/smtp.ts';
-import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
+import { assertNotDemo, assertPermission, getCallerUser } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,16 +69,9 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new Error('Neautorizovan pristup');
-    }
-
-    const token = authHeader.slice('Bearer '.length);
-    const { data: { user: callerUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
+    const { user: callerUser, error: userError } = await getCallerUser(req, supabaseAdmin);
     if (userError || !callerUser) {
-      console.error('JWT validation failed:', userError?.message);
+      console.error('JWT validation failed:', userError);
       throw new Error('Neautorizovan pristup');
     }
 
