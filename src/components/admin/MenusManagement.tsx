@@ -21,6 +21,8 @@ import { WEEK_DAYS } from "@/constants";
 import { MenuTemplatesTab } from "./MenuTemplatesTab";
 import { AssignMenuDialog } from "./AssignMenuDialog";
 import { TablePagination } from "@/components/ui/table-pagination";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 interface MenuFormState {
   description: string;
