@@ -383,10 +383,13 @@ export function MenusManagement() {
               </CardTitle>
               <CardDescription className="text-xs md:text-sm">Pregled dodeljenih jelovnika po nedeljama i datumima</CardDescription>
             </div>
+            {hasPerm("menus.write") && (
             <Button className="w-full md:w-auto" onClick={() => setAssignDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Dodeli jelovnik
             </Button>
+            )}
+
             <Sheet open={isCreateMenuOpen} onOpenChange={setIsCreateMenuOpen}>
               <SheetTrigger asChild>
                 <Button className="hidden">
