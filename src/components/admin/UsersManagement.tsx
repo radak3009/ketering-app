@@ -872,8 +872,9 @@ export function UsersManagement() {
                         .map(user => (
                         <div
                           key={user.id}
-                          className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
-                          onClick={() => setSelectedUser({...user})}
+                          className={`p-3 border rounded-lg bg-card ${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                          onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
