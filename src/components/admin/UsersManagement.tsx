@@ -72,6 +72,7 @@ export function UsersManagement() {
   const isMobile = useIsMobile();
   const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
   const { roles } = useRoles();
+  const { has: hasPerm } = usePermissions();
   const [changingRole, setChangingRole] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
