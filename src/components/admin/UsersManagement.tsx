@@ -669,6 +669,7 @@ export function UsersManagement() {
                       />
                     </div>
                     
+                    {hasPerm("users.assign_role") && (
                     <div>
                       <Label>Uloga</Label>
                       <Select
@@ -687,6 +688,8 @@ export function UsersManagement() {
                         </SelectContent>
                       </Select>
                     </div>
+                    )}
+
                     
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center space-x-2">
