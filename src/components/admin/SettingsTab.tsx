@@ -66,30 +66,52 @@ export function SettingsTab() {
   const kitchenKioskUrlMasked = `/kiosk/kitchen?t=••••••••`;
   const hasValidTokens = employeeToken.length > 0 && kitchenToken.length > 0;
 
+  const { has: hasPerm } = usePermissions();
+  const canKiosk = hasPerm("settings.kiosk");
+  const canKitchen = hasPerm("settings.kitchen");
+  const canOrg = hasPerm("settings.organization");
+  const canRoles = hasPerm("settings.roles");
+  const visibleTabs = [
+    canKiosk && "kiosk",
+    canKitchen && "kitchen",
+    canOrg && "organization",
+    canRoles && "roles",
+  ].filter(Boolean) as string[];
+  const defaultTab = visibleTabs[0] || "kiosk";
+
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="kiosk" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
+          {canKiosk && (
           <TabsTrigger value="kiosk" className="gap-1.5">
             <MonitorSmartphone className="h-4 w-4" />
             <span className="hidden sm:inline">Kiosk postavke</span>
             <span className="sm:hidden">Kiosk</span>
           </TabsTrigger>
+          )}
+          {canKitchen && (
           <TabsTrigger value="kitchen" className="gap-1.5">
             <Clock className="h-4 w-4" />
             <span>Kuhinja</span>
           </TabsTrigger>
+          )}
+          {canOrg && (
           <TabsTrigger value="organization" className="gap-1.5">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Organizacija</span>
             <span className="sm:hidden">Org.</span>
           </TabsTrigger>
+          )}
+          {canRoles && (
           <TabsTrigger value="roles" className="gap-1.5">
             <ShieldCheck className="h-4 w-4" />
             <span className="hidden sm:inline">Uloge i dozvole</span>
             <span className="sm:hidden">Uloge</span>
           </TabsTrigger>
+          )}
         </TabsList>
+
 
         {/* Kiosk Tab */}
         <TabsContent value="kiosk">
