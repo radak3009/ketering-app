@@ -72,11 +72,23 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get all employee profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('user_id, email, full_name, role')
-      .eq('role', 'employee');
+    // Get all employee profiles via user_roles join (roles.panel='employee').
+    const { data: empRoleRows, error: empRolesError } = await supabase
+      .from('user_roles')
+      .select('user_id, roles:role_id!inner(panel)')
+      .eq('roles.panel', 'employee');
+    if (empRolesError) {
+      console.error("Error fetching employee user_roles:", empRolesError);
+      throw empRolesError;
+    }
+    const employeeIds = (empRoleRows ?? []).map((r: any) => r.user_id).filter(Boolean);
+
+    const { data: profiles, error: profilesError } = employeeIds.length > 0
+      ? await supabase
+          .from('profiles')
+          .select('user_id, email, full_name')
+          .in('user_id', employeeIds)
+      : { data: [], error: null } as any;
 
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);

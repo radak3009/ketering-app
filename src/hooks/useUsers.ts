@@ -14,14 +14,14 @@ export function useUsers() {
       setLoading(true);
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
+        .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, password_set, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       const { data: rolesData } = await supabase
         .from('user_roles' as any)
-        .select('user_id, role, role_id, roles:role_id(id, key, name, panel)');
+        .select('user_id, role_id, roles:role_id(id, key, name, panel)');
 
       // O(n) lookup using Map
       const roleByUserId = new Map<string, any>(
@@ -30,9 +30,10 @@ export function useUsers() {
 
       const usersWithRoles = (profilesData || []).map(profile => {
         const r = roleByUserId.get(profile.user_id);
+        const panel = r?.roles?.panel as 'admin' | 'employee' | undefined;
         return {
           ...profile,
-          role: r?.role || 'employee',
+          role: panel === 'admin' ? 'admin' : 'employee',
           role_id: r?.role_id || null,
           role_key: r?.roles?.key || null,
           role_name: r?.roles?.name || null,
@@ -79,7 +80,7 @@ export function useUsers() {
         Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
       );
 
-      let updatedData = currentUser;
+      let updatedData: any = currentUser;
 
       if (Object.keys(cleanUpdates).length > 0) {
         const { data, error } = await supabase
@@ -94,7 +95,7 @@ export function useUsers() {
       } else if (updates.email) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
+          .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, password_set, created_at, updated_at')
           .eq('id', id)
           .single();
 
@@ -104,14 +105,15 @@ export function useUsers() {
 
       const { data: roleData } = await supabase
         .from('user_roles' as any)
-        .select('role, role_id, roles:role_id(id, key, name)')
+        .select('role_id, roles:role_id(id, key, name, panel)')
         .eq('user_id', updatedData.user_id)
         .maybeSingle();
 
       const r: any = roleData;
+      const panel = r?.roles?.panel as 'admin' | 'employee' | undefined;
       const updatedUser = {
         ...updatedData,
-        role: r?.role || 'employee',
+        role: panel === 'admin' ? 'admin' : 'employee',
         role_id: r?.role_id || null,
         role_key: r?.roles?.key || null,
         role_name: r?.roles?.name || null,
@@ -271,12 +273,13 @@ export function useUsers() {
       if (error) throw new Error(error.message || 'Greška pri promeni uloge');
       if (data?.error) throw new Error(data.error);
 
-      const enumRole = (data?.data?.role as 'admin' | 'employee') || undefined;
+      const panel = (data?.data?.panel as 'admin' | 'employee' | undefined);
+      const derivedRole: 'admin' | 'employee' = panel === 'admin' ? 'admin' : 'employee';
       setUsers(prev => prev.map(user =>
         user.id === userId
           ? {
               ...user,
-              role: enumRole ?? user.role,
+              role: panel ? derivedRole : user.role,
               role_id: data?.data?.role_id ?? user.role_id,
               role_key: data?.data?.role_key ?? roleKey,
               role_name: data?.data?.role_name ?? user.role_name,
