@@ -770,7 +770,6 @@ export type Database = {
           id: string
           password_set: boolean
           phone: string | null
-          role: Database["public"]["Enums"]["app_role"]
           tag: string | null
           updated_at: string
           user_id: string
@@ -786,7 +785,6 @@ export type Database = {
           id?: string
           password_set?: boolean
           phone?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
           tag?: string | null
           updated_at?: string
           user_id: string
@@ -802,7 +800,6 @@ export type Database = {
           id?: string
           password_set?: boolean
           phone?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
           tag?: string | null
           updated_at?: string
           user_id?: string
@@ -956,21 +953,18 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
           role_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
           role_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
           role_id?: string | null
           user_id?: string
         }
