@@ -164,8 +164,9 @@ export function FeedbackManagement() {
                           <TableCell className="text-center">
                             <Checkbox
                               checked={item.obradeno}
+                              disabled={!canProcess}
                               onCheckedChange={() => {}}
-                              onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                              onClick={(e) => { if (canProcess) handleCheckboxChange(e, item.id, item.obradeno); }}
                             />
                           </TableCell>
                         </TableRow>
