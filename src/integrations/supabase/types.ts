@@ -1055,14 +1055,6 @@ export type Database = {
         Args: { _perm: string; _user: string }
         Returns: boolean
       }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_admin_user: { Args: { user_uuid: string }; Returns: boolean }
       is_demo: { Args: never; Returns: boolean }
       is_demo_user: { Args: { _user: string }; Returns: boolean }
       list_old_receipts: {
