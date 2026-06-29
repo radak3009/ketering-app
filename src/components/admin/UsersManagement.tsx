@@ -1409,6 +1409,7 @@ export function UsersManagement() {
                   </AlertDialogContent>
                 </AlertDialog>
 
+                {hasPerm("users.delete") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
@@ -1434,6 +1435,8 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
+
               </div>
             </div>
           )}
