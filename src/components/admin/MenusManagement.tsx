@@ -358,10 +358,13 @@ export function MenusManagement() {
     <>
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'templates' | 'assignments')} className="w-full">
         <TabsList className="grid grid-cols-2 w-full max-w-md">
+          {hasPerm("menus.templates") && (
           <TabsTrigger value="templates" className="gap-2">
             <ListChecks className="h-4 w-4" />
             <span>Jelovnici</span>
           </TabsTrigger>
+          )}
+
           <TabsTrigger value="assignments" className="gap-2">
             <Calendar className="h-4 w-4" />
             <span>Dodela Jelovnika</span>
