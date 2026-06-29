@@ -214,10 +214,12 @@ export function ReportsTab() {
             </div>
           )}
           
+          {hasPerm("reports.export") && (
           <Button onClick={handleExportReport} className="w-full">
             <Download className="h-4 w-4 mr-2" />
             Generiši i preuzmi CSV
           </Button>
+          )}
         </CardContent>
       </Card>
       
