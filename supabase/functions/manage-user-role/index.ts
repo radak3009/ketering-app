@@ -1,5 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
-import { assertNotDemo, assertPermission } from '../_shared/auth.ts';
+import { createAdminClient, getCallerUser, assertNotDemo, assertPermission } from '../_shared/auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,51 +8,32 @@ const corsHeaders = {
 interface RoleRequest {
   userId: string;
   roleKey?: string;
-  // Legacy fallback (admin/employee enum); still accepted for backward-compat.
-  role?: 'admin' | 'employee';
+  role?: 'admin' | 'employee'; // legacy fallback
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Create Supabase client with service role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createAdminClient();
 
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('No authorization header provided');
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify the caller is an admin
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      console.error('Failed to get user:', userError);
+    // Use shared caller resolution (decodes JWT locally; avoids GoTrue "Auth session missing").
+    const { user, error: callerError } = await getCallerUser(req, supabase);
+    if (callerError || !user) {
+      console.error('manage-user-role: caller resolution failed:', callerError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Granular: only roles with users.assign_role can mutate user_roles (HR no longer has it).
     const permBlock = await assertPermission(supabase, user.id, 'users.assign_role', corsHeaders);
     if (permBlock) return permBlock;
     const demoBlock = await assertNotDemo(supabase, user.id, corsHeaders);
     if (demoBlock) return demoBlock;
 
-    // Parse request body
     const { userId, roleKey, role: legacyRole }: RoleRequest = await req.json();
 
     if (!userId || (!roleKey && !legacyRole)) {
@@ -63,7 +43,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Resolve role: prefer roleKey, fallback to legacy enum mapping.
     let resolvedKey = roleKey;
     if (!resolvedKey && legacyRole) {
       resolvedKey = legacyRole === 'admin' ? 'administrator' : 'zaposleni';
@@ -82,9 +61,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Admin ${user.email} is updating role for user ${userId} -> ${roleRow.key} (panel=${roleRow.panel})`);
+    // Self-demotion guard: prevent the caller from removing their own last admin role.
+    if (userId === user.id && roleRow.panel !== 'admin') {
+      return new Response(
+        JSON.stringify({ error: 'Ne možete sami sebi skinuti administratorsku ulogu.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Delete existing roles for this user
+    console.log(`Caller ${user.id} updating role for ${userId} -> ${roleRow.key} (panel=${roleRow.panel})`);
+
     const { error: deleteError } = await supabase
       .from('user_roles')
       .delete()
@@ -98,11 +84,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert new role. Provide enum `role` as fallback (trigger also syncs it from role_id).
-    const enumRole = roleRow.panel === 'admin' ? 'admin' : 'employee';
+    // Insert only role_id; trg_sync_user_role_enum populates the `role` enum from roles.panel.
+    // Eksplicitno NE prosleđujemo `role` da izbegnemo bilo kakav konflikt sa trigerom.
     const { data, error: insertError } = await supabase
       .from('user_roles')
-      .insert({ user_id: userId, role_id: roleRow.id, role: enumRole })
+      .insert({ user_id: userId, role_id: roleRow.id })
       .select('id, user_id, role, role_id')
       .single();
 
@@ -113,8 +99,6 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log(`Successfully updated role for user ${userId} to ${roleRow.key}`);
 
     return new Response(
       JSON.stringify({
