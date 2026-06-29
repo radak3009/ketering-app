@@ -46,6 +46,8 @@ export function AdminDashboard() {
   const { t } = useTranslation();
   const { signOut } = useAuth();
   const { toast } = useToast();
+  const { has, hasAny, loading: permsLoading } = usePermissions();
+
   
   
   const [notificationsLoading, setNotificationsLoading] = useState(false);
