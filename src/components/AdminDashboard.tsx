@@ -501,6 +501,8 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto">
+                  {has("notifications.menu") && (
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">{t('admin.notifications.menuAlert.title')}</CardTitle>
