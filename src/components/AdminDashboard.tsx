@@ -222,6 +222,8 @@ export function AdminDashboard() {
           </div>
         )}
         {has("dashboard.view") && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+
 
           {/* Card 1: Top 3 obroka */}
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
