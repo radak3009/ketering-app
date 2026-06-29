@@ -10,6 +10,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
+import { usePermissions } from "@/hooks/usePermissions";
 import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear } from "date-fns";
 
 export function ReportsTab() {
