@@ -836,6 +836,7 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
                 <Button 
                   size="sm" 
                   variant="ghost" 
