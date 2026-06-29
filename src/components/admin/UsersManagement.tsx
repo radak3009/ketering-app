@@ -802,6 +802,7 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                {hasPerm("users.delete") && (
                 <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="destructive">
@@ -809,6 +810,7 @@ export function UsersManagement() {
                       Obriši izabrane
                     </Button>
                   </AlertDialogTrigger>
+
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Masovno brisanje korisnika</AlertDialogTitle>
