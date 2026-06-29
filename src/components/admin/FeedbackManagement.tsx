@@ -214,8 +214,9 @@ export function FeedbackManagement() {
                 <div className="mt-1">
                   <Checkbox
                     checked={selectedItem?.obradeno}
+                    disabled={!canProcess}
                     onCheckedChange={() => {
-                      if (selectedItem) {
+                      if (selectedItem && canProcess) {
                         handleCheckboxChange({ stopPropagation: () => {} } as React.MouseEvent, selectedItem.id, selectedItem.obradeno);
                         setSelectedItem({ ...selectedItem, obradeno: !selectedItem.obradeno });
                       }
