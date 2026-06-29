@@ -8,6 +8,7 @@ import { ChevronRight, ChevronDown, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Order {
   id: string;
