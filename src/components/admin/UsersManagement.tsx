@@ -1376,9 +1376,10 @@ export function UsersManagement() {
               </div>
               
               <div className="space-y-2 pt-4">
+                {hasPerm("users.update") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="w-full" disabled={updatingUser}>
+                    <Button className="w-full" disabled={updatingUser} data-readonly-allowed>
                       {updatingUser ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1414,6 +1415,7 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
 
                 {hasPerm("users.delete") && (
                 <AlertDialog>
