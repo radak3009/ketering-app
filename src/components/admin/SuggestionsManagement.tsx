@@ -14,10 +14,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function SuggestionsManagement() {
   const isMobile = useIsMobile();
   const { suggestions, loading, updateSuggestion } = useSuggestions();
+  const { has: hasPerm } = usePermissions();
+  const canProcess = hasPerm('suggestions.process');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<SuggestionWithProfile | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -118,8 +121,9 @@ export function SuggestionsManagement() {
                           </span>
                           <Checkbox
                             checked={item.obradeno}
+                            disabled={!canProcess}
                             onCheckedChange={() => {}}
-                            onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                            onClick={(e) => { if (canProcess) handleCheckboxChange(e, item.id, item.obradeno); }}
                           />
                         </div>
                       </div>
@@ -169,8 +173,9 @@ export function SuggestionsManagement() {
                           <TableCell className="text-center">
                             <Checkbox
                               checked={item.obradeno}
+                              disabled={!canProcess}
                               onCheckedChange={() => {}}
-                              onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                              onClick={(e) => { if (canProcess) handleCheckboxChange(e, item.id, item.obradeno); }}
                             />
                           </TableCell>
                         </TableRow>
@@ -218,8 +223,9 @@ export function SuggestionsManagement() {
                 <div className="mt-1">
                   <Checkbox
                     checked={selectedItem?.obradeno}
+                    disabled={!canProcess}
                     onCheckedChange={() => {
-                      if (selectedItem) {
+                      if (selectedItem && canProcess) {
                         handleCheckboxChange({ stopPropagation: () => {} } as React.MouseEvent, selectedItem.id, selectedItem.obradeno);
                         setSelectedItem({ ...selectedItem, obradeno: !selectedItem.obradeno });
                       }

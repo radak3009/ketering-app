@@ -49,10 +49,12 @@ export interface AdminOrderDialogProps {
     mealId: string;
     mealPrice: number;
   }) => Promise<void>;
+  /** Whether the user can save changes. If false in edit mode, the dialog is read-only. */
+  canEdit?: boolean;
 }
 
 export function AdminOrderDialog({
-  open, onOpenChange, users, meals, onSubmit, editData, onUpdate,
+  open, onOpenChange, users, meals, onSubmit, editData, onUpdate, canEdit = true,
 }: AdminOrderDialogProps) {
   const [userId, setUserId] = useState("");
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>();
@@ -64,6 +66,7 @@ export function AdminOrderDialog({
   const [mealOpen, setMealOpen] = useState(false);
 
   const isEdit = !!editData;
+  const readOnly = isEdit && !canEdit;
 
   useEffect(() => {
     if (open) {
@@ -249,7 +252,7 @@ export function AdminOrderDialog({
           {/* Shift */}
           <div className="space-y-1.5">
             <Label>Smena</Label>
-            <Select value={shift} onValueChange={setShift}>
+            <Select value={shift} onValueChange={setShift} disabled={readOnly}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -266,12 +269,13 @@ export function AdminOrderDialog({
           {/* Meal - searchable */}
           <div className="space-y-1.5">
             <Label>Obrok</Label>
-            <Popover open={mealOpen} onOpenChange={setMealOpen}>
+            <Popover open={mealOpen} onOpenChange={(o) => !readOnly && setMealOpen(o)}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
                   aria-expanded={mealOpen}
+                  disabled={readOnly}
                   className={cn(
                     "w-full justify-between font-normal",
                     !mealId && "text-muted-foreground"
@@ -329,11 +333,13 @@ export function AdminOrderDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Otkaži
+            {readOnly ? "Zatvori" : "Otkaži"}
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
-            {saving ? "Čuvanje..." : isEdit ? "Sačuvaj izmene" : "Kreiraj porudžbinu"}
-          </Button>
+          {!readOnly && (
+            <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
+              {saving ? "Čuvanje..." : isEdit ? "Sačuvaj izmene" : "Kreiraj porudžbinu"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

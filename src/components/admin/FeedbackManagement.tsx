@@ -14,10 +14,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function FeedbackManagement() {
   const isMobile = useIsMobile();
   const { feedback, loading, updateFeedback } = useFeedback();
+  const { has: hasPerm } = usePermissions();
+  const canProcess = hasPerm('feedback.process');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<FeedbackWithProfile | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -118,8 +121,9 @@ export function FeedbackManagement() {
                           </span>
                           <Checkbox
                             checked={item.obradeno}
+                            disabled={!canProcess}
                             onCheckedChange={() => {}}
-                            onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                            onClick={(e) => { if (canProcess) handleCheckboxChange(e, item.id, item.obradeno); }}
                           />
                         </div>
                       </div>
@@ -160,8 +164,9 @@ export function FeedbackManagement() {
                           <TableCell className="text-center">
                             <Checkbox
                               checked={item.obradeno}
+                              disabled={!canProcess}
                               onCheckedChange={() => {}}
-                              onClick={(e) => handleCheckboxChange(e, item.id, item.obradeno)}
+                              onClick={(e) => { if (canProcess) handleCheckboxChange(e, item.id, item.obradeno); }}
                             />
                           </TableCell>
                         </TableRow>
@@ -209,8 +214,9 @@ export function FeedbackManagement() {
                 <div className="mt-1">
                   <Checkbox
                     checked={selectedItem?.obradeno}
+                    disabled={!canProcess}
                     onCheckedChange={() => {
-                      if (selectedItem) {
+                      if (selectedItem && canProcess) {
                         handleCheckboxChange({ stopPropagation: () => {} } as React.MouseEvent, selectedItem.id, selectedItem.obradeno);
                         setSelectedItem({ ...selectedItem, obradeno: !selectedItem.obradeno });
                       }

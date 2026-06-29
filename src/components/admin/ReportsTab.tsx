@@ -10,6 +10,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useUsers } from "@/hooks/useUsers";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenus } from "@/hooks/useMenus";
+import { usePermissions } from "@/hooks/usePermissions";
 import { format, startOfWeek, endOfWeek, addWeeks, getWeek, getYear } from "date-fns";
 
 export function ReportsTab() {
@@ -18,6 +19,8 @@ export function ReportsTab() {
   const { users } = useUsers();
   const { meals } = useMeals();
   const { menus } = useMenus();
+  const { has: hasPerm } = usePermissions();
+  
   
   const [reportType, setReportType] = useState("orders");
   const [reportDateRange, setReportDateRange] = useState({
@@ -211,10 +214,12 @@ export function ReportsTab() {
             </div>
           )}
           
+          {hasPerm("reports.export") && (
           <Button onClick={handleExportReport} className="w-full">
             <Download className="h-4 w-4 mr-2" />
             Generiši i preuzmi CSV
           </Button>
+          )}
         </CardContent>
       </Card>
       

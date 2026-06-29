@@ -514,11 +514,9 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId} · {item.tag}</p>
                               </div>
                               <div className="flex gap-1 shrink-0">
-                                {hasPerm("orders.update") && (
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)} title={hasPerm("orders.update") ? "Izmeni" : "Pregled"}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
-                                )}
                                 {hasPerm("orders.delete") && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -581,11 +579,9 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
-                                    {hasPerm("orders.update") && (
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)} title={hasPerm("orders.update") ? "Izmeni" : "Pregled"}>
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
-                                    )}
                                     {hasPerm("orders.delete") && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                       <Trash2 className="h-3.5 w-3.5" />
@@ -658,6 +654,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
         users={users}
         meals={meals}
         editData={editData}
+        canEdit={editData ? hasPerm("orders.update") : hasPerm("orders.create")}
         onSubmit={async (data) => {
           await createAdminOrder({
             userId: data.userId,

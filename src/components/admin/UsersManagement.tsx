@@ -872,8 +872,8 @@ export function UsersManagement() {
                         .map(user => (
                         <div
                           key={user.id}
-                          className={`p-3 border rounded-lg bg-card ${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""}`}
-                          onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+                          className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedUser({...user})}
 
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -1042,8 +1042,8 @@ export function UsersManagement() {
                           .map(user => (
                           <TableRow 
                             key={user.id}
-                            className={`${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""} ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
-                            onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+                            className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
+                            onClick={() => setSelectedUser({...user})}
 
                           >
                             <TableCell onClick={(e) => e.stopPropagation()}>
@@ -1127,10 +1127,10 @@ export function UsersManagement() {
       }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Izmeni korisnika</SheetTitle>
+            <SheetTitle>{hasPerm("users.update") ? "Izmeni korisnika" : "Pregled korisnika"}</SheetTitle>
           </SheetHeader>
           {selectedUser && (
-            <div className="space-y-4 mt-6">
+            <fieldset disabled={!hasPerm("users.update")} className={`space-y-4 mt-6 border-0 p-0 m-0 ${!hasPerm("users.update") ? "[&_button:not([data-readonly-allowed])]:pointer-events-none [&_[role=combobox]]:pointer-events-none [&_[role=checkbox]]:pointer-events-none [&_[role=switch]]:pointer-events-none" : ""}`}>
               <div>
                 <Label htmlFor="edit-user-name">Ime i prezime</Label>
                 <Input 
@@ -1376,9 +1376,10 @@ export function UsersManagement() {
               </div>
               
               <div className="space-y-2 pt-4">
+                {hasPerm("users.update") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="w-full" disabled={updatingUser}>
+                    <Button className="w-full" disabled={updatingUser} data-readonly-allowed>
                       {updatingUser ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1414,6 +1415,7 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
 
                 {hasPerm("users.delete") && (
                 <AlertDialog>
@@ -1444,7 +1446,7 @@ export function UsersManagement() {
                 )}
 
               </div>
-            </div>
+            </fieldset>
           )}
         </SheetContent>
       </Sheet>
