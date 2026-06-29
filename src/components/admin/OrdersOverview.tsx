@@ -581,13 +581,18 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
+                                    {hasPerm("orders.update") && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
+                                    )}
+                                    {hasPerm("orders.delete") && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
+                                    )}
                                   </div>
+
                                 </TableCell>
                               </TableRow>
                             ))
