@@ -51,6 +51,8 @@ const SHIFT_ROMAN: Record<string, string> = {
 
 export function UserOrderPivotTable({ orders, userCardFilter = '', shiftFilter }: UserOrderPivotTableProps) {
   const isMobile = useIsMobile();
+  const { has: hasPerm } = usePermissions();
+  const canExport = hasPerm("orders.export_csv");
   const [mobilePage, setMobilePage] = useState(1);
   const [mobilePageSize, setMobilePageSize] = useState(20);
   const [desktopPage, setDesktopPage] = useState(1);
