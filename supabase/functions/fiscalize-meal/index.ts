@@ -3,6 +3,7 @@ import { PDFDocument, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 import QRCode from "https://esm.sh/qrcode@1.5.4/lib/server.js?target=deno";
 import fontkit from "https://esm.sh/@pdf-lib/fontkit@1.1.1";
 import { sendEmail } from "../_shared/smtp.ts";
+import { getCallerUser } from "../_shared/auth.ts";
 
 const ALERT_EMAIL = "support@simpler.rs";
 const ALERT_CC_EMAIL = "zdravko.strbac@hogo.rs";
@@ -168,32 +169,20 @@ Deno.serve(async (req) => {
     const isKiosk = kioskToken && (kioskToken === employeeToken || kioskToken === kitchenToken);
 
     if (!isKiosk) {
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(
-          JSON.stringify({ error: "Nedozvoljen pristup" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const token = authHeader.replace("Bearer ", "");
-      const authClient = createClient(
+      const adminClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
-      const { data: userData, error: userErr } = await authClient.auth.getUser(token);
-      if (userErr || !userData?.user) {
+      const { user: caller, error: callerError } = await getCallerUser(req, adminClient);
+      if (callerError || !caller) {
         return new Response(
           JSON.stringify({ error: "Nevažeći token" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const adminClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
       // Granular: zahteva orders.fiscalize (Administrator-only po default-u).
       const { data: allowed } = await adminClient.rpc("has_permission", {
-        _user: userData.user.id,
+        _user: caller.id,
         _perm: "orders.fiscalize",
       });
       if (!allowed) {

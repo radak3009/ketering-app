@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCallerUser } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,24 +22,21 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user JWT
-    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Use service role for DB and storage access
+    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getUser(token);
-    if (claimsError || !claimsData?.user) {
+    // Verify user JWT (lokalni JWT decode preko shared helpera)
+    const { user: caller, error: callerError } = await getCallerUser(req, serviceClient);
+    if (callerError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.user.id;
+    const userId = caller.id;
 
     // Parse pickupId from query string
     const url = new URL(req.url);
@@ -50,8 +48,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role for DB and storage access
-    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+
 
     // Fetch pickup request
     const { data: pickup, error: pickupErr } = await serviceClient

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { assertNotDemo, assertPermission } from "../_shared/auth.ts";
+import { assertNotDemo, assertPermission, getCallerUser } from "../_shared/auth.ts";
 
 
 const corsHeaders = {
@@ -20,7 +20,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Verify the caller is an admin
+    // Verify the caller (lokalni JWT decode preko shared helpera)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       console.error("No authorization header provided");
@@ -30,17 +30,11 @@ serve(async (req: Request) => {
       );
     }
 
-    // Create a client for the calling user
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Get the calling user
-    const { data: { user: callingUser }, error: userError } = await userClient.auth.getUser();
+    const { user: callingUser, error: userError } = await getCallerUser(req, adminClient);
     if (userError || !callingUser) {
       console.error("Error getting calling user:", userError);
       return new Response(
@@ -49,8 +43,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check if calling user is an admin using the is_admin_user function
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const permBlock = await assertPermission(adminClient, callingUser.id, "users.update", corsHeaders);
     if (permBlock) return permBlock;
     const demoBlock = await assertNotDemo(adminClient, callingUser.id, corsHeaders);
