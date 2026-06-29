@@ -521,8 +521,10 @@ export function AdminDashboard() {
                       </Button>
                     </CardContent>
                   </Card>
-                  
+                  )}
+                  {has("notifications.reminder") && (
                   <Card>
+
                     <CardHeader>
                       <CardTitle className="text-base">{t('admin.notifications.reminder.title')}</CardTitle>
                       <CardDescription className="text-xs">
