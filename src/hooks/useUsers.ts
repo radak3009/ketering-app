@@ -14,14 +14,14 @@ export function useUsers() {
       setLoading(true);
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
+        .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, password_set, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       const { data: rolesData } = await supabase
         .from('user_roles' as any)
-        .select('user_id, role, role_id, roles:role_id(id, key, name, panel)');
+        .select('user_id, role_id, roles:role_id(id, key, name, panel)');
 
       // O(n) lookup using Map
       const roleByUserId = new Map<string, any>(
@@ -30,9 +30,10 @@ export function useUsers() {
 
       const usersWithRoles = (profilesData || []).map(profile => {
         const r = roleByUserId.get(profile.user_id);
+        const panel = r?.roles?.panel as 'admin' | 'employee' | undefined;
         return {
           ...profile,
-          role: r?.role || 'employee',
+          role: panel === 'admin' ? 'admin' : 'employee',
           role_id: r?.role_id || null,
           role_key: r?.roles?.key || null,
           role_name: r?.roles?.name || null,
