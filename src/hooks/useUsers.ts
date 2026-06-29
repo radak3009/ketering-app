@@ -273,12 +273,13 @@ export function useUsers() {
       if (error) throw new Error(error.message || 'Greška pri promeni uloge');
       if (data?.error) throw new Error(data.error);
 
-      const enumRole = (data?.data?.role as 'admin' | 'employee') || undefined;
+      const panel = (data?.data?.panel as 'admin' | 'employee' | undefined);
+      const derivedRole: 'admin' | 'employee' = panel === 'admin' ? 'admin' : 'employee';
       setUsers(prev => prev.map(user =>
         user.id === userId
           ? {
               ...user,
-              role: enumRole ?? user.role,
+              role: panel ? derivedRole : user.role,
               role_id: data?.data?.role_id ?? user.role_id,
               role_key: data?.data?.role_key ?? roleKey,
               role_name: data?.data?.role_name ?? user.role_name,
