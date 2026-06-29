@@ -485,11 +485,13 @@ export function UsersManagement() {
                 <Download className="h-4 w-4 mr-2" />
                 Preuzmi template
               </Button>
+              {hasPerm("users.import") && (
               <Button variant="outline" onClick={() => csvInputRef.current?.click()} className="w-full md:w-auto">
                 <FileText className="h-4 w-4 mr-2" />
                 Uvezi CSV/XLSX
               </Button>
-              {csvFile && (
+              )}
+              {csvFile && hasPerm("users.import") && (
                 <div className="flex items-center gap-2">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -524,7 +526,9 @@ export function UsersManagement() {
                   </Button>
                 </div>
               )}
+              {hasPerm("users.create") && (
               <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+
                 <SheetTrigger asChild>
                   <Button onClick={() => { resetUserForm(); setShowCustomTagInput(false); setIsAddUserOpen(true); }} className="w-full md:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
