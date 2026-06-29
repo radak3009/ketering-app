@@ -884,6 +884,7 @@ export function UsersManagement() {
                               <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
                                 {(user as any).role_name || (user.role === 'admin' ? 'Admin' : 'Zaposleni')}
                               </Badge>
+                              {hasPerm("users.invite") && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -895,6 +896,7 @@ export function UsersManagement() {
                               >
                                 <Mail className="h-3.5 w-3.5" />
                               </Button>
+                              )}
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
