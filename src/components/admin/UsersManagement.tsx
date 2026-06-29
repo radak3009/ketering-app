@@ -751,7 +751,9 @@ export function UsersManagement() {
                   </div>
                 </SheetContent>
               </Sheet>
+              )}
             </div>
+
           </div>
         </CardHeader>
         <CardContent>
