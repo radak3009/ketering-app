@@ -111,17 +111,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('[AuthContext] Fetching profile + tag setting for user:', userId);
         }
         
-        const [profileResult, roleResult, tagSettingResult] = await Promise.all([
+        const [profileResult, panelResult, tagSettingResult] = await Promise.all([
           supabase
             .from('profiles')
             .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
             .eq('user_id', userId)
             .maybeSingle(),
-          supabase
-            .from('user_roles' as any)
-            .select('role')
-            .eq('user_id', userId)
-            .maybeSingle(),
+          supabase.rpc('get_user_panel', { _user: userId }),
           supabase
             .from('app_settings' as any)
             .select('value')
@@ -130,8 +126,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
 
         const { data: profileData, error: profileError } = profileResult;
-        const { data: roleData, error: roleError } = roleResult;
-        
+        const { data: panelData, error: panelError } = panelResult;
+
         // Process tag setting
         if (tagSettingResult.data) {
           const val = (tagSettingResult.data as any).value;
@@ -139,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTagSelectionVisible(anyVisible);
         }
         setTagSettingLoaded(true);
-        
+
         if (profileError) {
           if (import.meta.env.DEV) {
             console.error('[AuthContext] Error fetching profile:', profileError);
@@ -148,23 +144,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProcessingAuth(false);
           return;
         }
-        
+
+        // Panel se RBAC izvor istine — derivira 'admin'/'employee' iz roles.panel preko RPC-a.
+        // Legacy profiles.role kolona se više NE čita za odluku panela.
         let userRole: 'admin' | 'employee' = 'employee';
-        
-        if (profileData) {
-          if (roleError) {
-            if (import.meta.env.DEV) {
-              console.error('[AuthContext] Error fetching role:', roleError);
-            }
-            userRole = (profileData.role as 'admin' | 'employee') || 'employee';
-          } else if (roleData) {
-            const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
-            userRole = typedRoleData.role;
-          } else {
-            userRole = (profileData.role as 'admin' | 'employee') || 'employee';
+        if (panelError) {
+          if (import.meta.env.DEV) {
+            console.error('[AuthContext] Error fetching panel:', panelError);
           }
+        } else if (panelData === 'admin') {
+          userRole = 'admin';
         }
-        
+
         if (import.meta.env.DEV) {
           console.log('[AuthContext] Profile loaded successfully:', { userId, role: userRole });
         }
@@ -348,30 +339,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Function to refresh profile (after password is set)
   const refreshProfile = useCallback(async () => {
     if (user) {
-      const [profileResult, roleResult] = await Promise.all([
+      const [profileResult, panelResult] = await Promise.all([
         supabase
           .from('profiles')
           .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
           .eq('user_id', user.id)
           .maybeSingle(),
-        supabase
-          .from('user_roles' as any)
-          .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle()
+        supabase.rpc('get_user_panel', { _user: user.id })
       ]);
 
       const { data: profileData } = profileResult;
-      const { data: roleData } = roleResult;
+      const { data: panelData } = panelResult;
 
       if (profileData) {
-        let userRole: 'admin' | 'employee' = 'employee';
-        if (roleData) {
-          const typedRoleData = roleData as unknown as { role: 'admin' | 'employee' };
-          userRole = typedRoleData.role;
-        } else {
-          userRole = (profileData.role as 'admin' | 'employee') || 'employee';
-        }
+        const userRole: 'admin' | 'employee' = panelData === 'admin' ? 'admin' : 'employee';
         setProfile({ ...profileData, role: userRole });
       }
     }

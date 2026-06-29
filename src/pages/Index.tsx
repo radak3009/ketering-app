@@ -64,14 +64,7 @@ const Index = () => {
     );
   }
 
-  // Ako ima user i profile, ali još nema role, prikaži loading
-  if (user && profile && !profile.role) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center">
-        <LoadingSpinner size="xl" text="Učitavanje korisničkih podataka..." />
-      </div>
-    );
-  }
+  // Panel determinacija ide kroz usePermissions (get_user_panel), čeka se ispod.
 
   // If user is not authenticated or no profile, show nothing (will redirect in useEffect)
   if (!user || !profile) {

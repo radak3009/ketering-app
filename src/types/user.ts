@@ -1,10 +1,11 @@
-import type { Tables, Enums } from '@/integrations/supabase/types';
+import type { Tables } from '@/integrations/supabase/types';
 
 // Base profile type from database
 export type Profile = Tables<'profiles'>;
 
-// App role type
-export type AppRole = Enums<'app_role'>;
+// Lokalni literal tip (RBAC panel determinacija); NE oslanja se više na enum app_role.
+// Posle drop-a kolone profiles.role (M7.3), ovo ostaje za UI panel selekciju.
+export type AppRole = 'admin' | 'employee';
 
 // Profile with role (merged from user_roles table)
 export interface ProfileWithRole extends Profile {

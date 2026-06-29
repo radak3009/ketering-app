@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { handleError, handleSuccess } from '@/services/errorService';
 import type { Meal, MealInsert, MealUpdate } from '@/types';
 
 export function useMeals() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { has, loading: permsLoading } = usePermissions();
 
-  const isAdmin = profile?.role === 'admin';
+  // Admin staza (puni `meals` select) zahteva meals.view (admin panel dozvola).
+  // Zaposleni idu preko `meals_secure` view-a.
+  const isAdmin = has('meals.view');
 
   const fetchMeals = async () => {
     try {
@@ -101,8 +103,9 @@ export function useMeals() {
   };
 
   useEffect(() => {
+    if (permsLoading) return; // sačekaj pesimistični fallback da se reši
     fetchMeals();
-  }, [isAdmin]);
+  }, [isAdmin, permsLoading]);
 
   return {
     meals,

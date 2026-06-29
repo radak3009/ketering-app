@@ -121,13 +121,13 @@ Deno.serve(async (req) => {
 
     const userMetadata: Record<string, string> = {
       full_name,
-      role: 'employee',
       company_card_id,
     };
     if (tag) userMetadata.tag = tag;
     if (date_of_birth) userMetadata.date_of_birth = date_of_birth;
 
-    // Create user with email NOT confirmed - we send our own verification email
+    // Create user with email NOT confirmed - we send our own verification email.
+    // handle_new_user trigger će automatski kreirati user_roles red sa rolom 'zaposleni'.
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -152,9 +152,8 @@ Deno.serve(async (req) => {
 
     const userId = created.user.id;
 
-    // Ensure user_roles row
-    await supabaseAdmin.from('user_roles').delete().eq('user_id', userId);
-    await supabaseAdmin.from('user_roles').insert({ user_id: userId, role: 'employee' });
+    // M7.0: handle_new_user trigger already inserted user_roles(role_id=zaposleni).
+    // No legacy enum write needed here.
 
     // Generate verification token
     const token = generateToken();

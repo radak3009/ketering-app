@@ -14,7 +14,7 @@ interface UsePermissionsResult {
 }
 
 export function usePermissions(): UsePermissionsResult {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["user-permissions", user?.id],
@@ -29,15 +29,15 @@ export function usePermissions(): UsePermissionsResult {
       const permList = ((permsRes.data ?? []) as string[]) || [];
       return {
         permissions: new Set(permList),
-        panel: (panelRes.data as "admin" | "employee") ?? (profile?.role === "admin" ? "admin" : "employee"),
+        panel: (panelRes.data as "admin" | "employee") ?? "employee",
         isDemo: !!demoRes.data,
       };
     },
   });
 
-  // PESIMISTIČAN fallback: dok dozvole nisu učitane NE dodeljujemo ništa adminskom panelu
-  // (jer Demo/HR/Kuhinja takođe imaju panel=admin pa bismo im davali sve dok query traje).
-  const fallbackPanel: "admin" | "employee" = profile?.role === "admin" ? "admin" : "employee";
+  // PESIMISTIČAN fallback: dok dozvole nisu učitane tretiramo korisnika kao 'employee'.
+  // (Više se ne oslanjamo na profile.role — ide se isključivo preko get_user_panel.)
+  const fallbackPanel: "admin" | "employee" = "employee";
 
   return {
     permissions: data?.permissions ?? new Set<string>(),
@@ -47,13 +47,12 @@ export function usePermissions(): UsePermissionsResult {
     has: (perm) => {
       if (data?.permissions) return data.permissions.has(perm);
       // Pre učitavanja: employee panel može na self.*, sve ostalo blokirano.
-      if (fallbackPanel === "employee" && perm.startsWith("self.")) return true;
+      if (perm.startsWith("self.")) return true;
       return false;
     },
     hasAny: (...perms) => {
       if (data?.permissions) return perms.some((p) => data.permissions.has(p));
-      if (fallbackPanel === "employee") return perms.some((p) => p.startsWith("self."));
-      return false;
+      return perms.some((p) => p.startsWith("self."));
     },
   };
 }
