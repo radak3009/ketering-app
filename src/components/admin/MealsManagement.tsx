@@ -26,6 +26,8 @@ import { uploadImage } from "@/services/storageService";
 import { validateMealCode } from "@/services/validationService";
 import { SHIFTS, MEAL_STATUSES, type MealStatus } from "@/constants";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 type Meal = Tables<'meals'>;
 
