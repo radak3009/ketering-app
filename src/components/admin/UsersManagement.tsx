@@ -1127,10 +1127,10 @@ export function UsersManagement() {
       }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Izmeni korisnika</SheetTitle>
+            <SheetTitle>{hasPerm("users.update") ? "Izmeni korisnika" : "Pregled korisnika"}</SheetTitle>
           </SheetHeader>
           {selectedUser && (
-            <div className="space-y-4 mt-6">
+            <fieldset disabled={!hasPerm("users.update")} className={`space-y-4 mt-6 border-0 p-0 m-0 ${!hasPerm("users.update") ? "[&_button:not([data-readonly-allowed])]:pointer-events-none [&_[role=combobox]]:pointer-events-none [&_[role=checkbox]]:pointer-events-none [&_[role=switch]]:pointer-events-none" : ""}`}>
               <div>
                 <Label htmlFor="edit-user-name">Ime i prezime</Label>
                 <Input 
