@@ -21,6 +21,8 @@ import { WEEK_DAYS } from "@/constants";
 import { MenuTemplatesTab } from "./MenuTemplatesTab";
 import { AssignMenuDialog } from "./AssignMenuDialog";
 import { TablePagination } from "@/components/ui/table-pagination";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 interface MenuFormState {
   description: string;
@@ -40,8 +42,10 @@ export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
   const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu, assignTemplate } = useMenus();
+  const { has: hasPerm } = usePermissions();
   
   const [mainTab, setMainTab] = useState<'templates' | 'assignments'>('templates');
+
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
@@ -354,10 +358,13 @@ export function MenusManagement() {
     <>
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'templates' | 'assignments')} className="w-full">
         <TabsList className="grid grid-cols-2 w-full max-w-md">
+          {hasPerm("menus.templates") && (
           <TabsTrigger value="templates" className="gap-2">
             <ListChecks className="h-4 w-4" />
             <span>Jelovnici</span>
           </TabsTrigger>
+          )}
+
           <TabsTrigger value="assignments" className="gap-2">
             <Calendar className="h-4 w-4" />
             <span>Dodela Jelovnika</span>
@@ -379,10 +386,13 @@ export function MenusManagement() {
               </CardTitle>
               <CardDescription className="text-xs md:text-sm">Pregled dodeljenih jelovnika po nedeljama i datumima</CardDescription>
             </div>
+            {hasPerm("menus.write") && (
             <Button className="w-full md:w-auto" onClick={() => setAssignDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Dodeli jelovnik
             </Button>
+            )}
+
             <Sheet open={isCreateMenuOpen} onOpenChange={setIsCreateMenuOpen}>
               <SheetTrigger asChild>
                 <Button className="hidden">
@@ -820,6 +830,7 @@ export function MenusManagement() {
                   </AlertDialogContent>
                 </AlertDialog>
 
+                {hasPerm("menus.delete") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
@@ -845,6 +856,8 @@ export function MenusManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
+
               </div>
             </div>
           )}

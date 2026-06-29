@@ -10,6 +10,8 @@ import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Setti
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Can } from "@/components/auth/Can";
 
 
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +46,8 @@ export function AdminDashboard() {
   const { t } = useTranslation();
   const { signOut } = useAuth();
   const { toast } = useToast();
+  const { has, hasAny, loading: permsLoading } = usePermissions();
+
   
   
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -197,25 +201,30 @@ export function AdminDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-8">
-        {/* Stats Overview */}
-        <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
-          <span className="text-xs md:text-sm text-muted-foreground">
-            {lastRefreshed
-              ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
-              : 'Učitavanje...'}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleManualRefresh}
-            disabled={statsLoading}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Osveži</span>
-          </Button>
-        </div>
+        {/* Stats Overview — samo ako korisnik ima dashboard.view */}
+        {has("dashboard.view") && (
+          <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
+            <span className="text-xs md:text-sm text-muted-foreground">
+              {lastRefreshed
+                ? `Poslednje osveženo: ${lastRefreshed.toLocaleTimeString('sr-RS')}`
+                : 'Učitavanje...'}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={statsLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Osveži</span>
+            </Button>
+          </div>
+        )}
+        {has("dashboard.view") && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+
+
           {/* Card 1: Top 3 obroka */}
           <Card className="bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="pb-1 p-2 md:p-4 md:pb-2">
@@ -347,51 +356,92 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+        )}
 
-        {/* Tabs */}
-        <Tabs defaultValue="orders" className="space-y-4 md:space-y-6">
+
+        {/* Tabs — vidljivost po dozvoli */}
+        {(() => {
+          const tabVisibility = {
+            orders: has("orders.view"),
+            meals: has("meals.view"),
+            menus: has("menus.view"),
+            users: has("users.view"),
+            feedback: hasAny("feedback.view", "suggestions.view"),
+            notifications: hasAny("notifications.menu", "notifications.reminder", "notifications.custom_email"),
+            reports: has("reports.view"),
+            settings: hasAny("settings.kiosk", "settings.kitchen", "settings.organization", "settings.roles"),
+          } as const;
+          const order: (keyof typeof tabVisibility)[] = ["orders","meals","menus","users","feedback","notifications","reports","settings"];
+          const firstVisible = order.find((k) => tabVisibility[k]);
+          if (!firstVisible) {
+            return permsLoading ? (
+              <div className="text-center text-muted-foreground py-12 text-sm">Učitavanje dozvola...</div>
+            ) : (
+              <div className="text-center text-muted-foreground py-12 text-sm">Nemate dozvole za prikaz nijednog dela admin panela.</div>
+            );
+          }
+          return (
+        <Tabs defaultValue={firstVisible} className="space-y-4 md:space-y-6">
           <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto gap-1 p-1">
+            {tabVisibility.orders && (
             <TabsTrigger value="orders" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.orders')}</span>
               <span className="sm:hidden">Por.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.meals && (
             <TabsTrigger value="meals" className="text-xs md:text-sm py-2">
               <ChefHat className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.meals')}</span>
               <span className="sm:hidden">Obr.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.menus && (
             <TabsTrigger value="menus" className="text-xs md:text-sm py-2">
               <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.menus')}</span>
               <span className="sm:hidden">Men.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.users && (
             <TabsTrigger value="users" className="text-xs md:text-sm py-2">
               <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.users')}</span>
               <span className="sm:hidden">Kor.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.feedback && (
             <TabsTrigger value="feedback" className="text-xs md:text-sm py-2">
               <MessageSquare className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.feedback')}</span>
               <span className="sm:hidden">Pov.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.notifications && (
             <TabsTrigger value="notifications" className="text-xs md:text-sm py-2">
               <Bell className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.notifications')}</span>
               <span className="sm:hidden">Obav.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.reports && (
             <TabsTrigger value="reports" className="text-xs md:text-sm py-2">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.reports')}</span>
               <span className="sm:hidden">Izv.</span>
             </TabsTrigger>
+            )}
+            {tabVisibility.settings && (
             <TabsTrigger value="settings" className="text-xs md:text-sm py-2">
               <Settings className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               <span className="hidden sm:inline">{t('admin.tabs.settings')}</span>
               <span className="sm:hidden">Pod.</span>
+
             </TabsTrigger>
+            )}
           </TabsList>
+
 
           {/* Orders Tab */}
           <TabsContent value="orders">
@@ -453,6 +503,8 @@ export function AdminDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto">
+                  {has("notifications.menu") && (
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">{t('admin.notifications.menuAlert.title')}</CardTitle>
@@ -471,8 +523,10 @@ export function AdminDashboard() {
                       </Button>
                     </CardContent>
                   </Card>
-                  
+                  )}
+                  {has("notifications.reminder") && (
                   <Card>
+
                     <CardHeader>
                       <CardTitle className="text-base">{t('admin.notifications.reminder.title')}</CardTitle>
                       <CardDescription className="text-xs">
@@ -491,8 +545,10 @@ export function AdminDashboard() {
                       </Button>
                     </CardContent>
                   </Card>
-
+                  )}
+                  {has("notifications.custom_email") && (
                   <Card>
+
                     <CardHeader>
                       <CardTitle className="text-base">Custom obaveštenje (email)</CardTitle>
                       <CardDescription className="text-xs">
@@ -565,7 +621,9 @@ export function AdminDashboard() {
                       </Button>
                     </CardContent>
                   </Card>
+                  )}
                 </div>
+
               </CardContent>
             </Card>
           </TabsContent>
@@ -584,6 +642,9 @@ export function AdminDashboard() {
             </Suspense>
           </TabsContent>
         </Tabs>
+        );
+        })()}
+
       </main>
       <ScrollToTopButton />
     </div>

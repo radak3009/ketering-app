@@ -17,6 +17,7 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { useRoles } from "@/hooks/useRoles";
+import { usePermissions } from "@/hooks/usePermissions";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
 import { format } from "date-fns";
 
@@ -71,6 +72,7 @@ export function UsersManagement() {
   const isMobile = useIsMobile();
   const { users, loading, createUser, updateUser, deleteUser, changeUserRole, sendMagicLink, sendInvitationWithCredentials, resetUserPassword } = useUsers();
   const { roles } = useRoles();
+  const { has: hasPerm } = usePermissions();
   const [changingRole, setChangingRole] = useState(false);
   
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -483,11 +485,13 @@ export function UsersManagement() {
                 <Download className="h-4 w-4 mr-2" />
                 Preuzmi template
               </Button>
+              {hasPerm("users.import") && (
               <Button variant="outline" onClick={() => csvInputRef.current?.click()} className="w-full md:w-auto">
                 <FileText className="h-4 w-4 mr-2" />
                 Uvezi CSV/XLSX
               </Button>
-              {csvFile && (
+              )}
+              {csvFile && hasPerm("users.import") && (
                 <div className="flex items-center gap-2">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -522,7 +526,9 @@ export function UsersManagement() {
                   </Button>
                 </div>
               )}
+              {hasPerm("users.create") && (
               <Sheet open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+
                 <SheetTrigger asChild>
                   <Button onClick={() => { resetUserForm(); setShowCustomTagInput(false); setIsAddUserOpen(true); }} className="w-full md:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
@@ -663,6 +669,7 @@ export function UsersManagement() {
                       />
                     </div>
                     
+                    {hasPerm("users.assign_role") && (
                     <div>
                       <Label>Uloga</Label>
                       <Select
@@ -681,6 +688,8 @@ export function UsersManagement() {
                         </SelectContent>
                       </Select>
                     </div>
+                    )}
+
                     
                     <div className="space-y-3 pt-2 border-t">
                       <div className="flex items-center space-x-2">
@@ -745,7 +754,9 @@ export function UsersManagement() {
                   </div>
                 </SheetContent>
               </Sheet>
+              )}
             </div>
+
           </div>
         </CardHeader>
         <CardContent>
@@ -791,6 +802,7 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                {hasPerm("users.delete") && (
                 <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="destructive">
@@ -798,6 +810,7 @@ export function UsersManagement() {
                       Obriši izabrane
                     </Button>
                   </AlertDialogTrigger>
+
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Masovno brisanje korisnika</AlertDialogTitle>
@@ -823,6 +836,7 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
                 <Button 
                   size="sm" 
                   variant="ghost" 
@@ -858,8 +872,9 @@ export function UsersManagement() {
                         .map(user => (
                         <div
                           key={user.id}
-                          className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
-                          onClick={() => setSelectedUser({...user})}
+                          className={`p-3 border rounded-lg bg-card ${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                          onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
@@ -870,6 +885,7 @@ export function UsersManagement() {
                               <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
                                 {(user as any).role_name || (user.role === 'admin' ? 'Admin' : 'Zaposleni')}
                               </Badge>
+                              {hasPerm("users.invite") && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -881,6 +897,7 @@ export function UsersManagement() {
                               >
                                 <Mail className="h-3.5 w-3.5" />
                               </Button>
+                              )}
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted-foreground">
@@ -1025,8 +1042,9 @@ export function UsersManagement() {
                           .map(user => (
                           <TableRow 
                             key={user.id}
-                            className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
-                            onClick={() => setSelectedUser({...user})}
+                            className={`${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""} ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
+                            onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+
                           >
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Checkbox
@@ -1064,6 +1082,7 @@ export function UsersManagement() {
                               </Badge>
                             </TableCell>
                             <TableCell>
+                              {hasPerm("users.invite") && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -1075,6 +1094,7 @@ export function UsersManagement() {
                               >
                                 <Mail className="h-4 w-4" />
                               </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
@@ -1246,6 +1266,7 @@ export function UsersManagement() {
                 />
               </div>
               
+              {hasPerm("users.assign_role") ? (
               <div>
                 <Label>Uloga</Label>
                 <Select
@@ -1287,6 +1308,15 @@ export function UsersManagement() {
                   <p className="text-xs text-muted-foreground mt-1">Menjanje uloge...</p>
                 )}
               </div>
+              ) : (
+                <div>
+                  <Label>Uloga</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {(selectedUser as any).role_name || (selectedUser.role === 'admin' ? 'Administrator' : 'Zaposleni')}
+                  </p>
+                </div>
+              )}
+
               
               <div className="space-y-2 pt-4 border-t">
                 <p className="text-sm font-medium">Resetuj lozinku</p>
@@ -1385,6 +1415,7 @@ export function UsersManagement() {
                   </AlertDialogContent>
                 </AlertDialog>
 
+                {hasPerm("users.delete") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
@@ -1410,6 +1441,8 @@ export function UsersManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
+
               </div>
             </div>
           )}

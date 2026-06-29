@@ -23,6 +23,8 @@ import { UserOrderPivotTable } from "./UserOrderPivotTable";
 import { AdminOrderDialog } from "./AdminOrderDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { format } from "date-fns";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 interface OrdersOverviewProps {
   orderDateRange: { startDate: string; endDate: string };
@@ -47,6 +49,9 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
   const { users } = useUsers();
   const { meals } = useMeals();
   const isMobile = useIsMobile();
+  const { has: hasPerm } = usePermissions();
+  
+
   
   const startDate = orderDateRange?.startDate || '';
   const endDate = orderDateRange?.endDate || '';
@@ -307,11 +312,14 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
                   Osveži
                 </Button>
+                {hasPerm("orders.create") && (
                 <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
                   <Plus className="h-4 w-4 mr-1.5" />
                   Nova porudžbina
                 </Button>
+                )}
               </div>
+
             </div>
             
               <div className="flex flex-wrap items-center gap-4">
@@ -468,7 +476,7 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                     <CardTitle className="text-lg md:text-xl">Lista porudžbina</CardTitle>
                     <CardDescription className="text-xs md:text-sm">Lista porudžbina po korisnicima</CardDescription>
                   </div>
-                  {flatOrderItems.length > 0 && (
+                  {flatOrderItems.length > 0 && hasPerm("orders.export_csv") && (
                     <Button variant="outline" size="sm" onClick={() => {
                       const header = ["Korisnik", "ID Kartice", "Organizacija", "Datum dostave", "Obrok", "Smena", "Status preuzimanja"];
                       const rows: (string | number)[][] = [header, ...flatOrderItems.map(item => [
@@ -506,13 +514,18 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId} · {item.tag}</p>
                               </div>
                               <div className="flex gap-1 shrink-0">
+                                {hasPerm("orders.update") && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
+                                )}
+                                {hasPerm("orders.delete") && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
+                                )}
                               </div>
+
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs">
                               <span className="text-muted-foreground">{item.deliveryDate}</span>
@@ -568,13 +581,18 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex gap-1 justify-end">
+                                    {hasPerm("orders.update") && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
+                                    )}
+                                    {hasPerm("orders.delete") && (
                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                       <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
+                                    )}
                                   </div>
+
                                 </TableCell>
                               </TableRow>
                             ))

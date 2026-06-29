@@ -26,6 +26,8 @@ import { uploadImage } from "@/services/storageService";
 import { validateMealCode } from "@/services/validationService";
 import { SHIFTS, MEAL_STATUSES, type MealStatus } from "@/constants";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePermissions } from "@/hooks/usePermissions";
+
 
 type Meal = Tables<'meals'>;
 
@@ -77,6 +79,9 @@ export function MealsManagement() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
+  const { has: hasPerm } = usePermissions();
+  
+
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -489,6 +494,7 @@ export function MealsManagement() {
               </CardTitle>
               <CardDescription className="text-xs md:text-sm">Pregled i upravljanje ponudom obroka</CardDescription>
             </div>
+            {hasPerm("meals.write") && (
             <Sheet open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>
               <SheetTrigger asChild>
                 <Button onClick={() => { resetMealForm(); setIsAddMealOpen(true); }} className="w-full md:w-auto">
@@ -496,6 +502,7 @@ export function MealsManagement() {
                   Dodaj obrok
                 </Button>
               </SheetTrigger>
+
               <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Dodaj novi obrok</SheetTitle>
@@ -703,7 +710,9 @@ export function MealsManagement() {
                 </div>
               </SheetContent>
             </Sheet>
+            )}
           </div>
+
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -728,7 +737,7 @@ export function MealsManagement() {
                     <div
                       key={meal.id}
                       className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                      onClick={() => { if (hasPerm("meals.write")) setSelectedMeal({...meal, shifts: meal.shifts || []}); }}
                     >
                       <div className="flex items-start gap-3">
                         {meal.image_url ? (
@@ -1014,7 +1023,7 @@ export function MealsManagement() {
                       <TableRow 
                         key={meal.id}
                         className={`cursor-pointer hover:bg-muted/50 ${selectedMealIds.has(meal.id) ? 'bg-primary/5' : ''}`}
-                        onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                        onClick={() => { if (hasPerm("meals.write")) setSelectedMeal({...meal, shifts: meal.shifts || []}); }}
                       >
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox
@@ -1335,6 +1344,7 @@ export function MealsManagement() {
                   </AlertDialogContent>
                 </AlertDialog>
 
+                {hasPerm("meals.delete") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
@@ -1360,7 +1370,9 @@ export function MealsManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
               </div>
+
             </div>
           )}
         </SheetContent>
