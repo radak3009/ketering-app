@@ -640,6 +640,9 @@ export function AdminDashboard() {
             </Suspense>
           </TabsContent>
         </Tabs>
+        );
+        })()}
+
       </main>
       <ScrollToTopButton />
     </div>
