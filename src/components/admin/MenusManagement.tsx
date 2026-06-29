@@ -40,8 +40,10 @@ export function MenusManagement() {
   const { toast } = useToast();
   const { meals } = useMeals();
   const { menus, loading, createMenu, updateMenu, deleteMenu, cloneWeekMenus, cloneSingleMenu, assignTemplate } = useMenus();
+  const { has: hasPerm } = (require("@/hooks/usePermissions") as typeof import("@/hooks/usePermissions")).usePermissions();
   
   const [mainTab, setMainTab] = useState<'templates' | 'assignments'>('templates');
+
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [activeOrgTab, setActiveOrgTab] = useState<OrgTab>('proizvodnja');
   const [selectedMenu, setSelectedMenu] = useState<any>(null);
