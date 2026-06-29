@@ -163,10 +163,12 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
               <CardTitle className="text-lg">Po obrocima</CardTitle>
               <CardDescription className="text-xs">Porudžbine po danima</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} className="shrink-0">
-              <Download className="h-4 w-4 mr-1.5" />
-              CSV
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={handleExportCSV} className="shrink-0">
+                <Download className="h-4 w-4 mr-1.5" />
+                CSV
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-3">
