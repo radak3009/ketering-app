@@ -737,7 +737,7 @@ export function MealsManagement() {
                     <div
                       key={meal.id}
                       className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                      onClick={() => { if (hasPerm("meals.write")) setSelectedMeal({...meal, shifts: meal.shifts || []}); }}
                     >
                       <div className="flex items-start gap-3">
                         {meal.image_url ? (
@@ -1023,7 +1023,7 @@ export function MealsManagement() {
                       <TableRow 
                         key={meal.id}
                         className={`cursor-pointer hover:bg-muted/50 ${selectedMealIds.has(meal.id) ? 'bg-primary/5' : ''}`}
-                        onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
+                        onClick={() => { if (hasPerm("meals.write")) setSelectedMeal({...meal, shifts: meal.shifts || []}); }}
                       >
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox
