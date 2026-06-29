@@ -827,6 +827,7 @@ export function MenusManagement() {
                   </AlertDialogContent>
                 </AlertDialog>
 
+                {hasPerm("menus.delete") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
@@ -852,6 +853,8 @@ export function MenusManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
+
               </div>
             </div>
           )}
