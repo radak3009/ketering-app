@@ -1,0 +1,353 @@
+# Ketering Portal — Tehnička dokumentacija: Uloge i dozvole (RBAC)
+
+**Projekat:** Ketering Portal (`ketering-app`)
+**Stack:** React + TypeScript + Tailwind (Vite) · Supabase (PostgreSQL, RLS, Edge Functions) · shadcn/ui
+**Status modela:** Faza 1 + Faza 2 + M7 (enum-most uklonjen) — `roles` + `role_permissions` su jedini izvor istine
+**Verzija dokumenta:** 1.0
+
+---
+
+## 1. Pregled
+
+Aplikacija koristi granularni RBAC (Role-Based Access Control) sistem. Svaki korisnik ima **tačno jednu ulogu**; svaka uloga nosi skup **dozvola** (booleani po akciji). Dozvole se primenjuju u tri sloja:
+
+1. **Baza (RLS)** — Row Level Security politike na svim tabelama proveravaju dozvolu po operaciji (`has_perm('<perm>')`). Ovo je primarna, neprobojna granica.
+2. **Edge funkcije** — serverska autorizacija po dozvoli (`assertPermission`) + blokada Demo naloga (`assertNotDemo`).
+3. **UI** — sakrivanje/onemogućavanje kontrola (`<Can>` / `usePermissions`) radi čistog korisničkog iskustva (nije bezbednosna granica sama za sebe).
+
+Sistem podržava **kreiranje proizvoljnih (custom) uloga** kroz ekran „Uloge i dozvole" u Postavkama.
+
+---
+
+## 2. Ključni koncepti
+
+- **Uloga (role):** imenovani skup dozvola. Ima `panel` koji određuje koji glavni ekran korisnik vidi (`admin` ili `employee`).
+- **Panel:** `admin` → Admin panel (upravljanje); `employee` → Employee panel (self-service). Rutiranje se izvodi iz `get_user_panel(user)`, NIKAD iz nekog hardkodovanog polja.
+- **Dozvola (permission):** atomska akcija, npr. `orders.create`, `meals.write`. Pohranjena u katalogu `permissions`, grupisana po sekciji.
+- **Sistemska uloga (`is_system`):** ne može se obrisati niti joj se menja ključ; dozvole joj se mogu menjati.
+- **Demo uloga (`is_demo`):** read-only nalog; sve write/slanje/izvoz akcije su blokirane i u bazi (dozvole = false) i dodatno u edge funkcijama.
+
+---
+
+## 3. Uloge
+
+| Ključ (`key`) | Naziv | Panel | Sistemska | Opis |
+|---|---|---|---|---|
+| `administrator` | Administrator | admin | da | Pun pristup, uključujući upravljanje ulogama. |
+| `hr` | HR | admin | da | Upravljanje korisnicima, organizacijom i izveštajima. |
+| `kuhinja` | Kuhinja | admin | da | Pregled porudžbina i označavanje preuzimanja. |
+| `zaposleni` | Zaposleni | employee | da | Naručivanje obroka i lične akcije. |
+| `demo` | Demo korisnik | admin | da (`is_demo`) | Pregled svih sekcija; bez izmena i slanja. |
+
+Pored ovih, administrator može da napravi **nove uloge** sa proizvoljnim nazivom, panelom i kombinacijom dozvola (vidi §12).
+
+> **Izvor istine za tačne toggle-ove je ekran „Uloge i dozvole".** Tabela u §5 opisuje *namenjene* podrazumevane profile; uvek proveri živo stanje u UI/bazi.
+
+---
+
+## 4. Katalog dozvola (43)
+
+Grupisano po sekciji (`group_key`). Labela je srpski prikaz u UI; ključ je interni `permission_key`.
+
+### Kontrolna tabla (`dashboard`)
+- `dashboard.view` — Pregled KPI
+
+### Porudžbine (`orders`)
+- `orders.view` — Pregled porudžbina
+- `orders.create` — Kreiranje porudžbina
+- `orders.update` — Izmena porudžbina
+- `orders.delete` — Brisanje porudžbina
+- `orders.export_csv` — Izvoz CSV
+- `orders.mark_pickup` — Označavanje preuzimanja
+- `orders.fiscalize` — Fiskalizacija porudžbine
+
+### Obroci (`meals`)
+- `meals.view` — Pregled obroka
+- `meals.write` — Kreiranje/izmena obroka
+- `meals.delete` — Brisanje obroka
+- `meals.upload_image` — Upload slika
+
+### Jelovnici (`menus`)
+- `menus.view` — Pregled jelovnika
+- `menus.write` — Kreiranje/izmena jelovnika
+- `menus.delete` — Brisanje jelovnika
+- `menus.templates` — Šabloni
+
+### Korisnici (`users`)
+- `users.view` — Pregled korisnika
+- `users.create` — Kreiranje korisnika
+- `users.update` — Izmena korisnika
+- `users.delete` — Brisanje korisnika
+- `users.assign_role` — Dodela uloga
+- `users.invite` — Slanje pozivnica
+- `users.import` — Uvoz korisnika
+
+### Povratne informacije (`feedback`)
+- `feedback.view` — Pregled utisaka
+- `feedback.process` — Obrada utisaka
+- `suggestions.view` — Pregled predloga
+- `suggestions.process` — Obrada predloga
+
+### Obaveštenja (`notifications`)
+- `notifications.menu` — Obaveštenje o jelovniku
+- `notifications.reminder` — Podsetnik zaposlenima
+- `notifications.custom_email` — Custom email obaveštenje
+
+### Izveštaji (`reports`)
+- `reports.view` — Pregled izveštaja
+- `reports.export` — Izvoz izveštaja
+- `receipts.view_all` — Pregled tuđih računa
+
+### Postavke (`settings`)
+- `settings.kiosk` — Postavke kioska
+- `settings.kitchen` — Postavke kuhinje
+- `settings.organization` — Organizacija (tagovi)
+- `settings.roles` — Uloge i dozvole
+
+### Zaposleni / self-service (`self`)
+- `self.order` — Naručivanje
+- `self.my_orders` — Pregled svojih porudžbina
+- `self.feedback` — Slanje utisaka
+- `self.suggestions` — Slanje predloga
+- `self.profile` — Profil
+- `self.nfc` — NFC preuzimanje
+
+---
+
+## 5. Podrazumevani profili uloga
+
+✅ = dozvoljeno · ❌ = zabranjeno (pregled = *.view dozvola)
+
+| Oblast | Administrator | HR | Kuhinja | Zaposleni | Demo |
+|---|---|---|---|---|---|
+| Kontrolna tabla (`dashboard.view`) | ✅ | ✅ | ✅ | ❌ | ✅ |
+| Porudžbine — pregled | ✅ | ❌ | ✅ | self | ✅ |
+| Porudžbine — kreiranje/izmena/brisanje | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Porudžbine — preuzimanje (`mark_pickup`) | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Porudžbine — izvoz CSV | ✅ | ❌ | ✅ | ❌ | ❌ |
+| Fiskalizacija (`orders.fiscalize`) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Obroci — pregled | ✅ | ❌ | ✅ | (slike javno) | ✅ |
+| Obroci — write/delete/slike | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Jelovnici — pregled | ✅ | ❌ | ✅ | ❌ | ✅ |
+| Jelovnici — write/delete/šabloni | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Korisnici — pregled/kreiranje/izmena/brisanje/pozivnice/uvoz | ✅ | ✅ | ❌ | ❌ | view |
+| Korisnici — dodela uloga (`assign_role`) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Povratne — pregled / obrada | ✅ / ✅ | view | ❌ | ❌ | view / ❌ |
+| Obaveštenja — jelovnik / podsetnik | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Obaveštenja — custom email | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Izveštaji — pregled / izvoz | ✅ / ✅ | ✅ / ✅ | ❌ | ❌ | view / ❌ |
+| Pregled tuđih računa (`receipts.view_all`) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Postavke — kiosk / kuhinja / roles | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Postavke — organizacija (tagovi) | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Self-service (`self.*`) | n/a | n/a | n/a | ✅ | n/a |
+
+> Napomena: „self" znači da korisnik pristupa **samo svojim** podacima (svoje porudžbine, profil, utisci). Ove politike su nezavisne od admin dozvola i uvek su prisutne za sve naloge.
+
+---
+
+## 6. Model podataka (Supabase)
+
+### `roles`
+| Kolona | Tip | Opis |
+|---|---|---|
+| `id` | uuid (PK) | |
+| `key` | text (unique) | interni ključ (`administrator`, `hr`, …) |
+| `name` | text | prikazni naziv |
+| `description` | text | |
+| `panel` | text `admin`/`employee` | određuje glavni ekran |
+| `is_system` | bool | sistemska uloga (ne briše se) |
+| `is_demo` | bool | okida dodatne serverske blokade |
+
+### `permissions` (katalog)
+| Kolona | Tip | Opis |
+|---|---|---|
+| `key` | text (PK) | npr. `orders.create` |
+| `group_key` | text | sekcija (`orders`, `meals`, …) |
+| `label` | text | srpski prikaz |
+| `description` | text | |
+| `sort_order` | int | redosled u UI |
+
+### `role_permissions` (matrica)
+| Kolona | Tip | Opis |
+|---|---|---|
+| `role_id` | uuid (FK → roles) | |
+| `permission_key` | text (FK → permissions) | |
+| `allowed` | bool | |
+| PK | (role_id, permission_key) | |
+
+### `user_roles` (veza korisnik → uloga)
+| Kolona | Tip | Opis |
+|---|---|---|
+| `user_id` | uuid | auth korisnik |
+| `role_id` | uuid (FK → roles) | dodeljena uloga |
+
+> **Napomena (M7):** legacy enum tip `app_role` i kolone `user_roles.role` / `profiles.role` su **uklonjeni**. Panel i uloga se izvode isključivo preko `user_roles.role_id → roles`.
+
+### Pristup (GRANT/RLS) za meta-tabele
+- `roles`, `permissions`, `role_permissions`, `user_roles`: **SELECT** dozvoljen `authenticated` (potrebno za UI i `usePermissions`).
+- **INSERT/UPDATE/DELETE**: bez klijentske politike → menja se isključivo preko `service_role` (edge funkcije `manage-roles` i `manage-user-role`).
+
+---
+
+## 7. SQL funkcije (helpers, `security definer`)
+
+| Funkcija | Vraća | Namena |
+|---|---|---|
+| `get_user_permissions(_user uuid)` | setof text | svi `permission_key` gde je `allowed=true` za korisnikovu ulogu |
+| `has_permission(_user uuid, _perm text)` | boolean | da li korisnik ima konkretnu dozvolu |
+| `has_perm(_perm text)` | boolean | wrapper nad `has_permission(auth.uid(), _perm)` — koristi se u RLS politikama |
+| `get_user_panel(_user uuid)` | text | `admin` / `employee` (iz `roles.panel`) — za rutiranje |
+| `is_demo_user(_user uuid)` | boolean | da li je uloga Demo |
+| `handle_new_user()` | trigger | na novu registraciju kreira `profiles` red i `user_roles(role_id=zaposleni)` |
+
+---
+
+## 8. Slojevi primene
+
+### 8.1 Baza (RLS)
+
+Svaka admin tabela koristi `has_perm('<perm>')` po operaciji. Self-service tabele dodatno dozvoljavaju vlasniku pristup svojim redovima (`auth.uid() = user_id`).
+
+**Mapiranje tabela → dozvola:**
+
+| Tabela | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| `orders` | `orders.view` (+ self) | `orders.create` | `orders.update` | `orders.delete` |
+| `order_items` | `orders.view` (+ self) | `orders.create` | `orders.update` **ILI** `orders.mark_pickup` (samo `pickup_status`) | `orders.delete` |
+| `meals` | javno/auth (aktivni) + `meals.view` | `meals.write` | `meals.write` | `meals.delete` |
+| `menus`, `menu_meals` | auth + `menus.view` | `menus.write` | `menus.write` | `menus.delete` |
+| `menu_templates*` | auth | `menus.templates` | `menus.templates` | `menus.templates` |
+| `profiles` | self **ILI** `users.view` | `users.create` (+ trigger) | self (zaštićeni `tag`/`company_id`) **ILI** `users.update` | `users.delete` |
+| `feedback` | self **ILI** `feedback.view` | self | `feedback.process` | — |
+| `suggestions` | self **ILI** `suggestions.view` | self | `suggestions.process` | — |
+| `app_settings`, `kitchen_schedule*`, `meal_groups`, `allergens`, `companies` | auth/po potrebi | `settings.*` | `settings.*` | `settings.*` |
+| `user_roles` | self **ILI** `users.view` | `service_role` | `service_role` | `service_role` |
+| `roles`, `permissions`, `role_permissions` | auth | `service_role` | `service_role` | `service_role` |
+
+**Storage:**
+- Bucket „Slike obroka": **čitanje javno/auth** (zaposleni vide slike pri naručivanju), upis `meals.write`, brisanje `meals.delete`.
+- Bucket „Resursi": `settings.organization`.
+
+**Realtime (`realtime.messages`):**
+- svi admin kanali → `has_perm('dashboard.view')`
+- `kiosk-%` teme → `has_perm('orders.view')`
+- `pickup_requests` teme → `has_perm('orders.view')`
+
+> Pošto Demo ima sve write dozvole = false, RLS ga automatski blokira na svim mutacijama.
+
+### 8.2 Edge funkcije
+
+Obrazac:
+1. `getCallerUser(req, adminClient)` — lokalno dekodira JWT (ne `auth.getUser(token)`, koji puca pod signing-keys runtime-om).
+2. `assertPermission(client, userId, '<perm>', corsHeaders)` — 403 ako nema dozvolu (**fail-closed** i na grešku).
+3. `assertNotDemo(client, userId, corsHeaders)` — 403 za Demo na destruktivnim/„slanje" akcijama (**fail-closed**).
+
+| Funkcija | Dozvola |
+|---|---|
+| `create-user` | `users.create` |
+| `delete-user` | `users.delete` |
+| `manage-user-role` | `users.assign_role` |
+| `manage-roles` | `settings.roles` |
+| `send-invitation`, `send-magic-link` | `users.invite` |
+| `update-user-email`, `reset-user-password` | `users.update` |
+| `send-custom-broadcast` | `notifications.custom_email` |
+| `notify-menu-ready` | `notifications.menu` |
+| `send-employee-reminder` | `notifications.reminder` (+ sistemski/cron put) |
+| `receipt-download` | vlasnik **ILI** `receipts.view_all` |
+| `fiscalize-meal` (korisnička grana) | `orders.fiscalize` (kiosk grana = token) |
+
+### 8.3 UI
+
+- **`usePermissions()`** (`src/hooks/usePermissions.ts`) — učitava `get_user_permissions` / `get_user_panel` / `is_demo_user`. Vraća `{ has(perm), hasAny(...), panel, isDemo, loading }`. Dok se učitava → **pesimistično** (`has` vraća false), bez „admin vidi sve" fallback-a.
+- **`<Can permission="orders.delete">…</Can>`** (`src/components/auth/Can.tsx`) — renderuje decu samo ako korisnik ima dozvolu.
+- **Rutiranje panela:** `src/pages/Index.tsx` bira Admin/Employee panel preko `panel` iz `usePermissions` (izvedeno iz `get_user_panel`).
+- **Ekran „Uloge i dozvole":** `src/components/admin/RolesPermissions.tsx` — lista uloga, „Dodaj ulogu", grupisani toggle-ovi, čuvanje preko `manage-roles`.
+- **Read-only dijalozi:** ako uloga nema write dozvolu, dijalog izmene se i dalje **otvara za pregled**, ali su sva polja `disabled` i primarno dugme („Sačuvaj") sakriveno/onemogućeno. „Kreiranje novog" dugmad su potpuno sakrivena bez create dozvole.
+
+---
+
+## 9. Demo korisnik
+
+- Sve `*.view` dozvole = true; sve write/delete/slanje/izvoz = false.
+- **Baza:** RLS blokira sve mutacije (jer `has_perm` vraća false).
+- **Edge:** `assertNotDemo` (fail-closed) dodatno odbija destruktivne i „slanje" akcije, čak i ako bi nešto zaobišlo UI.
+- **UI:** sve kontrole za izmenu su sakrivene/onemogućene; dijalozi se otvaraju read-only.
+
+Namena: bezbedne demonstracije bez rizika od izmene pravih podataka.
+
+---
+
+## 10. Kiosk / NFC (nezavisno od RBAC-a)
+
+Rute `/kiosk/pickup` i `/kiosk/kitchen` i funkcija `nfc-meal-pickup` rade preko **tokena** (`KIOSK_TOKEN_*`, `verify_jwt=false`) i `service_role`. Ne koriste korisničke dozvole i **nisu** dirane RBAC-om. `service_role` zaobilazi RLS, pa kiosk tok radi nezavisno.
+
+---
+
+## 11. Tok nove registracije
+
+1. Korisnik se registruje (`/auth` → `signup-employee`), potvrdi email.
+2. Triger `handle_new_user()` na `auth.users`:
+   - kreira `profiles` red (bez `role` kolone),
+   - ubacuje `user_roles(user_id, role_id = roles WHERE key='zaposleni')` (idempotentno, `WHERE NOT EXISTS` po `role_id`).
+3. `get_user_panel(user)` → `employee` → korisnik vidi Employee panel.
+
+---
+
+## 12. Kako dodati NOVU ULOGU
+
+Preko UI (preporučeno): Postavke → **Uloge i dozvole** → „Dodaj ulogu" → unesi ključ, naziv, panel, opciono kopiraj dozvole od postojeće → podesi toggle-ove → „Sačuvaj". Sve ide kroz edge funkciju `manage-roles` (admin-only).
+
+Šta se dešava u pozadini: red u `roles` + `role_permissions` redovi za sve dozvole. Pošto je RLS data-driven (`has_perm`), nova uloga **odmah** dobija odgovarajući pristup bez izmena koda.
+
+Dodela uloge korisniku: tab **Korisnici** → izmena korisnika → „Uloga" (vidljivo samo uz `users.assign_role`).
+
+---
+
+## 13. Kako dodati NOVU DOZVOLU
+
+1. **Katalog:** ubaci red u `permissions` (`key`, `group_key`, `label`, `description`, `sort_order`). Ako uvodiš novu grupu, dodaj i `GROUP_LABELS` unos u `RolesPermissions.tsx`.
+2. **Dodele:** ubaci `role_permissions` redove za sve uloge (default `false`, `true` za one koje treba). Administrator treba uvek da dobije `true` (da se ne zaključa).
+3. **Primena:**
+   - **RLS:** dodaj/izmeni politiku da koristi `has_perm('<nova.dozvola>')`.
+   - **Edge:** ako akciju radi edge funkcija, dodaj `assertPermission(..., '<nova.dozvola>')`.
+   - **UI:** obmotaj kontrolu u `<Can permission="<nova.dozvola>">`.
+4. Verifikuj da Administrator ima novu dozvolu (`get_user_permissions`).
+
+> Nova dozvola se automatski pojavljuje u ekranu „Uloge i dozvole" (jer se renderuje iz `permissions` tabele).
+
+---
+
+## 14. Istorija i bezbednosne napomene
+
+- **Faza 1** — model (`roles`/`permissions`/`role_permissions`), ekran „Uloge i dozvole", `usePermissions`/`Can`, dinamičan dropdown uloga; privremeni „enum-most" (`app_role`) kao kompatibilnost.
+- **Faza 2** — prava serverska primena: RLS prebačen na `has_perm`, edge funkcije na `assertPermission`, `assertNotDemo` fail-closed, Demo blokiran na nivou baze.
+- **M7** — uklonjen enum-most: `realtime` politike prebačene na `has_perm`; obrisani `is_admin_user`, `has_role`, kolone `role`, tip `app_role`. `roles` + `role_permissions` = jedini izvor istine.
+
+**Princip koji se NE sme narušiti:** uloge i dozvole se menjaju **isključivo preko service-role edge funkcija** (`manage-roles`, `manage-user-role`), nikad direktno iz klijenta. Ovo sprečava privilege-escalation.
+
+---
+
+## 15. Poznate zamke / Troubleshooting
+
+- **`AuthSessionMissingError` / „Edge Function returned a non-2xx"** — edge funkcija koristi `supabase.auth.getUser(token)`. Reši prelaskom na shared `getCallerUser(req, adminClient)` (lokalni JWT decode). Svih ~12 funkcija je već prevedeno.
+- **„Database error creating new user" pri registraciji** — neki objekat referencira nepostojeću `role` kolonu (npr. `ON CONFLICT (user_id, role)` u `handle_new_user`). Reši prelaskom na `role_id`.
+- **404 NOT_FOUND na Vercel domenu** (`/auth`, `/auth/confirm` refresh) — nedostaje SPA fallback. Rešeno fajlom `vercel.json` (`rewrites: /(.*) → /index.html`); proradi nakon Vercel redeploy-a. Lovable domen (`*.lovable.app`) ima fallback ugrađen.
+- **Slike obroka se ne vide zaposlenima** — čitanje bucket-a „Slike obroka" mora ostati javno/auth (NE gejtovati iza `meals.view`, koju zaposleni nemaju).
+- **Novi admin se „zaključao"** — proveri da Administrator (ili relevantna uloga) ima `true` za sve potrebne dozvole; admin uvek treba sve.
+
+---
+
+## Dodatak: ključni fajlovi
+
+| Putanja | Uloga |
+|---|---|
+| `src/hooks/usePermissions.ts` | čitanje dozvola/panela na frontendu |
+| `src/components/auth/Can.tsx` | UI gejt komponenta |
+| `src/components/admin/RolesPermissions.tsx` | ekran „Uloge i dozvole" |
+| `src/components/admin/UsersManagement.tsx` | dodela uloge korisniku |
+| `src/pages/Index.tsx` | rutiranje admin/employee panela |
+| `supabase/functions/_shared/auth.ts` | `getCallerUser`, `assertPermission`, `assertNotDemo` |
+| `supabase/functions/manage-roles/` | CRUD uloga i dozvola (admin-only) |
+| `supabase/functions/manage-user-role/` | dodela uloge korisniku (admin-only) |
+
+*Kraj dokumenta.*
