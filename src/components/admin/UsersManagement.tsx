@@ -1257,6 +1257,7 @@ export function UsersManagement() {
                 />
               </div>
               
+              {hasPerm("users.assign_role") ? (
               <div>
                 <Label>Uloga</Label>
                 <Select
@@ -1298,6 +1299,15 @@ export function UsersManagement() {
                   <p className="text-xs text-muted-foreground mt-1">Menjanje uloge...</p>
                 )}
               </div>
+              ) : (
+                <div>
+                  <Label>Uloga</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {(selectedUser as any).role_name || (selectedUser.role === 'admin' ? 'Administrator' : 'Zaposleni')}
+                  </p>
+                </div>
+              )}
+
               
               <div className="space-y-2 pt-4 border-t">
                 <p className="text-sm font-medium">Resetuj lozinku</p>
