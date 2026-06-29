@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUsers } from "@/hooks/useUsers";
 import { useRoles } from "@/hooks/useRoles";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 import { validateCompanyCardId, validatePassword } from "@/services/validationService";
 import { format } from "date-fns";
 
