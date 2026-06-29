@@ -514,13 +514,18 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                                 <p className="text-xs text-muted-foreground font-mono">ID: {item.cardId} · {item.tag}</p>
                               </div>
                               <div className="flex gap-1 shrink-0">
+                                {hasPerm("orders.update") && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditItem(item)}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
+                                )}
+                                {hasPerm("orders.delete") && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteItemId(item.orderItemId)}>
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
+                                )}
                               </div>
+
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs">
                               <span className="text-muted-foreground">{item.deliveryDate}</span>
