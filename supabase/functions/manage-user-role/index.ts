@@ -84,12 +84,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert only role_id; trg_sync_user_role_enum populates the `role` enum from roles.panel.
-    // Eksplicitno NE prosleđujemo `role` da izbegnemo bilo kakav konflikt sa trigerom.
+    // Insert only role_id. (M7.1+: enum `role` column is being phased out; not selected.)
     const { data, error: insertError } = await supabase
       .from('user_roles')
       .insert({ user_id: userId, role_id: roleRow.id })
-      .select('id, user_id, role, role_id')
+      .select('id, user_id, role_id')
       .single();
 
     if (insertError) {
