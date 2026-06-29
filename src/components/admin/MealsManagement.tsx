@@ -737,7 +737,7 @@ export function MealsManagement() {
                     <div
                       key={meal.id}
                       className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
-                      onClick={() => { if (hasPerm("meals.write")) setSelectedMeal({...meal, shifts: meal.shifts || []}); }}
+                      onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
                     >
                       <div className="flex items-start gap-3">
                         {meal.image_url ? (
@@ -1023,7 +1023,7 @@ export function MealsManagement() {
                       <TableRow 
                         key={meal.id}
                         className={`cursor-pointer hover:bg-muted/50 ${selectedMealIds.has(meal.id) ? 'bg-primary/5' : ''}`}
-                        onClick={() => { if (hasPerm("meals.write")) setSelectedMeal({...meal, shifts: meal.shifts || []}); }}
+                        onClick={() => setSelectedMeal({...meal, shifts: meal.shifts || []})}
                       >
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox
@@ -1116,11 +1116,11 @@ export function MealsManagement() {
       <Sheet open={!!selectedMeal} onOpenChange={() => { setSelectedMeal(null); setImageFile(null); setEditShowNewGroupInput(false); setEditNewGroupInput(''); }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Izmeni obrok</SheetTitle>
+            <SheetTitle>{hasPerm("meals.write") ? "Izmeni obrok" : "Pregled obroka"}</SheetTitle>
           </SheetHeader>
           {selectedMeal && (
-            <div className="space-y-4 mt-6">
-              <div>
+            <fieldset disabled={!hasPerm("meals.write")} className={`space-y-4 mt-6 border-0 p-0 m-0 ${!hasPerm("meals.write") ? "[&_button:not([data-readonly-allowed])]:pointer-events-none [&_[role=combobox]]:pointer-events-none [&_[role=checkbox]]:pointer-events-none [&_[role=switch]]:pointer-events-none [&_input[type=file]]:pointer-events-none" : ""}`}>
+              <div className="mt-0">
                 <Label htmlFor="edit-meal-code">Šifra obroka</Label>
                 <Input 
                   id="edit-meal-code" 
@@ -1305,9 +1305,10 @@ export function MealsManagement() {
               </div>
               
               <div className="space-y-2 pt-4">
+                {hasPerm("meals.write") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="w-full" disabled={updatingMeal}>
+                    <Button className="w-full" disabled={updatingMeal} data-readonly-allowed>
                       {updatingMeal ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1343,6 +1344,7 @@ export function MealsManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
 
                 {hasPerm("meals.delete") && (
                 <AlertDialog>
@@ -1373,7 +1375,7 @@ export function MealsManagement() {
                 )}
               </div>
 
-            </div>
+            </fieldset>
           )}
         </SheetContent>
       </Sheet>

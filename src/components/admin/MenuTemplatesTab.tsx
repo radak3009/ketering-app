@@ -18,6 +18,7 @@ import { Plus, Pencil, Trash2, Loader2, ImageIcon, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMeals } from "@/hooks/useMeals";
 import { useMenuTemplates } from "@/hooks/useMenuTemplates";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { MenuTemplateWithMeals } from "@/types/menu";
 import { z } from "zod";
 
@@ -46,6 +47,9 @@ export function MenuTemplatesTab() {
   const { meals } = useMeals();
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useMenuTemplates();
   const isMobile = useIsMobile();
+  const { has: hasPerm } = usePermissions();
+  const canWriteMenus = hasPerm("menus.write");
+  const canDeleteMenus = hasPerm("menus.delete");
 
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("");
@@ -311,12 +315,14 @@ export function MenuTemplatesTab() {
         </div>
 
         <Sheet open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) { setForm(emptyForm()); resetMealFilters(); } }}>
+          {canWriteMenus && (
           <SheetTrigger asChild>
             <Button className="w-full md:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Kreiraj jelovnik
             </Button>
           </SheetTrigger>
+          )}
           <SheetContent className="w-full md:max-w-lg overflow-y-auto">
             <SheetHeader>
               <SheetTitle>Kreiraj novi jelovnik</SheetTitle>
@@ -417,9 +423,10 @@ export function MenuTemplatesTab() {
                       ))}
                     </div>
                     <div className="flex justify-end gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title="Izmeni">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title={canWriteMenus ? "Izmeni" : "Pregled"}>
                         <Pencil className="h-4 w-4" />
                       </Button>
+                      {canDeleteMenus && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" title="Obriši">
@@ -439,6 +446,7 @@ export function MenuTemplatesTab() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </div>
                 );
@@ -497,9 +505,10 @@ export function MenuTemplatesTab() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title="Izmeni">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(tpl)} title={canWriteMenus ? "Izmeni" : "Pregled"}>
                             <Pencil className="h-4 w-4" />
                           </Button>
+                          {canDeleteMenus && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" title="Obriši">
@@ -519,6 +528,7 @@ export function MenuTemplatesTab() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -545,10 +555,10 @@ export function MenuTemplatesTab() {
       <Sheet open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Izmeni jelovnik</SheetTitle>
+            <SheetTitle>{canWriteMenus ? "Izmeni jelovnik" : "Pregled jelovnika"}</SheetTitle>
           </SheetHeader>
           {editing && (
-            <div className="space-y-4 mt-6">
+            <fieldset disabled={!canWriteMenus} className={`space-y-4 mt-6 border-0 p-0 m-0 ${!canWriteMenus ? "[&_[role=checkbox]]:pointer-events-none [&_select]:pointer-events-none" : ""}`}>
               <div>
                 <Label htmlFor="edit-tpl-name">Naziv *</Label>
                 <Input
@@ -597,14 +607,16 @@ export function MenuTemplatesTab() {
                 }))
               )}
               <div className="flex gap-2 pt-2">
+                {canWriteMenus && (
                 <Button onClick={handleUpdate} className="flex-1" disabled={updating}>
                   {updating ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Čuvanje...</>
                   ) : "Sačuvaj izmene"}
                 </Button>
-                <Button variant="outline" onClick={() => setEditing(null)}>Otkaži</Button>
+                )}
+                <Button variant="outline" onClick={() => setEditing(null)} className={canWriteMenus ? "" : "flex-1"}>{canWriteMenus ? "Otkaži" : "Zatvori"}</Button>
               </div>
-            </div>
+            </fieldset>
           )}
         </SheetContent>
       </Sheet>

@@ -672,10 +672,10 @@ export function MenusManagement() {
       <Sheet open={!!selectedMenu} onOpenChange={(open) => { if (!open) { setSelectedMenu(null); setMenuMealSearch(""); setMenuGroupFilter(""); setMenuShiftFilter(""); } }}>
         <SheetContent className="w-full md:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Detalji jelovnika</SheetTitle>
+            <SheetTitle>{hasPerm("menus.write") ? "Detalji jelovnika" : "Pregled jelovnika"}</SheetTitle>
           </SheetHeader>
           {selectedMenu && (
-            <div className="space-y-4 mt-6">
+            <fieldset disabled={!hasPerm("menus.write")} className={`space-y-4 mt-6 border-0 p-0 m-0 ${!hasPerm("menus.write") ? "[&_[role=checkbox]]:pointer-events-none [&_select]:pointer-events-none" : ""}`}>
               <div>
                 <Label>Naziv jelovnika</Label>
                 <Input value={generateMenuName(selectedMenu.menu_date)} disabled />
@@ -791,6 +791,7 @@ export function MenusManagement() {
               </div>
               
               <div className="space-y-2 pt-4">
+                {hasPerm("menus.write") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button className="w-full" disabled={updatingMenu}>
@@ -829,6 +830,7 @@ export function MenusManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
 
                 {hasPerm("menus.delete") && (
                 <AlertDialog>
@@ -859,7 +861,7 @@ export function MenusManagement() {
                 )}
 
               </div>
-            </div>
+            </fieldset>
           )}
         </SheetContent>
       </Sheet>

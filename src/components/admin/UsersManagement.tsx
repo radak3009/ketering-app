@@ -872,8 +872,8 @@ export function UsersManagement() {
                         .map(user => (
                         <div
                           key={user.id}
-                          className={`p-3 border rounded-lg bg-card ${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""}`}
-                          onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+                          className="p-3 border rounded-lg bg-card cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedUser({...user})}
 
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -1042,8 +1042,8 @@ export function UsersManagement() {
                           .map(user => (
                           <TableRow 
                             key={user.id}
-                            className={`${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""} ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
-                            onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+                            className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
+                            onClick={() => setSelectedUser({...user})}
 
                           >
                             <TableCell onClick={(e) => e.stopPropagation()}>
