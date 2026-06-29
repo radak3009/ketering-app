@@ -1370,7 +1370,9 @@ export function MealsManagement() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                )}
               </div>
+
             </div>
           )}
         </SheetContent>
