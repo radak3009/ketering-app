@@ -19,6 +19,8 @@ export function ReportsTab() {
   const { users } = useUsers();
   const { meals } = useMeals();
   const { menus } = useMenus();
+  const { has: hasPerm } = usePermissions();
+  
   
   const [reportType, setReportType] = useState("orders");
   const [reportDateRange, setReportDateRange] = useState({
