@@ -494,6 +494,7 @@ export function MealsManagement() {
               </CardTitle>
               <CardDescription className="text-xs md:text-sm">Pregled i upravljanje ponudom obroka</CardDescription>
             </div>
+            {hasPerm("meals.write") && (
             <Sheet open={isAddMealOpen} onOpenChange={setIsAddMealOpen}>
               <SheetTrigger asChild>
                 <Button onClick={() => { resetMealForm(); setIsAddMealOpen(true); }} className="w-full md:w-auto">
@@ -501,6 +502,7 @@ export function MealsManagement() {
                   Dodaj obrok
                 </Button>
               </SheetTrigger>
+
               <SheetContent className="w-full md:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Dodaj novi obrok</SheetTitle>
