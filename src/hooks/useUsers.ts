@@ -95,7 +95,7 @@ export function useUsers() {
       } else if (updates.email) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, role, password_set, created_at, updated_at')
+          .select('id, user_id, full_name, email, phone, company_card_id, company_card_serial, tag, date_of_birth, company_id, password_set, created_at, updated_at')
           .eq('id', id)
           .single();
 
@@ -105,14 +105,15 @@ export function useUsers() {
 
       const { data: roleData } = await supabase
         .from('user_roles' as any)
-        .select('role, role_id, roles:role_id(id, key, name)')
+        .select('role_id, roles:role_id(id, key, name, panel)')
         .eq('user_id', updatedData.user_id)
         .maybeSingle();
 
       const r: any = roleData;
+      const panel = r?.roles?.panel as 'admin' | 'employee' | undefined;
       const updatedUser = {
         ...updatedData,
-        role: r?.role || 'employee',
+        role: panel === 'admin' ? 'admin' : 'employee',
         role_id: r?.role_id || null,
         role_key: r?.roles?.key || null,
         role_name: r?.roles?.name || null,
