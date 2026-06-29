@@ -80,7 +80,7 @@ export function useUsers() {
         Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
       );
 
-      let updatedData = currentUser;
+      let updatedData: any = currentUser;
 
       if (Object.keys(cleanUpdates).length > 0) {
         const { data, error } = await supabase
