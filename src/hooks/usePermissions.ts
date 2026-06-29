@@ -35,7 +35,8 @@ export function usePermissions(): UsePermissionsResult {
     },
   });
 
-  // Sensible fallback while loading: derive from legacy enum role so UI doesn't flash empty.
+  // PESIMISTIČAN fallback: dok dozvole nisu učitane NE dodeljujemo ništa adminskom panelu
+  // (jer Demo/HR/Kuhinja takođe imaju panel=admin pa bismo im davali sve dok query traje).
   const fallbackPanel: "admin" | "employee" = profile?.role === "admin" ? "admin" : "employee";
 
   return {
@@ -45,10 +46,14 @@ export function usePermissions(): UsePermissionsResult {
     loading: isLoading,
     has: (perm) => {
       if (data?.permissions) return data.permissions.has(perm);
-      // Loading fallback: admin sees all, employee only self.*
-      if (fallbackPanel === "admin") return true;
-      return perm.startsWith("self.");
+      // Pre učitavanja: employee panel može na self.*, sve ostalo blokirano.
+      if (fallbackPanel === "employee" && perm.startsWith("self.")) return true;
+      return false;
     },
-    hasAny: (...perms) => perms.some((p) => (data?.permissions?.has(p) ?? (fallbackPanel === "admin"))),
+    hasAny: (...perms) => {
+      if (data?.permissions) return perms.some((p) => data.permissions.has(p));
+      if (fallbackPanel === "employee") return perms.some((p) => p.startsWith("self."));
+      return false;
+    },
   };
 }
