@@ -312,11 +312,14 @@ export function OrdersOverview({ orderDateRange, setOrderDateRange }: OrdersOver
                   <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
                   Osveži
                 </Button>
+                {hasPerm("orders.create") && (
                 <Button size="sm" className="w-full sm:w-auto" onClick={() => { setEditData(null); setOrderDialogOpen(true); }}>
                   <Plus className="h-4 w-4 mr-1.5" />
                   Nova porudžbina
                 </Button>
+                )}
               </div>
+
             </div>
             
               <div className="flex flex-wrap items-center gap-4">
