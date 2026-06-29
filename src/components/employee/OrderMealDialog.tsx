@@ -60,11 +60,12 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
   ];
 
   useEffect(() => {
-    if (open && userId) {
+    // Wait for profile to load so organization_tag filter is correct.
+    if (open && userId && profile) {
       fetchMenus();
       fetchExistingOrders();
     }
-  }, [open, userId]);
+  }, [open, userId, profile?.tag]);
 
   useEffect(() => {
     if (open && refreshTrigger > 0) {
