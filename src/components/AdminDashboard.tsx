@@ -439,7 +439,9 @@ export function AdminDashboard() {
               <span className="sm:hidden">Pod.</span>
 
             </TabsTrigger>
+            )}
           </TabsList>
+
 
           {/* Orders Tab */}
           <TabsContent value="orders">
