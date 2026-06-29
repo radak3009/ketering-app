@@ -354,6 +354,8 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+        )}
+
 
         {/* Tabs */}
         <Tabs defaultValue="orders" className="space-y-4 md:space-y-6">
