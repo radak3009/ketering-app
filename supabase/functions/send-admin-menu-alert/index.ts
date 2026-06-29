@@ -64,11 +64,23 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get all admin emails
-    const { data: admins, error: adminsError } = await supabase
-      .from('profiles')
-      .select('email, full_name')
-      .eq('role', 'admin');
+    // Get all admin emails via user_roles join (roles.panel='admin').
+    const { data: adminRoleRows, error: adminRolesError } = await supabase
+      .from('user_roles')
+      .select('user_id, roles:role_id!inner(panel)')
+      .eq('roles.panel', 'admin');
+    if (adminRolesError) {
+      console.error("Error fetching admin user_roles:", adminRolesError);
+      throw adminRolesError;
+    }
+    const adminIds = (adminRoleRows ?? []).map((r: any) => r.user_id).filter(Boolean);
+
+    const { data: admins, error: adminsError } = adminIds.length > 0
+      ? await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .in('user_id', adminIds)
+      : { data: [], error: null } as any;
 
     if (adminsError) {
       console.error("Error fetching admins:", adminsError);
