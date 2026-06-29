@@ -710,7 +710,9 @@ export function MealsManagement() {
                 </div>
               </SheetContent>
             </Sheet>
+            )}
           </div>
+
         </CardHeader>
         <CardContent>
           {loading ? (
