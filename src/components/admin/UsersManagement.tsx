@@ -1042,8 +1042,9 @@ export function UsersManagement() {
                           .map(user => (
                           <TableRow 
                             key={user.id}
-                            className={`cursor-pointer hover:bg-muted/50 ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
-                            onClick={() => setSelectedUser({...user})}
+                            className={`${hasPerm("users.update") ? "cursor-pointer hover:bg-muted/50" : ""} ${selectedUserIds.has(user.id) ? 'bg-primary/5' : ''}`}
+                            onClick={() => { if (hasPerm("users.update")) setSelectedUser({...user}); }}
+
                           >
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Checkbox
