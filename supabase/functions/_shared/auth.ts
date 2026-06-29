@@ -1,5 +1,6 @@
 // Shared auth helpers for edge functions (Faza 2 RBAC).
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createLocalJWKSet, jwtVerify, type JWTPayload } from "https://esm.sh/jose@5.9.6";
 
 export function createAdminClient(): SupabaseClient {
   return createClient(
@@ -9,15 +10,34 @@ export function createAdminClient(): SupabaseClient {
   );
 }
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
+// Build a local JWKS resolver once per cold start from SUPABASE_JWKS env.
+// This is required so we can VERIFY the JWT signature in functions where
+// verify_jwt=false (kiosk/system entrypoints koje sami u kodu razdvajaju
+// sistemski vs korisnički zahtev). Bez ovoga bi se mogao podmetnuti forge JWT.
+let jwksResolver: ReturnType<typeof createLocalJWKSet> | null = null;
+function getJwks() {
+  if (jwksResolver) return jwksResolver;
+  const raw = Deno.env.get("SUPABASE_JWKS");
+  if (!raw) return null;
   try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const padded = part.replace(/-/g, "+").replace(/_/g, "/");
-    const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
-    const json = atob(padded + pad);
-    return JSON.parse(json);
-  } catch {
+    const parsed = JSON.parse(raw);
+    const jwks = parsed?.keys ? parsed : { keys: Array.isArray(parsed) ? parsed : [parsed] };
+    jwksResolver = createLocalJWKSet(jwks);
+    return jwksResolver;
+  } catch (e) {
+    console.error("[auth] SUPABASE_JWKS parse error:", (e as Error).message);
+    return null;
+  }
+}
+
+async function verifyJwtSignature(token: string): Promise<JWTPayload | null> {
+  const jwks = getJwks();
+  if (!jwks) return null;
+  try {
+    const { payload } = await jwtVerify(token, jwks, { algorithms: ["ES256", "RS256", "EdDSA"] });
+    return payload;
+  } catch (e) {
+    console.warn("[auth] jwtVerify failed:", (e as Error).message);
     return null;
   }
 }
@@ -29,18 +49,14 @@ export async function getCallerUser(req: Request, admin?: SupabaseClient) {
   }
   const token = authHeader.slice("Bearer ".length);
 
-  // Edge runtime već validira JWT (verify_jwt=true u config.toml) pre nego što stigne do funkcije.
-  // Lokalno dekodiranje payload-a je pouzdanije od client.auth.getUser(token) koji s vremena
-  // na vreme vraća null zbog mrežnih bljeskova ka GoTrue-u → izazivao je sporadične 401 greške
-  // (npr. prazna lista uloga u "Uloge i dozvole").
-  const payload = decodeJwtPayload(token);
-  const sub = typeof payload?.sub === "string" ? payload.sub as string : null;
-  if (sub) {
-    const email = typeof payload?.email === "string" ? payload!.email as string : null;
-    return { user: { id: sub, email } as { id: string; email: string | null }, token, error: null };
+  // 1) Primarni put: lokalna verifikacija potpisa preko SUPABASE_JWKS (asimetricni signing keys).
+  const verified = await verifyJwtSignature(token);
+  if (verified && typeof verified.sub === "string") {
+    const email = typeof verified.email === "string" ? verified.email : null;
+    return { user: { id: verified.sub, email } as { id: string; email: string | null }, token, error: null };
   }
 
-  // Fallback: ako lokalno dekodiranje pukne, pokušaj sa GoTrue-om.
+  // 2) Fallback: GoTrue (npr. legacy HS256 tokeni ili kada JWKS nije dostupan).
   const client = admin ?? createAdminClient();
   const { data, error } = await client.auth.getUser(token);
   if (error || !data?.user) return { user: null, token, error: "Invalid token" };
