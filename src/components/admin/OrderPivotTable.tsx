@@ -8,6 +8,7 @@ import { ChevronRight, ChevronDown, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Order {
   id: string;
@@ -56,6 +57,8 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
   const [mobilePage, setMobilePage] = useState(1);
   const [mobilePageSize, setMobilePageSize] = useState(20);
   const isMobile = useIsMobile();
+  const { has: hasPerm } = usePermissions();
+  const canExport = hasPerm("orders.export_csv");
 
   const toggleMeal = (mealName: string) => {
     setExpandedMeals(prev => {
@@ -160,10 +163,12 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
               <CardTitle className="text-lg">Po obrocima</CardTitle>
               <CardDescription className="text-xs">Porudžbine po danima</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} className="shrink-0">
-              <Download className="h-4 w-4 mr-1.5" />
-              CSV
-            </Button>
+            {canExport && (
+              <Button variant="outline" size="sm" onClick={handleExportCSV} className="shrink-0">
+                <Download className="h-4 w-4 mr-1.5" />
+                CSV
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="px-3">
@@ -244,10 +249,12 @@ export function OrderPivotTable({ orders, shiftFilter }: OrderPivotTableProps) {
             <CardTitle className="text-lg md:text-xl">Pivot tabela</CardTitle>
             <CardDescription className="text-xs md:text-sm">Pregled porudžbina po obrocima i danima</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="self-start sm:self-auto shrink-0">
-            <Download className="h-4 w-4 mr-1.5" />
-            CSV
-          </Button>
+          {canExport && (
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="self-start sm:self-auto shrink-0">
+              <Download className="h-4 w-4 mr-1.5" />
+              CSV
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
