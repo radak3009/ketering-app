@@ -543,8 +543,10 @@ export function AdminDashboard() {
                       </Button>
                     </CardContent>
                   </Card>
-
+                  )}
+                  {has("notifications.custom_email") && (
                   <Card>
+
                     <CardHeader>
                       <CardTitle className="text-base">Custom obaveštenje (email)</CardTitle>
                       <CardDescription className="text-xs">
