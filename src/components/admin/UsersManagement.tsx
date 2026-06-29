@@ -1080,6 +1080,7 @@ export function UsersManagement() {
                               </Badge>
                             </TableCell>
                             <TableCell>
+                              {hasPerm("users.invite") && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -1091,6 +1092,7 @@ export function UsersManagement() {
                               >
                                 <Mail className="h-4 w-4" />
                               </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
