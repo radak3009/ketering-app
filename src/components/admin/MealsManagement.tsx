@@ -1344,6 +1344,7 @@ export function MealsManagement() {
                   </AlertDialogContent>
                 </AlertDialog>
 
+                {hasPerm("meals.delete") && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full">
