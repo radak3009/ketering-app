@@ -79,6 +79,9 @@ export function MealsManagement() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { meals, loading, createMeal, updateMeal, deleteMeal, refetch } = useMeals();
+  const { has: hasPerm } = usePermissions();
+  
+
   
   const [selectedMeal, setSelectedMeal] = useState<any>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
