@@ -10,6 +10,8 @@ import { BarChart3, Users, ChefHat, Calendar, LogOut, MessageSquare, Bell, Setti
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStats } from "@/hooks/useAdminStats";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Can } from "@/components/auth/Can";
 
 
 import { supabase } from "@/integrations/supabase/client";
