@@ -101,9 +101,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check ownership: pickup.profile_id -> profiles.user_id must match auth user
-    // Admin bypass via has_role check
-    const { data: isAdmin } = await serviceClient.rpc("is_admin_user", { user_uuid: userId });
+    // Check ownership: pickup.profile_id -> profiles.user_id must match auth user.
+    // Granular bypass: receipts.view_all permission (Administrator-only by default).
+    const { data: isAdmin } = await serviceClient.rpc("has_permission", {
+      _user: userId,
+      _perm: "receipts.view_all",
+    });
 
     if (!isAdmin && pickup.profile_id) {
       const { data: profile } = await serviceClient

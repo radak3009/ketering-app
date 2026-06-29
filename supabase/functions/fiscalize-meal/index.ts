@@ -191,10 +191,14 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
-      const { data: isAdmin } = await adminClient.rpc("is_admin_user", { user_uuid: userData.user.id });
-      if (!isAdmin) {
+      // Granular: zahteva orders.fiscalize (Administrator-only po default-u).
+      const { data: allowed } = await adminClient.rpc("has_permission", {
+        _user: userData.user.id,
+        _perm: "orders.fiscalize",
+      });
+      if (!allowed) {
         return new Response(
-          JSON.stringify({ error: "Samo administratori" }),
+          JSON.stringify({ error: "Nemate dozvolu za fiskalizaciju" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -25,6 +26,9 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { profile } = useAuth();
+  const { panel } = usePermissions();
+  const isAdminPanel = panel === 'admin';
+
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -57,7 +61,7 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
           },
           body: JSON.stringify({
             messages: [...messages, userMessage],
-            role: profile.role,
+            role: isAdminPanel ? 'admin' : 'employee',
             language: i18n.language,
           }),
         }
@@ -222,7 +226,7 @@ export const AIHelpChat = ({ open, onOpenChange }: AIHelpChatProps) => {
                   <p className="font-medium">{exampleQuestions.intro}</p>
                   <p>• {exampleQuestions.orderMeal}</p>
                   <p>• {exampleQuestions.giveFeedback}</p>
-                  {profile?.role === 'admin' && (
+                  {isAdminPanel && (
                     <>
                       <p>• {exampleQuestions.createMenu}</p>
                       <p>• {exampleQuestions.addMeal}</p>
