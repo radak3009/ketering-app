@@ -48,8 +48,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role for DB and storage access
-    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+
 
     // Fetch pickup request
     const { data: pickup, error: pickupErr } = await serviceClient
