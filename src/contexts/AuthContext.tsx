@@ -114,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const [profileResult, panelResult, tagSettingResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, role, password_set, created_at, updated_at')
+            .select('id, user_id, company_id, company_card_id, tag, full_name, email, phone, password_set, created_at, updated_at')
             .eq('user_id', userId)
             .maybeSingle(),
           supabase.rpc('get_user_panel', { _user: userId }),
