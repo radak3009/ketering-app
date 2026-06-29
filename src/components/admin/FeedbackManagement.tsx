@@ -14,10 +14,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function FeedbackManagement() {
   const isMobile = useIsMobile();
   const { feedback, loading, updateFeedback } = useFeedback();
+  const { has: hasPerm } = usePermissions();
+  const canProcess = hasPerm('feedback.process');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<FeedbackWithProfile | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
