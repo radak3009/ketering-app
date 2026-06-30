@@ -1042,6 +1042,8 @@ export type Database = {
       can_view_company: { Args: { company_uuid: string }; Returns: boolean }
       company_card_id_exists: { Args: { check_id: string }; Returns: boolean }
       email_exists: { Args: { check_email: string }; Returns: boolean }
+      get_self_company_id: { Args: never; Returns: string }
+      get_self_tag: { Args: never; Returns: string }
       get_user_panel: { Args: { _user: string }; Returns: string }
       get_user_permissions: { Args: { _user: string }; Returns: string[] }
       has_perm: { Args: { _perm: string }; Returns: boolean }
