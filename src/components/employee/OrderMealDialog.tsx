@@ -387,11 +387,20 @@ export function OrderMealDialog({ open, onOpenChange, userId, onOrderCreated, to
                         }`}
                       >
                         {meal.image_url && (
-                          <img
-                            src={meal.image_url}
-                            alt={meal.name}
-                            className="w-full h-32 object-cover"
-                          />
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
+                            <img
+                              src={meal.image_url}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+                            />
+                            <img
+                              src={meal.image_url}
+                              alt={meal.name}
+                              loading="lazy"
+                              className="relative w-full h-full object-contain"
+                            />
+                          </div>
                         )}
                         <div className="p-3">
                           <h3 className="font-medium">{meal.name}</h3>
