@@ -98,14 +98,21 @@ export function MealCard({ item, canDelete = false, onDelete, onRefresh }: MealC
   return (
     <div className="relative border rounded-lg overflow-hidden bg-card hover:shadow-md transition-shadow">
       {item.meal.image_url && (
-        <div className="relative w-full h-48 md:h-32">
+        <div className="relative w-full aspect-[4/3] md:aspect-[16/9] overflow-hidden bg-muted">
+          <img
+            src={item.meal.image_url}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60"
+          />
           <img
             src={item.meal.image_url}
             alt={item.meal.name}
-            className="w-full h-full object-cover"
+            loading="lazy"
+            className="relative w-full h-full object-contain"
           />
           {item.pickup_status === 'preuzeto' && (
-            <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5">
+            <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5 z-10">
               <CheckCircle2 className="h-5 w-5 text-white" />
             </div>
           )}
