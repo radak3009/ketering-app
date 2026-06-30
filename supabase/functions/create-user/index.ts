@@ -222,7 +222,6 @@ Deno.serve(async (req) => {
       .insert({
         user_id: userId,
         role_id: roleRow.id,
-        role: enumRole,
       });
 
     if (roleError) {
