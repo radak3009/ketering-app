@@ -195,7 +195,6 @@ Deno.serve(async (req) => {
     if (company_card_id) profileUpdates.company_card_id = company_card_id;
     if (tag) profileUpdates.tag = tag;
     if (date_of_birth) profileUpdates.date_of_birth = date_of_birth;
-    profileUpdates.role = enumRole;
     // Set password_set based on whether password was provided
     profileUpdates.password_set = !!password;
 
