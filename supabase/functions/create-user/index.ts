@@ -211,24 +211,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Delete existing role if any, then insert new role
-    await supabaseAdmin
+    // Replace any role auto-created by handle_new_user trigger
+    const { error: delRoleErr } = await supabaseAdmin
       .from('user_roles')
       .delete()
       .eq('user_id', userId);
+    if (delRoleErr) {
+      console.error('Error deleting existing role:', delRoleErr);
+      throw new Error(`Greška pri brisanju postojeće uloge: ${delRoleErr.message}`);
+    }
 
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
-        user_id: userId,
-        role_id: roleRow.id,
-      });
+      .insert({ user_id: userId, role_id: roleRow.id });
 
     if (roleError) {
-      console.error('Error setting user role:', roleError);
-    } else {
-      console.log('User role set successfully:', roleRow.key);
+      console.error('Error setting user role:', roleError, { userId, roleId: roleRow.id, roleKey: roleRow.key });
+      throw new Error(`Greška pri dodeljivanju uloge "${roleRow.key}": ${roleError.message}`);
     }
+    console.log('User role set successfully:', roleRow.key);
 
     // Fetch the created profile to return
     const { data: profile } = await supabaseAdmin
